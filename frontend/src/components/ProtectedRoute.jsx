@@ -1,10 +1,12 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import { Box, Spinner, Center } from "@chakra-ui/react";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  // const { isAuthenticated, isLoading } = useAuth();
+  // TODO: Remove this after done this feature
+  const isAuthenticated = true;
+  const isLoading = false;
   const location = useLocation();
 
   // Hiển thị loading spinner khi đang kiểm tra authentication
