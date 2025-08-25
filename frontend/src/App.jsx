@@ -20,6 +20,8 @@ import ProductListPage from "./pages/products/ProductListPage";
 import CreateProductPage from "./pages/products/CreateProductPage";
 import EditProductPage from "./pages/products/EditProductPage";
 import ProductDetailPage from "./pages/products/ProductDetailPage";
+import ImportOrderPage from "./pages/ImportOrderPage";
+import ImportOrderListPage from "./pages/ImportOrderListPage";
 
 function App() {
   return (
@@ -83,6 +85,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditProductPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/import-orders/create"
+            element={
+              <ProtectedRoute>
+                <ImportOrderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/import-orders"
+            element={
+              <ProtectedRoute>
+                <ImportOrderListPage />
               </ProtectedRoute>
             }
           />
