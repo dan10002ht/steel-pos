@@ -1,124 +1,146 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchProtectedApi, API_ENDPOINTS } from "../../../shared/services/api";
+import { useState, useEffect, useCallback } from "react";
+import productService from "../services/productService";
 
-// Query keys
-export const productKeys = {
-  all: ["products"],
-  lists: () => [...productKeys.all, "list"],
-  list: (filters) => [...productKeys.lists(), filters],
-  details: () => [...productKeys.all, "detail"],
-  detail: (id) => [...productKeys.details(), id],
-};
-
-// Get all products
-export const useProducts = (filters = {}) => {
-  return useQuery({
-    queryKey: productKeys.list(filters),
-    queryFn: () =>
-      fetchProtectedApi.get(API_ENDPOINTS.PRODUCTS, { params: filters }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+export const useProducts = (initialParams = {}) => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
   });
-};
-
-// Get product by ID
-export const useProduct = (id) => {
-  return useQuery({
-    queryKey: productKeys.detail(id),
-    queryFn: () => fetchProtectedApi.get(API_ENDPOINTS.PRODUCT_BY_ID(id)),
-    enabled: !!id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    ...initialParams,
   });
-};
 
-// Create product
-export const useCreateProduct = () => {
-  const queryClient = useQueryClient();
+  // Fetch products with current filters and pagination
+  const fetchProducts = useCallback(
+    async (params = {}) => {
+      setLoading(true);
+      setError(null);
 
-  return useMutation({
-    mutationFn: (productData) =>
-      fetchProtectedApi.post(API_ENDPOINTS.PRODUCTS, productData),
-    onSuccess: () => {
-      // Invalidate and refetch products list
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      try {
+        const response = await productService.getProducts({
+          ...filters,
+          ...params,
+        });
+
+        setProducts(response.data);
+        setPagination(response.pagination);
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
+      }
     },
-    onError: (error) => {
-      console.error("Error creating product:", error);
+    [filters]
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Update filters and refetch
+  const updateFilters = useCallback((newFilters) => {
+    setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+  }, []);
+
+  // Change page
+  const changePage = useCallback(
+    (page) => {
+      fetchProducts({ page });
     },
-  });
-};
+    [fetchProducts]
+  );
 
-// Update product
-export const useUpdateProduct = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }) =>
-      fetchProtectedApi.put(API_ENDPOINTS.PRODUCT_BY_ID(id), data),
-    onSuccess: (data, variables) => {
-      // Update the product in cache
-      queryClient.setQueryData(productKeys.detail(variables.id), data);
-      // Invalidate products list
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+  // Search products
+  const searchProducts = useCallback(
+    (searchTerm) => {
+      updateFilters({ search: searchTerm });
     },
-    onError: (error) => {
-      console.error("Error updating product:", error);
+    [updateFilters]
+  );
+
+  // Filter by category
+  const filterByCategory = useCallback(
+    (category) => {
+      updateFilters({ category });
     },
-  });
-};
+    [updateFilters]
+  );
 
-// Delete product
-export const useDeleteProduct = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id) =>
-      fetchProtectedApi.delete(API_ENDPOINTS.PRODUCT_BY_ID(id)),
-    onSuccess: (data, variables) => {
-      // Remove product from cache
-      queryClient.removeQueries({ queryKey: productKeys.detail(variables) });
-      // Invalidate products list
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+  // Sort products
+  const sortProducts = useCallback(
+    (sortBy, sortOrder = "desc") => {
+      updateFilters({ sortBy, sortOrder });
     },
-    onError: (error) => {
-      console.error("Error deleting product:", error);
-    },
-  });
-};
+    [updateFilters]
+  );
 
-// Search products
-export const useSearchProducts = (searchTerm, filters = {}) => {
-  return useQuery({
-    queryKey: [...productKeys.lists(), "search", searchTerm, filters],
-    queryFn: () =>
-      fetchProtectedApi.get(API_ENDPOINTS.PRODUCTS, {
-        params: { search: searchTerm, ...filters },
-      }),
-    enabled: !!searchTerm,
-    staleTime: 2 * 60 * 1000, // 2 minutes for search results
-  });
-};
+  // Refresh products
+  const refreshProducts = useCallback(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
-// Get products by category
-export const useProductsByCategory = (categoryId) => {
-  return useQuery({
-    queryKey: [...productKeys.lists(), "category", categoryId],
-    queryFn: () =>
-      fetchProtectedApi.get(API_ENDPOINTS.PRODUCTS, {
-        params: { category: categoryId },
-      }),
-    enabled: !!categoryId,
-    staleTime: 5 * 60 * 1000,
-  });
-};
+  // Get products by category
+  const getProductsByCategory = useCallback(async (category) => {
+    setLoading(true);
+    setError(null);
 
-// Get low stock products
-export const useLowStockProducts = (threshold = 10) => {
-  return useQuery({
-    queryKey: [...productKeys.lists(), "low-stock", threshold],
-    queryFn: () =>
-      fetchProtectedApi.get(API_ENDPOINTS.PRODUCTS, {
-        params: { lowStock: threshold },
-      }),
-    staleTime: 2 * 60 * 1000, // 2 minutes for stock alerts
-  });
+    try {
+      const response = await productService.getProductsByCategory(category);
+      return response.data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Search products (standalone)
+  const searchProductsStandalone = useCallback(async (query) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await productService.searchProducts(query);
+      return response.data;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    // State
+    products,
+    loading,
+    error,
+    pagination,
+    filters,
+
+    // Actions
+    fetchProducts,
+    updateFilters,
+    changePage,
+    searchProducts,
+    filterByCategory,
+    sortProducts,
+    refreshProducts,
+    getProductsByCategory,
+    searchProductsStandalone,
+  };
 };

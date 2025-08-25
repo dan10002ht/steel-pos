@@ -7,12 +7,12 @@ import {
   HStack,
   Text,
   Avatar,
+  useToast,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
   MenuDivider,
-  useToast,
 } from "@chakra-ui/react";
 import { LogOut, User, Settings } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
