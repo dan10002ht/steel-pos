@@ -40,14 +40,12 @@ const CreateProductPage = () => {
   };
 
   return (
-    <MainLayout>
-      <ProductForm
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        title="Tạo sản phẩm mới"
-        submitText="Tạo sản phẩm"
-      />
-    </MainLayout>
+    <ProductForm
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+      title="Tạo sản phẩm mới"
+      submitText="Tạo sản phẩm"
+    />
   );
 };
 

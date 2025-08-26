@@ -1,12 +1,11 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Outlet } from "react-router-dom";
 import { Box, Spinner, Center } from "@chakra-ui/react";
+import { useAuth } from "../contexts/AuthContext";
+import MainLayout from "./Layout/MainLayout";
 
-const ProtectedRoute = ({ children }) => {
-  // const { isAuthenticated, isLoading } = useAuth();
-  // TODO: Remove this after done this feature
-  const isAuthenticated = true;
-  const isLoading = false;
+const ProtectedRoute = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   // Hiển thị loading spinner khi đang kiểm tra authentication
@@ -19,12 +18,16 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Nếu chưa đăng nhập, chuyển hướng đến trang login
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/login" state={{ from: location }} replace />;
+  // }
 
-  // Nếu đã đăng nhập, hiển thị children
-  return children;
+  // Nếu đã đăng nhập, hiển thị children hoặc Outlet
+  return (
+    <MainLayout>
+      <Outlet />
+    </MainLayout>
+  );
 };
 
 export default ProtectedRoute;

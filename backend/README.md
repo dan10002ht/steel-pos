@@ -1,140 +1,195 @@
 # Steel POS Backend
 
-Backend API cho hệ thống quản lý cửa hàng sắt thép.
+Backend API cho hệ thống quản lý bán hàng Steel POS.
 
-## Công nghệ sử dụng
+## 🚀 Quick Start
 
-- **Go 1.21+**
-- **Gin** - Web framework
-- **PostgreSQL** - Database
-- **pgx** - PostgreSQL driver
-- **JWT** - Authentication
-- **Logrus** - Logging
+### Prerequisites
 
-## Cấu trúc dự án
+- Go 1.21+
+- PostgreSQL 12+
+- Make
 
-```
-backend/
-├── cmd/
-│   └── server/          # Entry point
-├── internal/
-│   ├── config/          # Configuration
-│   ├── handlers/        # HTTP handlers
-│   ├── middleware/      # Middleware
-│   ├── models/          # Data models
-│   ├── repository/      # Data access layer
-│   └── services/        # Business logic
-├── pkg/
-│   ├── database/        # Database connection
-│   ├── logger/          # Logging utilities
-│   └── utils/           # Common utilities
-├── migrations/          # Database migrations
-└── docs/               # API documentation
+### Installation
+
+1. Clone repository:
+
+```bash
+git clone <repository-url>
+cd steel-pos/backend
 ```
 
-## Setup
-
-### 1. Cài đặt dependencies
+2. Install dependencies:
 
 ```bash
 make deps
 ```
 
-### 2. Cấu hình môi trường
-
-Copy file env.example thành .env và cấu hình:
+3. Setup environment variables:
 
 ```bash
 cp env.example .env
+# Edit .env file with your database configuration
 ```
 
-### 3. Cấu hình database
-
-- Cài đặt PostgreSQL
-- Tạo database `steel_pos`
-- Cập nhật thông tin kết nối trong file .env
-
-### 4. Chạy ứng dụng
+4. Run database migrations:
 
 ```bash
-# Development
+make migrate-up
+```
+
+5. Run the application:
+
+```bash
 make run
-
-# Build và chạy
-make build
-./bin/server
 ```
 
-## API Endpoints
+## 📊 Database Migrations
 
-### Health Check
-
-- `GET /health` - Kiểm tra trạng thái server
-
-### Authentication
-
-- `POST /api/v1/auth/login` - Đăng nhập
-- `POST /api/v1/auth/register` - Đăng ký
-
-### Products
-
-- `GET /api/v1/products` - Lấy danh sách sản phẩm
-- `GET /api/v1/products/:id` - Lấy sản phẩm theo ID
-- `POST /api/v1/products` - Tạo sản phẩm mới
-- `PUT /api/v1/products/:id` - Cập nhật sản phẩm
-- `DELETE /api/v1/products/:id` - Xóa sản phẩm
-
-### Orders
-
-- `GET /api/v1/orders` - Lấy danh sách đơn hàng
-- `GET /api/v1/orders/:id` - Lấy đơn hàng theo ID
-- `POST /api/v1/orders` - Tạo đơn hàng mới
-- `PUT /api/v1/orders/:id` - Cập nhật đơn hàng
-- `DELETE /api/v1/orders/:id` - Xóa đơn hàng
-
-### Customers
-
-- `GET /api/v1/customers` - Lấy danh sách khách hàng
-- `GET /api/v1/customers/:id` - Lấy khách hàng theo ID
-- `POST /api/v1/customers` - Tạo khách hàng mới
-- `PUT /api/v1/customers/:id` - Cập nhật khách hàng
-- `DELETE /api/v1/customers/:id` - Xóa khách hàng
-
-### Inventory
-
-- `GET /api/v1/inventory` - Lấy danh sách tồn kho
-- `GET /api/v1/inventory/:id` - Lấy tồn kho theo ID
-- `POST /api/v1/inventory/in` - Nhập kho
-- `POST /api/v1/inventory/out` - Xuất kho
-
-## Development
-
-### Hot reload (cần cài air)
+### Available Commands
 
 ```bash
-go install github.com/cosmtrek/air@latest
-make dev
+# Run all pending migrations
+make migrate-up
+
+# Rollback last migration
+make migrate-down
+
+# Check current migration version
+make migrate-version
+
+# Force migration to specific version
+make migrate-force VERSION=1
+
+# Create new migration file
+make migrate-create NAME=add_new_table
 ```
 
-### Testing
+### Migration Files
+
+- `000001_create_initial_schema.up.sql` - Tạo schema cơ bản
+- `000001_create_initial_schema.down.sql` - Rollback schema
+- `000002_insert_initial_data.up.sql` - Insert dữ liệu mẫu
+- `000002_insert_initial_data.down.sql` - Rollback dữ liệu
+- `000003_add_inventory_update_function.up.sql` - Thêm functions cho inventory
+- `000003_add_inventory_update_function.down.sql` - Rollback functions
+
+## 🏗️ Database Schema
+
+### Core Tables
+
+#### Users
+
+- Quản lý người dùng và phân quyền
+- Roles: admin, manager, accountant, user
+
+#### Products & Product Variants
+
+- Quản lý sản phẩm với variants
+- Tracking stock và sold quantities
+
+#### Import Orders
+
+- Quản lý đơn nhập kho
+- Workflow: pending → approved
+- Auto-update inventory khi approve
+
+#### Suppliers
+
+- Quản lý nhà cung cấp
+
+#### Inventory History
+
+- Track lịch sử thay đổi tồn kho
+- Reference đến import orders, sales, etc.
+
+### Key Functions
+
+#### `update_inventory_on_import_approval(import_order_id, approved_by)`
+
+- Cập nhật tồn kho khi approve đơn nhập
+- Tạo inventory history records
+- Update import order status
+
+#### `generate_next_import_code()`
+
+- Tự động generate mã đơn nhập tiếp theo
+
+#### `calculate_import_order_total(import_order_id)`
+
+- Tính tổng giá trị đơn nhập
+
+## 🔧 Development
+
+### Environment Variables
 
 ```bash
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=steel_pos
+DB_USER=postgres
+DB_PASSWORD=password
+JWT_SECRET=your-secret-key
+```
+
+### API Endpoints
+
+#### Authentication
+
+- `POST /api/auth/login` - Đăng nhập
+- `POST /api/auth/logout` - Đăng xuất
+- `POST /api/auth/refresh` - Refresh token
+
+#### Products
+
+- `GET /api/products` - Danh sách sản phẩm
+- `POST /api/products` - Tạo sản phẩm mới
+- `GET /api/products/:id` - Chi tiết sản phẩm
+- `PUT /api/products/:id` - Cập nhật sản phẩm
+- `DELETE /api/products/:id` - Xóa sản phẩm
+
+#### Import Orders
+
+- `GET /api/import-orders` - Danh sách đơn nhập
+- `POST /api/import-orders` - Tạo đơn nhập mới
+- `GET /api/import-orders/:id` - Chi tiết đơn nhập
+- `PUT /api/import-orders/:id` - Cập nhật đơn nhập
+- `POST /api/import-orders/:id/approve` - Phê duyệt đơn nhập
+
+#### Suppliers
+
+- `GET /api/suppliers` - Danh sách nhà cung cấp
+- `POST /api/suppliers` - Tạo nhà cung cấp mới
+
+## 🧪 Testing
+
+```bash
+# Run all tests
 make test
+
+# Run specific test
+go test ./internal/handlers -v
 ```
 
-## Production
+## 📦 Build
 
 ```bash
+# Build for development
+make build
+
+# Build for production
 make build-prod
 ```
 
-## TODO
+## 🔍 Monitoring
 
-- [ ] Implement database models
-- [ ] Implement repository layer
-- [ ] Implement business logic services
-- [ ] Add JWT authentication
-- [ ] Add database migrations
-- [ ] Add comprehensive tests
-- [ ] Add API documentation
-- [ ] Add Docker support
+- Logs được ghi vào stdout/stderr
+- Sử dụng logrus cho structured logging
+- Health check endpoint: `GET /health`
+
+## 📝 Notes
+
+- Tất cả timestamps sử dụng UTC
+- UUID được sử dụng cho primary keys
+- Soft delete với `is_active` flag
+- Auto-update `updated_at` với triggers

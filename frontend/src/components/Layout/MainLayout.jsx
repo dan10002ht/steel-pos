@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Box,
   Flex,
@@ -31,6 +31,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const menuItems = [
   {
@@ -40,22 +41,16 @@ const menuItems = [
     path: "/dashboard",
   },
   {
-    id: "sales",
-    label: "Bán hàng",
-    icon: <ShoppingCart size={20} />,
-    path: "/sales",
+    id: "products",
+    label: "Sản phẩm",
+    icon: <Package size={20} />,
+    path: "/products",
   },
   {
     id: "inventory",
     label: "Nhập kho",
     icon: <Package size={20} />,
     path: "/inventory",
-  },
-  {
-    id: "products",
-    label: "Sản phẩm",
-    icon: <Package size={20} />,
-    path: "/products",
   },
   {
     id: "customers",
@@ -80,22 +75,26 @@ const menuItems = [
 const MainLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user] = useState({
-    name: "Admin User",
-    role: "Administrator",
-  });
+  const { user, logout } = useAuth();
 
   const bgColor = useColorModeValue("white", "gray.800");
   const borderColor = useColorModeValue("gray.200", "gray.700");
   const hoverBg = useColorModeValue("gray.50", "gray.700");
 
   const isActiveRoute = (path) => {
+    if (path === "/inventory") {
+      return location.pathname.startsWith("/inventory");
+    }
     return location.pathname === path;
   };
 
-  const handleLogout = () => {
-    // Handle logout logic here
-    console.log("Logout clicked");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
@@ -142,28 +141,59 @@ const MainLayout = ({ children }) => {
         {/* Navigation Menu */}
         <VStack spacing={1} p={4} align="stretch">
           {menuItems.map((item) => (
-            <Button
-              key={item.id}
-              variant={isActiveRoute(item.path) ? "solid" : "ghost"}
-              colorScheme={isActiveRoute(item.path) ? "blue" : "gray"}
-              justifyContent="flex-start"
-              w="full"
-              h="auto"
-              py={3}
-              px={4}
-              onClick={() => navigate(item.path)}
-              _hover={{
-                bg: isActiveRoute(item.path) ? "blue.600" : hoverBg,
-              }}
-              transition="all 0.2s"
-            >
-              <HStack spacing={3} w="full">
-                {item.icon}
-                <Text fontSize="sm" fontWeight="medium">
-                  {item.label}
-                </Text>
-              </HStack>
-            </Button>
+            <Box key={item.id}>
+              <Button
+                variant={isActiveRoute(item.path) ? "solid" : "ghost"}
+                colorScheme={isActiveRoute(item.path) ? "blue" : "gray"}
+                justifyContent="flex-start"
+                w="full"
+                h="auto"
+                py={3}
+                px={4}
+                onClick={() => navigate(item.path)}
+                _hover={{
+                  bg: isActiveRoute(item.path) ? "blue.600" : hoverBg,
+                }}
+                transition="all 0.2s"
+              >
+                <HStack spacing={3} w="full">
+                  {item.icon}
+                  <Text fontSize="sm" fontWeight="medium">
+                    {item.label}
+                  </Text>
+                </HStack>
+              </Button>
+
+              {/* Sub-menu items */}
+              {item.subItems && isActiveRoute(item.path) && (
+                <VStack spacing={1} mt={2} ml={4} align="stretch">
+                  {item.subItems.map((subItem) => (
+                    <Button
+                      key={subItem.id}
+                      variant={isActiveRoute(subItem.path) ? "solid" : "ghost"}
+                      colorScheme={
+                        isActiveRoute(subItem.path) ? "blue" : "gray"
+                      }
+                      justifyContent="flex-start"
+                      w="full"
+                      h="auto"
+                      py={2}
+                      px={4}
+                      size="sm"
+                      onClick={() => navigate(subItem.path)}
+                      _hover={{
+                        bg: isActiveRoute(subItem.path) ? "blue.600" : hoverBg,
+                      }}
+                      transition="all 0.2s"
+                    >
+                      <Text fontSize="sm" fontWeight="medium">
+                        {subItem.label}
+                      </Text>
+                    </Button>
+                  ))}
+                </VStack>
+              )}
+            </Box>
           ))}
         </VStack>
 
@@ -190,13 +220,13 @@ const MainLayout = ({ children }) => {
               _hover={{ bg: hoverBg }}
             >
               <HStack spacing={3} w="full">
-                <Avatar size="sm" name={user.name} />
+                <Avatar size="sm" name={user?.full_name || user?.username} />
                 <VStack align="flex-start" spacing={0} flex={1}>
                   <Text fontSize="sm" fontWeight="medium">
-                    {user.name}
+                    {user?.full_name || user?.username || "User"}
                   </Text>
                   <Text fontSize="xs" color="gray.500">
-                    {user.role}
+                    {user?.role || "User"}
                   </Text>
                 </VStack>
                 <ChevronDown size={16} />

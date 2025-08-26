@@ -15,7 +15,6 @@ import {
   AlertIcon,
 } from "@chakra-ui/react";
 import { Edit, ArrowLeft } from "lucide-react";
-import MainLayout from "../../components/Layout/MainLayout";
 import { useNavigate, useParams } from "react-router-dom";
 import ProductForm from "../../features/products/components/ProductForm";
 import productService from "../../features/products/services/productService";
@@ -82,129 +81,121 @@ const EditProductPage = () => {
 
   if (isLoading) {
     return (
-      <MainLayout>
-        <VStack spacing={6} align="stretch">
-          <Box>
-            <HStack justify="space-between" align="center" mb={6}>
-              <HStack spacing={4}>
-                <Button
-                  leftIcon={<ArrowLeft size={16} />}
-                  variant="ghost"
-                  onClick={() => navigate("/products")}
-                  size="sm"
-                >
-                  Quay lại
-                </Button>
-                <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                  Chỉnh sửa sản phẩm
-                </Text>
-              </HStack>
+      <VStack spacing={6} align="stretch">
+        <Box>
+          <HStack justify="space-between" align="center" mb={6}>
+            <HStack spacing={4}>
+              <Button
+                leftIcon={<ArrowLeft size={16} />}
+                variant="ghost"
+                onClick={() => navigate("/products")}
+                size="sm"
+              >
+                Quay lại
+              </Button>
+              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+                Chỉnh sửa sản phẩm
+              </Text>
             </HStack>
-          </Box>
+          </HStack>
+        </Box>
 
-          <Card shadow="sm">
-            <CardBody>
-              <VStack spacing={4} py={12}>
-                <Spinner size="lg" color="blue.500" />
-                <Text color="gray.500">Đang tải thông tin sản phẩm...</Text>
-              </VStack>
-            </CardBody>
-          </Card>
-        </VStack>
-      </MainLayout>
+        <Card shadow="sm">
+          <CardBody>
+            <VStack spacing={4} py={12}>
+              <Spinner size="lg" color="blue.500" />
+              <Text color="gray.500">Đang tải thông tin sản phẩm...</Text>
+            </VStack>
+          </CardBody>
+        </Card>
+      </VStack>
     );
   }
 
   if (error) {
     return (
-      <MainLayout>
-        <VStack spacing={6} align="stretch">
-          <Box>
-            <HStack justify="space-between" align="center" mb={6}>
-              <HStack spacing={4}>
-                <Button
-                  leftIcon={<ArrowLeft size={16} />}
-                  variant="ghost"
-                  onClick={() => navigate("/products")}
-                  size="sm"
-                >
-                  Quay lại
-                </Button>
-                <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                  Chỉnh sửa sản phẩm
-                </Text>
-              </HStack>
+      <VStack spacing={6} align="stretch">
+        <Box>
+          <HStack justify="space-between" align="center" mb={6}>
+            <HStack spacing={4}>
+              <Button
+                leftIcon={<ArrowLeft size={16} />}
+                variant="ghost"
+                onClick={() => navigate("/products")}
+                size="sm"
+              >
+                Quay lại
+              </Button>
+              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+                Chỉnh sửa sản phẩm
+              </Text>
             </HStack>
-          </Box>
+          </HStack>
+        </Box>
 
-          <Card shadow="sm">
-            <CardBody>
-              <Alert status="error">
-                <AlertIcon />
-                <VStack align="start" spacing={2}>
-                  <Text fontWeight="bold">Lỗi tải dữ liệu</Text>
-                  <Text>{error}</Text>
-                  <Button
-                    colorScheme="blue"
-                    size="sm"
-                    onClick={() => window.location.reload()}
-                  >
-                    Thử lại
-                  </Button>
-                </VStack>
-              </Alert>
-            </CardBody>
-          </Card>
-        </VStack>
-      </MainLayout>
+        <Card shadow="sm">
+          <CardBody>
+            <Alert status="error">
+              <AlertIcon />
+              <VStack align="start" spacing={2}>
+                <Text fontWeight="bold">Lỗi tải dữ liệu</Text>
+                <Text>{error}</Text>
+                <Button
+                  colorScheme="blue"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  Thử lại
+                </Button>
+              </VStack>
+            </Alert>
+          </CardBody>
+        </Card>
+      </VStack>
     );
   }
 
   if (!product) {
     return (
-      <MainLayout>
-        <VStack spacing={6} align="stretch">
-          <Box>
-            <HStack justify="space-between" align="center" mb={6}>
-              <HStack spacing={4}>
-                <Button
-                  leftIcon={<ArrowLeft size={16} />}
-                  variant="ghost"
-                  onClick={() => navigate("/products")}
-                  size="sm"
-                >
-                  Quay lại
-                </Button>
-                <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                  Chỉnh sửa sản phẩm
-                </Text>
-              </HStack>
+      <VStack spacing={6} align="stretch">
+        <Box>
+          <HStack justify="space-between" align="center" mb={6}>
+            <HStack spacing={4}>
+              <Button
+                leftIcon={<ArrowLeft size={16} />}
+                variant="ghost"
+                onClick={() => navigate("/products")}
+                size="sm"
+              >
+                Quay lại
+              </Button>
+              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+                Chỉnh sửa sản phẩm
+              </Text>
             </HStack>
-          </Box>
+          </HStack>
+        </Box>
 
-          <Card shadow="sm">
-            <CardBody>
-              <Alert status="warning">
-                <AlertIcon />
-                <Text>Không tìm thấy sản phẩm với ID: {id}</Text>
-              </Alert>
-            </CardBody>
-          </Card>
-        </VStack>
-      </MainLayout>
+        <Card shadow="sm">
+          <CardBody>
+            <Alert status="warning">
+              <AlertIcon />
+              <Text>Không tìm thấy sản phẩm với ID: {id}</Text>
+            </Alert>
+          </CardBody>
+        </Card>
+      </VStack>
     );
   }
 
   return (
-    <MainLayout>
-      <ProductForm
-        product={product}
-        onSubmit={handleSubmit}
-        isLoading={isSubmitting}
-        title="Chỉnh sửa sản phẩm"
-        submitText="Cập nhật sản phẩm"
-      />
-    </MainLayout>
+    <ProductForm
+      product={product}
+      onSubmit={handleSubmit}
+      isLoading={isSubmitting}
+      title="Chỉnh sửa sản phẩm"
+      submitText="Cập nhật sản phẩm"
+    />
   );
 };
 

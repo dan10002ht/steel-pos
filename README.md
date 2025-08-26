@@ -1,235 +1,153 @@
-# Steel POS - Hệ thống quản lý cửa hàng sắt thép
+# Steel POS
 
-Hệ thống quản lý cửa hàng sắt thép với backend Go và frontend React.
-
-## 🚀 Tính năng chính
-
-- **Quản lý sản phẩm**: Thêm, sửa, xóa, phân loại sản phẩm
-- **Quản lý kho**: Nhập xuất tồn kho, theo dõi tồn kho
-- **Quản lý đơn hàng**: Tạo đơn hàng, theo dõi trạng thái, thanh toán
-- **Quản lý khách hàng**: Thông tin khách hàng, công nợ
-- **Báo cáo**: Doanh thu, tồn kho, lợi nhuận
-- **Phân quyền**: Admin, nhân viên, kế toán
-
-## 🛠 Công nghệ sử dụng
-
-### Backend
-
-- **Go 1.21+** - Ngôn ngữ lập trình
-- **Gin** - Web framework
-- **PostgreSQL** - Database
-- **pgx** - PostgreSQL driver
-- **JWT** - Authentication
-- **Logrus** - Logging
-
-### Frontend
-
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **React Router** - Routing
-- **TanStack Query** - Data fetching
-- **Tailwind CSS** - Styling
-- **Lucide React** - Icons
-
-## 📁 Cấu trúc dự án
-
-```
-steel-pos/
-├── backend/           # Backend Go API
-│   ├── cmd/          # Entry points
-│   ├── internal/     # Internal packages
-│   ├── pkg/          # Public packages
-│   ├── migrations/   # Database migrations
-│   └── docs/         # API documentation
-├── frontend/         # Frontend React app
-│   ├── src/          # Source code
-│   ├── public/       # Public assets
-│   └── dist/         # Build output
-└── docs/             # Project documentation
-```
+A Point of Sale system for steel trading businesses.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Go 1.21+
-- Node.js 18+
-- PostgreSQL 12+
-- Git
+- Docker & Docker Compose
+- Node.js (v18+) & Yarn
+- Go (v1.21+)
 
-### 1. Clone repository
+### Development Setup
 
-```bash
-git clone <repository-url>
-cd steel-pos
+1. **Start Development Environment:**
+
+   ```bash
+   ./dev-local.sh
+   ```
+
+   This will:
+
+   - Start PostgreSQL (port 5434), Redis (port 6380), pgAdmin (port 5051)
+   - Run database migrations
+   - Start backend with hot reload (port 8080)
+   - Start frontend (port 3000)
+
+2. **Seed Database (Optional):**
+   ```bash
+   ./seed-db.sh
+   ```
+   This will create initial users and sample data.
+
+### Service URLs
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
+- **pgAdmin**: http://localhost:5051
+  - Email: admin@steelpos.com
+  - Password: admin123
+
+### Database
+
+- **PostgreSQL**: localhost:5434
+  - Database: steel_pos
+  - Username: postgres
+  - Password: password
+
+## 📁 Project Structure
+
+```
+steel-pos/
+├── frontend/          # React + Vite + Chakra UI
+├── backend/           # Go + Gin + PostgreSQL
+├── migrations/        # Database migrations
+├── dev-local.sh       # Development environment script
+├── seed-db.sh         # Database seeding script
+└── docker-compose.dev.yml
 ```
 
-### 2. Setup Backend
+## 🔧 Development Commands
 
-```bash
-cd backend
-
-# Install dependencies
-make deps
-
-# Copy environment file
-cp env.example .env
-
-# Edit .env file with your database configuration
-# DB_HOST=localhost
-# DB_PORT=5432
-# DB_USER=postgres
-# DB_PASSWORD=your_password
-# DB_NAME=steel_pos
-
-# Create database
-createdb steel_pos
-
-# Run the application
-make run
-```
-
-### 3. Setup Frontend
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Create environment file
-echo "VITE_API_URL=http://localhost:8080/api/v1" > .env
-
-# Run the application
-npm run dev
-```
-
-### 4. Access the application
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8080
-- API Documentation: http://localhost:8080/docs
-
-## 📋 Checklist tính năng
-
-Dựa trên checklist trong `pos_checklist.md`:
-
-### ✅ Đã hoàn thành (Boilerplate)
-
-- [x] Phân tích & thiết kế hệ thống
-- [x] Setup backend Go với cấu trúc clean architecture
-- [x] Setup frontend React với Vite
-- [x] Cấu hình database PostgreSQL
-- [x] Authentication system
-- [x] Basic routing và layout
-- [x] API service layer
-
-### 🔄 Đang thực hiện
-
-- [ ] Implement database models
-- [ ] Implement repository layer
-- [ ] Implement business logic services
-- [ ] Complete CRUD operations
-
-### 📝 Cần thực hiện
-
-- [ ] Quản lý sản phẩm (CRUD)
-- [ ] Quản lý kho (nhập/xuất/tồn)
-- [ ] Quản lý đơn hàng (tạo/sửa/xóa)
-- [ ] Quản lý khách hàng (CRUD)
-- [ ] Báo cáo & thống kê
-- [ ] Phân quyền người dùng
-- [ ] In hóa đơn
-- [ ] Quét mã vạch
-- [ ] Export/Import dữ liệu
-
-## 🧪 Development
-
-### Backend Commands
+### Backend
 
 ```bash
 cd backend
-
-make deps        # Install dependencies
-make run         # Run development server
-make build       # Build application
-make test        # Run tests
-make clean       # Clean build artifacts
+make dev          # Start with hot reload (air)
+make build        # Build binary
+make test         # Run tests
+make migrate-up   # Run migrations
 ```
 
-### Frontend Commands
+### Frontend
 
 ```bash
 cd frontend
-
-npm install      # Install dependencies
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
+yarn dev          # Start development server
+yarn build        # Build for production
+yarn lint         # Run linter
 ```
 
-## 📚 API Documentation
+## 🛠️ Manual Setup
 
-### Authentication
+If you prefer to run services manually:
 
-- `POST /api/v1/auth/login` - Đăng nhập
-- `POST /api/v1/auth/register` - Đăng ký
+1. **Start Database Services:**
 
-### Products
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
 
-- `GET /api/v1/products` - Lấy danh sách sản phẩm
-- `GET /api/v1/products/:id` - Lấy sản phẩm theo ID
-- `POST /api/v1/products` - Tạo sản phẩm mới
-- `PUT /api/v1/products/:id` - Cập nhật sản phẩm
-- `DELETE /api/v1/products/:id` - Xóa sản phẩm
+2. **Run Migrations:**
 
-### Orders
+   ```bash
+   cd backend
+   make migrate-up
+   ```
 
-- `GET /api/v1/orders` - Lấy danh sách đơn hàng
-- `GET /api/v1/orders/:id` - Lấy đơn hàng theo ID
-- `POST /api/v1/orders` - Tạo đơn hàng mới
-- `PUT /api/v1/orders/:id` - Cập nhật đơn hàng
-- `DELETE /api/v1/orders/:id` - Xóa đơn hàng
+3. **Start Backend:**
 
-### Customers
+   ```bash
+   cd backend
+   make dev
+   ```
 
-- `GET /api/v1/customers` - Lấy danh sách khách hàng
-- `GET /api/v1/customers/:id` - Lấy khách hàng theo ID
-- `POST /api/v1/customers` - Tạo khách hàng mới
-- `PUT /api/v1/customers/:id` - Cập nhật khách hàng
-- `DELETE /api/v1/customers/:id` - Xóa khách hàng
+4. **Start Frontend:**
+   ```bash
+   cd frontend
+   yarn dev
+   ```
 
-### Inventory
+## 📝 Environment Variables
 
-- `GET /api/v1/inventory` - Lấy danh sách tồn kho
-- `GET /api/v1/inventory/:id` - Lấy tồn kho theo ID
-- `POST /api/v1/inventory/in` - Nhập kho
-- `POST /api/v1/inventory/out` - Xuất kho
+Backend environment variables are configured in `backend/.env`:
 
-## 🤝 Contributing
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5434
+DB_USER=postgres
+DB_PASSWORD=password
+DB_NAME=steel_pos
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+# Server Configuration
+SERVER_PORT=8080
+SERVER_HOST=0.0.0.0
 
-## 📄 License
+# JWT Configuration
+JWT_SECRET=your-secret-key-here
+JWT_ACCESS_TOKEN_EXPIRY=15m
+JWT_REFRESH_TOKEN_EXPIRY=7d
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6380
+```
 
-## 📞 Support
+## 🔐 Authentication
 
-Nếu bạn có câu hỏi hoặc cần hỗ trợ, vui lòng tạo issue trên GitHub hoặc liên hệ:
+The system uses JWT-based authentication with role-based access control:
 
-- Email: [your-email@example.com]
-- GitHub: [your-github-username]
+- **Admin**: Full access to all features
+- **Manager**: Product and inventory management
+- **Accountant**: Financial operations
+- **User**: Basic operations
 
-## 🙏 Acknowledgments
+## 📊 Features
 
-- [Gin](https://github.com/gin-gonic/gin) - Web framework for Go
-- [React](https://reactjs.org/) - UI library
-- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
-- [Vite](https://vitejs.dev/) - Build tool
+- **Product Management**: CRUD operations for products and variants
+- **Inventory Management**: Stock tracking and updates
+- **Import Orders**: Purchase order management with approval workflow
+- **Supplier Management**: Vendor information and relationships
+- **User Management**: Role-based access control

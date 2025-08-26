@@ -38,7 +38,6 @@ import {
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
-import MainLayout from "../../components/Layout/MainLayout";
 import {
   mockProducts,
   calculateTotalStock,
@@ -126,7 +125,7 @@ const ProductListPage = () => {
   };
 
   return (
-    <MainLayout>
+    <>
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Box>
@@ -405,7 +404,6 @@ const ProductListPage = () => {
         </Card>
       </VStack>
 
-      {/* Delete Confirmation Modal */}
       <AlertDialog
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
@@ -433,7 +431,7 @@ const ProductListPage = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-    </MainLayout>
+    </>
   );
 };
 

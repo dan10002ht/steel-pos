@@ -5,13 +5,15 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
 } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import MainLayout from "./components/Layout/MainLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
-import Inventory from "./pages/Inventory";
+import Inventory from "./pages/inventory";
 import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
@@ -31,106 +33,26 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sales"
-            element={
-              <ProtectedRoute>
-                <Sales />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <ProtectedRoute>
-                <Inventory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <ProtectedRoute>
-                <ProductListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products/create"
-            element={
-              <ProtectedRoute>
-                <CreateProductPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products/:id"
-            element={
-              <ProtectedRoute>
-                <ProductDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/products/:id/edit"
-            element={
-              <ProtectedRoute>
-                <EditProductPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/import-orders/create"
-            element={
-              <ProtectedRoute>
-                <ImportOrderPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/import-orders"
-            element={
-              <ProtectedRoute>
-                <ImportOrderListPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers"
-            element={
-              <ProtectedRoute>
-                <Customers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
+          {/* Protected routes group */}
+          <Route path="/" element={<ProtectedRoute />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="sales" element={<Sales />} />
+            <Route path="inventory/*" element={<Inventory />} />
+            <Route path="products" element={<ProductListPage />} />
+            <Route path="products/create" element={<CreateProductPage />} />
+            <Route path="products/:id" element={<ProductDetailPage />} />
+            <Route path="products/:id/edit" element={<EditProductPage />} />
+            <Route path="import-orders/create" element={<ImportOrderPage />} />
+            <Route path="import-orders" element={<ImportOrderListPage />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="analytics" element={<Analytics />} />
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Default redirect */}
+            <Route index element={<Navigate to="/dashboard" replace />} />
+          </Route>
+
+          {/* Catch all route */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>

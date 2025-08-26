@@ -246,21 +246,7 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   };
 
   return (
-    <Box maxW="1200px" mx="auto">
-      {/* Header Section */}
-      <HStack justify="space-between" mb={6}>
-        <Heading size="lg" color="gray.700">
-          Tạo mới nhập kho
-        </Heading>
-        <Button
-          colorScheme="blue"
-          leftIcon={<Plus size={20} />}
-          onClick={onNavigateToList}
-        >
-          Xem danh sách
-        </Button>
-      </HStack>
-
+    <>
       <VStack spacing={6} align="stretch">
         {/* Import Order Details Section */}
         <Card>
@@ -543,7 +529,7 @@ const ImportOrderForm = ({ onNavigateToList }) => {
         onClose={() => setIsProductModalOpen(false)}
         onProductCreated={handleProductCreated}
       />
-    </Box>
+    </>
   );
 };
 

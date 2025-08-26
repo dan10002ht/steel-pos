@@ -1,135 +1,177 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
 	"errors"
-
 	"steel-pos-backend/internal/models"
-
-	"github.com/jmoiron/sqlx"
 )
 
 type UserRepository struct {
-	db *sqlx.DB
+	db *sql.DB
 }
 
-func NewUserRepository(db *sqlx.DB) *UserRepository {
+func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-// Create tạo user mới
-func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
+func (r *UserRepository) Create(user *models.User) error {
 	query := `
-		INSERT INTO users (username, email, password_hash, full_name, phone, role)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO users (username, email, password_hash, full_name, role, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at, updated_at
 	`
 	
-	return r.db.GetContext(ctx, user, query,
+	err := r.db.QueryRow(
+		query,
 		user.Username,
 		user.Email,
 		user.PasswordHash,
 		user.FullName,
-		user.Phone,
 		user.Role,
-	)
+		user.IsActive,
+		user.CreatedAt,
+		user.UpdatedAt,
+	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	
+	return err
 }
 
-// GetByID lấy user theo ID
-func (r *UserRepository) GetByID(ctx context.Context, id int64) (*models.User, error) {
-	var user models.User
-	query := `SELECT * FROM users WHERE id = $1`
-	
-	err := r.db.GetContext(ctx, &user, query, id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, err
-	}
-	
-	return &user, nil
-}
-
-// GetByUsername lấy user theo username
-func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
-	var user models.User
-	query := `SELECT * FROM users WHERE username = $1`
-	
-	err := r.db.GetContext(ctx, &user, query, username)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, err
-	}
-	
-	return &user, nil
-}
-
-// GetByEmail lấy user theo email
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	query := `SELECT * FROM users WHERE email = $1`
-	
-	err := r.db.GetContext(ctx, &user, query, email)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("user not found")
-		}
-		return nil, err
-	}
-	
-	return &user, nil
-}
-
-// List lấy danh sách users với pagination
-func (r *UserRepository) List(ctx context.Context, offset, limit int) ([]*models.User, error) {
-	var users []*models.User
+func (r *UserRepository) GetByID(id int) (*models.User, error) {
+	user := &models.User{}
 	query := `
-		SELECT * FROM users 
-		ORDER BY created_at DESC 
+		SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE id = $1 AND is_active = true
+	`
+	
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	
+	return user, nil
+}
+
+func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE username = $1 AND is_active = true
+	`
+	
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	
+	return user, nil
+}
+
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE email = $1 AND is_active = true
+	`
+	
+	err := r.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FullName,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("user not found")
+		}
+		return nil, err
+	}
+	
+	return user, nil
+}
+
+func (r *UserRepository) GetAll(limit, offset int) ([]*models.User, error) {
+	query := `
+		SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE is_active = true
+		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2
 	`
 	
-	err := r.db.SelectContext(ctx, &users, query, limit, offset)
+	rows, err := r.db.Query(query, limit, offset)
 	if err != nil {
 		return nil, err
+	}
+	defer rows.Close()
+	
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Email,
+			&user.PasswordHash,
+			&user.FullName,
+			&user.Role,
+			&user.IsActive,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
 	}
 	
 	return users, nil
 }
 
-// Count đếm tổng số users
-func (r *UserRepository) Count(ctx context.Context) (int64, error) {
-	var count int64
-	query := `SELECT COUNT(*) FROM users`
-	
-	err := r.db.GetContext(ctx, &count, query)
-	if err != nil {
-		return 0, err
-	}
-	
-	return count, nil
-}
-
-// Update cập nhật thông tin user
-func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
+func (r *UserRepository) Update(user *models.User) error {
 	query := `
-		UPDATE users 
-		SET email = $1, full_name = $2, phone = $3, role = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $6
+		UPDATE users
+		SET full_name = $1, role = $2, is_active = $3, updated_at = $4
+		WHERE id = $5
 	`
 	
-	result, err := r.db.ExecContext(ctx, query,
-		user.Email,
-		user.FullName,
-		user.Phone,
-		user.Role,
-		user.IsActive,
-		user.ID,
-	)
+	result, err := r.db.Exec(query, user.FullName, user.Role, user.IsActive, user.UpdatedAt, user.ID)
 	if err != nil {
 		return err
 	}
@@ -146,15 +188,14 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	return nil
 }
 
-// UpdatePassword cập nhật mật khẩu user
-func (r *UserRepository) UpdatePassword(ctx context.Context, id int64, passwordHash string) error {
+func (r *UserRepository) UpdatePassword(userID int, passwordHash string) error {
 	query := `
-		UPDATE users 
-		SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
+		UPDATE users
+		SET password_hash = $1, updated_at = NOW()
 		WHERE id = $2
 	`
 	
-	result, err := r.db.ExecContext(ctx, query, passwordHash, id)
+	result, err := r.db.Exec(query, passwordHash, userID)
 	if err != nil {
 		return err
 	}
@@ -171,15 +212,14 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, id int64, passwordH
 	return nil
 }
 
-// UpdateLastLogin cập nhật thời gian đăng nhập cuối
-func (r *UserRepository) UpdateLastLogin(ctx context.Context, id int64) error {
+func (r *UserRepository) Delete(id int) error {
 	query := `
-		UPDATE users 
-		SET last_login_at = CURRENT_TIMESTAMP
+		UPDATE users
+		SET is_active = false, updated_at = NOW()
 		WHERE id = $1
 	`
 	
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.Exec(query, id)
 	if err != nil {
 		return err
 	}
@@ -196,74 +236,26 @@ func (r *UserRepository) UpdateLastLogin(ctx context.Context, id int64) error {
 	return nil
 }
 
-// Delete xóa user (soft delete bằng cách set is_active = false)
-func (r *UserRepository) Delete(ctx context.Context, id int64) error {
-	query := `
-		UPDATE users 
-		SET is_active = false, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1
-	`
+func (r *UserRepository) Count() (int, error) {
+	query := `SELECT COUNT(*) FROM users WHERE is_active = true`
 	
-	result, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
-	
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	
-	if rowsAffected == 0 {
-		return errors.New("user not found")
-	}
-	
-	return nil
+	var count int
+	err := r.db.QueryRow(query).Scan(&count)
+	return count, err
 }
 
-// HardDelete xóa hoàn toàn user khỏi database
-func (r *UserRepository) HardDelete(ctx context.Context, id int64) error {
-	query := `DELETE FROM users WHERE id = $1`
+func (r *UserRepository) ExistsByUsername(username string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND is_active = true)`
 	
-	result, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
-	
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	
-	if rowsAffected == 0 {
-		return errors.New("user not found")
-	}
-	
-	return nil
-}
-
-// ExistsByUsername kiểm tra username đã tồn tại chưa
-func (r *UserRepository) ExistsByUsername(ctx context.Context, username string) (bool, error) {
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)`
-	
-	err := r.db.GetContext(ctx, &exists, query, username)
-	if err != nil {
-		return false, err
-	}
-	
-	return exists, nil
+	err := r.db.QueryRow(query, username).Scan(&exists)
+	return exists, err
 }
 
-// ExistsByEmail kiểm tra email đã tồn tại chưa
-func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+func (r *UserRepository) ExistsByEmail(email string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1 AND is_active = true)`
+	
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
-	
-	err := r.db.GetContext(ctx, &exists, query, email)
-	if err != nil {
-		return false, err
-	}
-	
-	return exists, nil
-} 
+	err := r.db.QueryRow(query, email).Scan(&exists)
+	return exists, err
+}
