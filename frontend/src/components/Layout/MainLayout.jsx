@@ -47,6 +47,24 @@ const menuItems = [
     path: "/products",
   },
   {
+    id: "sales",
+    label: "Bán hàng",
+    icon: <ShoppingCart size={20} />,
+    path: "/sales",
+    subItems: [
+      {
+        id: "sales-create",
+        label: "Tạo hoá đơn mới",
+        path: "/sales/create",
+      },
+      {
+        id: "sales-list",
+        label: "Danh sách bán hàng",
+        path: "/sales/list",
+      },
+    ],
+  },
+  {
     id: "inventory",
     label: "Nhập kho",
     icon: <Package size={20} />,
@@ -84,6 +102,9 @@ const MainLayout = ({ children }) => {
   const isActiveRoute = (path) => {
     if (path === "/inventory") {
       return location.pathname.startsWith("/inventory");
+    }
+    if (path === "/sales") {
+      return location.pathname.startsWith("/sales");
     }
     return location.pathname === path;
   };

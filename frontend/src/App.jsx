@@ -12,8 +12,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./components/Layout/MainLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import Sales from "./pages/Sales";
 import Inventory from "./pages/inventory";
+import Sales from "./pages/sales";
 import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
@@ -36,7 +36,7 @@ function App() {
           {/* Protected routes group */}
           <Route path="/" element={<ProtectedRoute />}>
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="sales" element={<Sales />} />
+            <Route path="sales/*" element={<Sales />} />
             <Route path="inventory/*" element={<Inventory />} />
             <Route path="products" element={<ProductListPage />} />
             <Route path="products/create" element={<CreateProductPage />} />

@@ -199,7 +199,7 @@ const InventoryDashboard = () => {
         </SimpleGrid>
 
         {/* Stats Grid */}
-        <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={6}>
+        {/* <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={6}>
           {stats.map((stat, index) => (
             <Card key={index} shadow="sm">
               <CardBody>
@@ -239,10 +239,10 @@ const InventoryDashboard = () => {
               </CardBody>
             </Card>
           ))}
-        </Grid>
+        </Grid> */}
 
         {/* Recent Activities */}
-        <Card shadow="sm">
+        {/* <Card shadow="sm">
           <CardBody>
             <Heading size="md" mb={4}>
               Hoạt động gần đây
@@ -274,7 +274,7 @@ const InventoryDashboard = () => {
               ))}
             </VStack>
           </CardBody>
-        </Card>
+        </Card> */}
       </VStack>
     </Box>
   );
