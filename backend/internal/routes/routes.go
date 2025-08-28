@@ -14,10 +14,11 @@ func SetupAllRoutes(
 	productHandler *handlers.ProductHandler,
 	supplierHandler *handlers.SupplierHandler,
 	authMiddleware *middleware.AuthMiddleware,
+	tokenRefreshMiddleware *middleware.TokenRefreshMiddleware,
 ) {
 	// API group
 	api := router.Group("/api")
-	
+
 	// Public auth routes (no authentication required)
 	publicAuth := api.Group("/auth")
 	{
@@ -25,7 +26,8 @@ func SetupAllRoutes(
 		publicAuth.POST("/refresh", authHandler.RefreshToken)
 	}
 
-	// Apply authentication middleware to all other routes
+	// Apply token refresh middleware first, then authentication middleware
+	api.Use(tokenRefreshMiddleware.TokenRefresh())
 	api.Use(authMiddleware.Authenticate())
 
 	// Setup individual route groups

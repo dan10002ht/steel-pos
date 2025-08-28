@@ -21,15 +21,14 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 func (s *ProductService) CreateProduct(req *models.CreateProductRequest, createdBy int) (*models.Product, error) {
 	// Create product
 	product := &models.Product{
-		Name:        req.Name,
-		Description: req.Description,
-		CategoryID:  req.CategoryID,
-		Unit:        req.Unit,
-		Notes:       req.Notes,
-		IsActive:    true,
-		CreatedBy:   createdBy,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		Name:       req.Name,
+		CategoryID: req.CategoryID,
+		Unit:       req.Unit,
+		Notes:      req.Notes,
+		IsActive:   true,
+		CreatedBy:  createdBy,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	err := s.productRepo.Create(product)
@@ -118,10 +117,7 @@ func (s *ProductService) UpdateProduct(id int, req *models.UpdateProductRequest,
 	if req.Name != "" {
 		product.Name = req.Name
 	}
-	if req.Description != "" {
-		product.Description = req.Description
-	}
-	if req.CategoryID != 0 {
+	if req.CategoryID != nil {
 		product.CategoryID = req.CategoryID
 	}
 	if req.Unit != "" {
@@ -141,7 +137,78 @@ func (s *ProductService) UpdateProduct(id int, req *models.UpdateProductRequest,
 		return nil, err
 	}
 
-	return product, nil
+	// Handle variants if provided
+	if len(req.Variants) > 0 {
+		for _, variantReq := range req.Variants {
+			if variantReq.IsDeleted != nil && *variantReq.IsDeleted {
+				// Delete variant
+				if variantReq.ID != nil {
+					err = s.productRepo.DeleteVariant(*variantReq.ID)
+					if err != nil {
+						return nil, err
+					}
+				}
+			} else if variantReq.ID != nil {
+				// Update existing variant
+				existingVariant, err := s.productRepo.GetVariantByID(*variantReq.ID)
+				if err != nil {
+					return nil, err
+				}
+				if existingVariant == nil {
+					return nil, errors.New("variant not found")
+				}
+
+				// Update fields if provided
+				if variantReq.Name != "" {
+					existingVariant.Name = variantReq.Name
+				}
+				if variantReq.SKU != "" {
+					existingVariant.SKU = variantReq.SKU
+				}
+				if variantReq.Stock != nil {
+					existingVariant.Stock = *variantReq.Stock
+				}
+				if variantReq.Price != nil {
+					existingVariant.Price = *variantReq.Price
+				}
+				if variantReq.Unit != "" {
+					existingVariant.Unit = variantReq.Unit
+				}
+				if variantReq.IsActive != nil {
+					existingVariant.IsActive = *variantReq.IsActive
+				}
+
+				existingVariant.UpdatedAt = time.Now()
+
+				err = s.productRepo.UpdateVariant(existingVariant)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				// Create new variant
+				variant := &models.ProductVariant{
+					ProductID: id,
+					Name:      variantReq.Name,
+					SKU:       variantReq.SKU,
+					Stock:     *variantReq.Stock,
+					Price:     *variantReq.Price,
+					Unit:      variantReq.Unit,
+					IsActive:  true,
+					CreatedBy: updatedBy,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}
+
+				err = s.productRepo.CreateVariant(variant)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	// Get updated product with variants
+	return s.GetProductByID(id)
 }
 
 func (s *ProductService) DeleteProduct(id int) error {

@@ -31,9 +31,9 @@ type ServerConfig struct {
 }
 
 type JWTConfig struct {
-	Secret              string
-	AccessTokenExpiry   string
-	RefreshTokenExpiry  string
+	Secret             string
+	AccessTokenExpiry  string
+	RefreshTokenExpiry string
 }
 
 type RedisConfig struct {
@@ -47,7 +47,7 @@ func Load() *Config {
 	return &Config{
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5433"),
+			Port:     getEnv("DB_PORT", "5434"),
 			User:     getEnv("DB_USER", "postgres"),
 			Password: getEnv("DB_PASSWORD", "password"),
 			Name:     getEnv("DB_NAME", "steel_pos"),
@@ -59,8 +59,8 @@ func Load() *Config {
 		},
 		JWT: JWTConfig{
 			Secret:             getEnv("JWT_SECRET", "your-secret-key-here"),
-			AccessTokenExpiry:  getEnv("JWT_ACCESS_TOKEN_EXPIRY", "15m"),
-			RefreshTokenExpiry: getEnv("JWT_REFRESH_TOKEN_EXPIRY", "7d"),
+			AccessTokenExpiry:  getEnv("JWT_ACCESS_TOKEN_EXPIRY", "24h"),
+			RefreshTokenExpiry: getEnv("JWT_REFRESH_TOKEN_EXPIRY", "720h"),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
@@ -107,4 +107,4 @@ func InitDB(cfg *Config) (*sql.DB, error) {
 	}
 
 	return db, nil
-} 
+}

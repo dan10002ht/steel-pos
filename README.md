@@ -23,7 +23,7 @@ A Point of Sale system for steel trading businesses.
    - Start PostgreSQL (port 5434), Redis (port 6380), pgAdmin (port 5051)
    - Run database migrations
    - Start backend with hot reload (port 8080)
-   - Start frontend (port 3000)
+   - Start frontend (port 5173)
 
 2. **Seed Database (Optional):**
    ```bash
@@ -33,7 +33,7 @@ A Point of Sale system for steel trading businesses.
 
 ### Service URLs
 
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8080
 - **pgAdmin**: http://localhost:5051
   - Email: admin@steelpos.com

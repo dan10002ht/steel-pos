@@ -11,7 +11,6 @@ import {
   Icon,
 } from "@chakra-ui/react";
 import { Users, Plus, FileText, UserCheck } from "lucide-react";
-import MainLayout from "../components/Layout/MainLayout";
 
 const Customers = () => {
   const quickActions = [

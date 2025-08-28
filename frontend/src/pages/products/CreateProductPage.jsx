@@ -1,22 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
-import MainLayout from "../../components/Layout/MainLayout";
 import ProductForm from "../../features/products/components/ProductForm";
-import productService from "../../features/products/services/productService";
+import { useCreateProduct } from "../../features/products/hooks/useProduct";
 
 const CreateProductPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (productData) => {
-    setIsLoading(true);
-
-    try {
-      // Simulate API call
-      await productService.createProduct(productData);
-
+  
+  const createProductMutation = useCreateProduct({
+    onSuccess: () => {
       toast({
         title: "Thành công!",
         description: "Sản phẩm đã được tạo thành công.",
@@ -24,25 +17,32 @@ const CreateProductPage = () => {
         duration: 3000,
         isClosable: true,
       });
-
       navigate("/products");
-    } catch (error) {
+    },
+    onError: (error) => {
       toast({
         title: "Lỗi!",
-        description: "Không thể tạo sản phẩm. Vui lòng thử lại.",
+        description: error.message || "Không thể tạo sản phẩm. Vui lòng thử lại.",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  const handleSubmit = async (productData) => {
+    try {
+      await createProductMutation.mutateAsync(productData);
+    } catch (error) {
+      // Error is handled by onError callback
+      console.error("Error creating product:", error);
     }
   };
 
   return (
     <ProductForm
       onSubmit={handleSubmit}
-      isLoading={isLoading}
+      isLoading={createProductMutation.isPending}
       title="Tạo sản phẩm mới"
       submitText="Tạo sản phẩm"
     />

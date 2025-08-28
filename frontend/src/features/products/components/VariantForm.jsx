@@ -28,6 +28,8 @@ const VariantForm = ({
   defaultUnit = "",
   isReadOnly = false,
 }) => {
+  // Check if variant is marked for deletion
+  const isDeleted = variant.isDeleted;
   const handleChange = (field, value) => {
     onChange(field, value);
   };
@@ -35,11 +37,12 @@ const VariantForm = ({
   return (
     <Box
       border="1px"
-      borderColor="gray.200"
+      borderColor={isDeleted ? "red.200" : "gray.200"}
       borderRadius="md"
       p={4}
-      bg="gray.50"
+      bg={isDeleted ? "red.50" : "gray.50"}
       position="relative"
+      opacity={isDeleted ? 0.6 : 1}
     >
       {/* Variant Header */}
       <HStack justify="space-between" align="center" mb={4}>
@@ -52,16 +55,21 @@ const VariantForm = ({
               Mặc định
             </Badge>
           )}
+          {isDeleted && (
+            <Badge colorScheme="red" variant="subtle">
+              Sẽ xóa
+            </Badge>
+          )}
         </HStack>
         {canRemove && !isReadOnly && (
           <Button
             size="sm"
             variant="ghost"
-            colorScheme="red"
+            colorScheme={isDeleted ? "green" : "red"}
             onClick={onRemove}
             leftIcon={<Trash2 size={14} />}
           >
-            Xóa
+            {isDeleted ? "Khôi phục" : "Xóa"}
           </Button>
         )}
       </HStack>
@@ -75,8 +83,8 @@ const VariantForm = ({
               value={variant.name}
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="VD: Đỏ, XL, 100g"
-              isReadOnly={isReadOnly}
-              bg={isReadOnly ? "gray.50" : "white"}
+              isReadOnly={isReadOnly || isDeleted}
+              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
             />
             <FormErrorMessage>{errors.name}</FormErrorMessage>
           </FormControl>
@@ -87,9 +95,9 @@ const VariantForm = ({
               value={variant.sku}
               onChange={(e) => handleChange("sku", e.target.value)}
               placeholder="Mã sản phẩm"
-              isReadOnly={isReadOnly}
-              bg={isReadOnly ? "gray.50" : "white"}
-              fontFamily={isReadOnly ? "mono" : "inherit"}
+              isReadOnly={isReadOnly || isDeleted}
+              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
+              fontFamily={isReadOnly || isDeleted ? "mono" : "inherit"}
             />
             <FormErrorMessage>{errors.sku}</FormErrorMessage>
           </FormControl>
@@ -99,7 +107,7 @@ const VariantForm = ({
         <HStack spacing={4}>
           <FormControl isInvalid={!!errors.stock} isRequired>
             <FormLabel>Số lượng tồn kho</FormLabel>
-            {isReadOnly ? (
+            {isReadOnly || isDeleted ? (
               <Input value={variant.stock} isReadOnly bg="gray.50" />
             ) : (
               <NumberInput
@@ -120,7 +128,7 @@ const VariantForm = ({
 
           <FormControl isInvalid={!!errors.price} isRequired>
             <FormLabel>Giá tiền (VNĐ)</FormLabel>
-            {isReadOnly ? (
+            {isReadOnly || isDeleted ? (
               <Input
                 value={variant.price}
                 isReadOnly
@@ -151,8 +159,8 @@ const VariantForm = ({
               value={variant.unit}
               onChange={(e) => handleChange("unit", e.target.value)}
               placeholder={defaultUnit || "VD: cái, kg, m"}
-              isReadOnly={isReadOnly}
-              bg={isReadOnly ? "gray.50" : "white"}
+              isReadOnly={isReadOnly || isDeleted}
+              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
             />
             <FormErrorMessage>{errors.unit}</FormErrorMessage>
           </FormControl>

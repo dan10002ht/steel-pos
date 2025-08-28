@@ -11,7 +11,6 @@ import {
   Icon,
 } from "@chakra-ui/react";
 import { TrendingUp, BarChart3, PieChart, Activity } from "lucide-react";
-import MainLayout from "../components/Layout/MainLayout";
 
 const Analytics = () => {
   const analyticsTypes = [

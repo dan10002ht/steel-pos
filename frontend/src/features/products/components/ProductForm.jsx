@@ -33,9 +33,17 @@ const ProductForm = ({
     name: product?.name || "",
     unit: product?.unit || "",
     notes: product?.notes || "",
-    variants: product?.variants || [
+    variants: product?.variants?.length > 0 ? product.variants.map(variant => ({
+      id: variant.id?.toString() || null, // Use null for new variants
+      name: variant.name || "",
+      sku: variant.sku || "",
+      stock: variant.stock || 0,
+      price: variant.price || 0,
+      unit: variant.unit || "",
+      sold: variant.sold || 0,
+    })) : [
       {
-        id: "1",
+        id: null, // Use null for new variants
         name: "",
         sku: "",
         stock: 0,
@@ -78,7 +86,7 @@ const ProductForm = ({
       variants: [
         ...prev.variants,
         {
-          id: Date.now().toString(),
+          id: null, // Use null for new variants
           name: "",
           sku: "",
           stock: 0,
@@ -94,7 +102,11 @@ const ProductForm = ({
     if (formData.variants.length > 1) {
       setFormData((prev) => ({
         ...prev,
-        variants: prev.variants.filter((_, i) => i !== index),
+        variants: prev.variants.map((variant, i) => 
+          i === index 
+            ? { ...variant, isDeleted: !variant.isDeleted } // Toggle deleted state
+            : variant
+        ),
       }));
     }
   };
@@ -112,9 +124,14 @@ const ProductForm = ({
       newErrors.unit = "Đơn vị là bắt buộc";
     }
 
-    // Validate variants
+    // Validate variants (skip deleted ones)
     const variantErrors = [];
     formData.variants.forEach((variant, index) => {
+      // Skip validation for deleted variants
+      if (variant.isDeleted) {
+        return;
+      }
+
       const variantError = {};
 
       if (!variant.name.trim()) {
@@ -156,9 +173,28 @@ const ProductForm = ({
     if (validateForm()) {
       const productData = {
         ...formData,
-        id: product?.id || Date.now().toString(),
-        createdAt: product?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        // Process variants for API
+        variants: formData.variants.map(variant => {
+          const baseVariant = {
+            name: variant.name,
+            sku: variant.sku,
+            stock: variant.stock,
+            price: variant.price,
+            unit: variant.unit,
+          };
+
+          // Add id if exists (for UPDATE/DELETE)
+          if (variant.id) {
+            baseVariant.id = parseInt(variant.id);
+          }
+
+          // Add isDeleted flag if marked for deletion
+          if (variant.isDeleted) {
+            baseVariant.isDeleted = true;
+          }
+
+          return baseVariant;
+        }).filter(variant => !variant.isDeleted), // Remove deleted variants from request
       };
 
       onSubmit(productData);
@@ -246,8 +282,8 @@ const ProductForm = ({
           </CardHeader>
           <CardBody>
             <VStack spacing={4} align="stretch">
-              {formData.variants.map((variant, index) => (
-                <Box key={variant.id}>
+                             {formData.variants.map((variant, index) => (
+                 <Box key={variant.id || `new-${index}`}>
                   <VariantForm
                     variant={variant}
                     index={index}

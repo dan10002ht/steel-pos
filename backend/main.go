@@ -43,6 +43,7 @@ func main() {
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
+	tokenRefreshMiddleware := middleware.NewTokenRefreshMiddleware(jwtService)
 
 	// Setup Gin router
 	router := gin.Default()
@@ -52,25 +53,25 @@ func main() {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	})
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"message": "Steel POS API is running",
 		})
 	})
 
 	// Setup routes
-	routes.SetupAllRoutes(router, authHandler, productHandler, supplierHandler, authMiddleware)
+	routes.SetupAllRoutes(router, authHandler, productHandler, supplierHandler, authMiddleware, tokenRefreshMiddleware)
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.Server.Port)

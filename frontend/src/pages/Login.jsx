@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { Eye, EyeOff, Building2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuthContext";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -28,7 +28,7 @@ const Login = () => {
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoginLoading } = useAuth();
 
   // Nếu đã đăng nhập, chuyển hướng đến dashboard
   useEffect(() => {
@@ -196,7 +196,7 @@ const Login = () => {
                     size="lg"
                     fontSize="md"
                     w="full"
-                    isLoading={isLoading}
+                    isLoading={isLoginLoading}
                     loadingText="Đang đăng nhập..."
                   >
                     Đăng nhập
@@ -209,9 +209,20 @@ const Login = () => {
                 <Text fontSize="sm" color="gray.600" textAlign="center">
                   Tài khoản demo:
                 </Text>
-                <Text fontSize="xs" color="gray.500" textAlign="center">
-                  Username: admin | Password: admin123
-                </Text>
+                <VStack spacing="1">
+                  <Text fontSize="xs" color="gray.500" textAlign="center">
+                    <strong>Admin:</strong> admin / admin123
+                  </Text>
+                  <Text fontSize="xs" color="gray.500" textAlign="center">
+                    <strong>Manager:</strong> manager / manager123
+                  </Text>
+                  <Text fontSize="xs" color="gray.500" textAlign="center">
+                    <strong>Accountant:</strong> accountant / accountant123
+                  </Text>
+                  <Text fontSize="xs" color="gray.500" textAlign="center">
+                    <strong>User:</strong> user / user123
+                  </Text>
+                </VStack>
               </VStack>
             </VStack>
           </Box>

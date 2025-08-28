@@ -1,201 +1,137 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Icon,
-  useToast,
-  Spinner,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
-import { Edit, ArrowLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import React from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useFetchApi } from "../../hooks/useFetchApi";
+import { useEditApi } from "../../hooks/useEditApi";
 import ProductForm from "../../features/products/components/ProductForm";
-import productService from "../../features/products/services/productService";
+import Page from "../../components/organisms/Page";
+import { Spinner, VStack, Text, Alert, AlertIcon, AlertTitle, AlertDescription, Box, useToast } from "@chakra-ui/react";
 
 const EditProductPage = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
   const toast = useToast();
 
-  const [product, setProduct] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Fetch product data
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const productData = await productService.getProduct(id);
-        setProduct(productData);
-      } catch (err) {
-        console.error("Error fetching product:", err);
-        setError("Không thể tải thông tin sản phẩm. Vui lòng thử lại.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProduct();
+  // Fetch product data for editing
+  const {
+    data: product,
+    isLoading: isLoadingProduct,
+    error: productError,
+  } = useFetchApi(
+    ["product", id],
+    `/products/${id}`,
+    {
+      enabled: !!id,
     }
-  }, [id]);
+  );
 
-  // Handle form submission
-  const handleSubmit = async (productData) => {
-    try {
-      setIsSubmitting(true);
-      await productService.updateProduct(id, productData);
-
+  // Edit product mutation
+  const editProductMutation = useEditApi("/products", {
+    invalidateQueries: [["products"], ["product", id]], // Invalidate specific product detail
+    onSuccess: () => {
       toast({
-        title: "Cập nhật thành công",
-        description: `Sản phẩm "${productData.name}" đã được cập nhật.`,
+        title: "Thành công!",
+        description: "Sản phẩm đã được cập nhật thành công.",
         status: "success",
         duration: 3000,
         isClosable: true,
       });
-
-      navigate("/products");
-    } catch (err) {
-      console.error("Error updating product:", err);
+      // Navigate to product detail page on success
+      navigate(`/products/${id}`);
+    },
+    onError: (error) => {
       toast({
-        title: "Lỗi cập nhật",
-        description: "Không thể cập nhật sản phẩm. Vui lòng thử lại.",
+        title: "Lỗi!",
+        description: error.message || "Không thể cập nhật sản phẩm. Vui lòng thử lại.",
         status: "error",
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsSubmitting(false);
+    },
+  });
+
+  const handleSubmit = async (formData) => {
+    try {
+      await editProductMutation.mutateAsync({
+        id: parseInt(id),
+        data: formData,
+      });
+      // Navigation is handled in onSuccess callback
+    } catch (error) {
+      console.error("Error updating product:", error);
     }
   };
 
-  if (isLoading) {
+  if (isLoadingProduct) {
     return (
-      <VStack spacing={6} align="stretch">
-        <Box>
-          <HStack justify="space-between" align="center" mb={6}>
-            <HStack spacing={4}>
-              <Button
-                leftIcon={<ArrowLeft size={16} />}
-                variant="ghost"
-                onClick={() => navigate("/products")}
-                size="sm"
-              >
-                Quay lại
-              </Button>
-              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                Chỉnh sửa sản phẩm
-              </Text>
-            </HStack>
-          </HStack>
-        </Box>
-
-        <Card shadow="sm">
-          <CardBody>
-            <VStack spacing={4} py={12}>
-              <Spinner size="lg" color="blue.500" />
-              <Text color="gray.500">Đang tải thông tin sản phẩm...</Text>
-            </VStack>
-          </CardBody>
-        </Card>
-      </VStack>
+      <Page
+        title="Chỉnh sửa sản phẩm"
+        subtitle="Đang tải thông tin sản phẩm..."
+      >
+        <VStack spacing={4} align="center" justify="center" minH="400px">
+          <Spinner size="lg" color="blue.500" />
+          <Text color="gray.500">Đang tải dữ liệu...</Text>
+        </VStack>
+      </Page>
     );
   }
 
-  if (error) {
+  if (productError) {
     return (
-      <VStack spacing={6} align="stretch">
-        <Box>
-          <HStack justify="space-between" align="center" mb={6}>
-            <HStack spacing={4}>
-              <Button
-                leftIcon={<ArrowLeft size={16} />}
-                variant="ghost"
-                onClick={() => navigate("/products")}
-                size="sm"
-              >
-                Quay lại
-              </Button>
-              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                Chỉnh sửa sản phẩm
-              </Text>
-            </HStack>
-          </HStack>
-        </Box>
-
-        <Card shadow="sm">
-          <CardBody>
-            <Alert status="error">
-              <AlertIcon />
-              <VStack align="start" spacing={2}>
-                <Text fontWeight="bold">Lỗi tải dữ liệu</Text>
-                <Text>{error}</Text>
-                <Button
-                  colorScheme="blue"
-                  size="sm"
-                  onClick={() => window.location.reload()}
-                >
-                  Thử lại
-                </Button>
-              </VStack>
-            </Alert>
-          </CardBody>
-        </Card>
-      </VStack>
+      <Page
+        title="Chỉnh sửa sản phẩm"
+        subtitle="Không thể tải thông tin sản phẩm"
+      >
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Lỗi!</AlertTitle>
+            <AlertDescription>
+              {productError.message || "Không thể tải thông tin sản phẩm. Vui lòng thử lại."}
+            </AlertDescription>
+          </Box>
+        </Alert>
+      </Page>
     );
   }
 
   if (!product) {
     return (
-      <VStack spacing={6} align="stretch">
-        <Box>
-          <HStack justify="space-between" align="center" mb={6}>
-            <HStack spacing={4}>
-              <Button
-                leftIcon={<ArrowLeft size={16} />}
-                variant="ghost"
-                onClick={() => navigate("/products")}
-                size="sm"
-              >
-                Quay lại
-              </Button>
-              <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                Chỉnh sửa sản phẩm
-              </Text>
-            </HStack>
-          </HStack>
-        </Box>
-
-        <Card shadow="sm">
-          <CardBody>
-            <Alert status="warning">
-              <AlertIcon />
-              <Text>Không tìm thấy sản phẩm với ID: {id}</Text>
-            </Alert>
-          </CardBody>
-        </Card>
-      </VStack>
+      <Page
+        title="Chỉnh sửa sản phẩm"
+        subtitle="Không tìm thấy sản phẩm"
+      >
+        <Alert status="warning" borderRadius="md">
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Cảnh báo!</AlertTitle>
+            <AlertDescription>
+              Không tìm thấy sản phẩm với ID này.
+            </AlertDescription>
+          </Box>
+        </Alert>
+      </Page>
     );
   }
 
   return (
-    <ProductForm
-      product={product}
-      onSubmit={handleSubmit}
-      isLoading={isSubmitting}
+    <Page
       title="Chỉnh sửa sản phẩm"
-      submitText="Cập nhật sản phẩm"
-    />
+      subtitle={`Cập nhật thông tin cho ${product.name}`}
+      breadcrumbs={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Sản phẩm", href: "/products" },
+        { label: product.name, href: `/products/${id}` },
+        { label: "Chỉnh sửa", href: `/products/${id}/edit` },
+      ]}
+    >
+      <ProductForm
+        product={product}
+        onSubmit={handleSubmit}
+        isLoading={editProductMutation.isPending}
+        title="Chỉnh sửa sản phẩm"
+        submitText="Cập nhật sản phẩm"
+      />
+    </Page>
   );
 };
 

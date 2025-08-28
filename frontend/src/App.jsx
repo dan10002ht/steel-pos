@@ -5,16 +5,15 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
 } from "react-router-dom";
+import QueryProvider from "./shared/providers/QueryProvider";
 import { AuthProvider } from "./contexts/AuthContext";
+import { UiProvider } from "./contexts/UiContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import MainLayout from "./components/Layout/MainLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/inventory";
 import Sales from "./pages/sales";
-import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
@@ -27,36 +26,40 @@ import ImportOrderListPage from "./pages/ImportOrderListPage";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
+    <QueryProvider>
+      <AuthProvider>
+        <UiProvider>
+          <Router>
+            <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected routes group */}
-          <Route path="/" element={<ProtectedRoute />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="sales/*" element={<Sales />} />
-            <Route path="inventory/*" element={<Inventory />} />
-            <Route path="products" element={<ProductListPage />} />
-            <Route path="products/create" element={<CreateProductPage />} />
-            <Route path="products/:id" element={<ProductDetailPage />} />
-            <Route path="products/:id/edit" element={<EditProductPage />} />
-            <Route path="import-orders/create" element={<ImportOrderPage />} />
-            <Route path="import-orders" element={<ImportOrderListPage />} />
-            <Route path="customers" element={<Customers />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="analytics" element={<Analytics />} />
+            {/* Protected routes group */}
+            <Route path="/" element={<ProtectedRoute />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="sales/*" element={<Sales />} />
+              <Route path="inventory/*" element={<Inventory />} />
+              <Route path="products" element={<ProductListPage />} />
+              <Route path="products/create" element={<CreateProductPage />} />
+              <Route path="products/:id" element={<ProductDetailPage />} />
+              <Route path="products/:id/edit" element={<EditProductPage />} />
+              <Route path="import-orders/create" element={<ImportOrderPage />} />
+              <Route path="import-orders" element={<ImportOrderListPage />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="analytics" element={<Analytics />} />
 
-            {/* Default redirect */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
-          </Route>
+              {/* Default redirect */}
+              <Route index element={<Navigate to="/dashboard" replace />} />
+            </Route>
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+          </Router>
+        </UiProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 

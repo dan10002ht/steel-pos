@@ -22,7 +22,7 @@ yarn install
 yarn dev
 ```
 
-Frontend sẽ chạy tại: http://localhost:3000
+Frontend sẽ chạy tại: http://localhost:5173
 
 ### Build
 

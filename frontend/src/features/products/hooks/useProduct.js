@@ -1,132 +1,55 @@
-import { useState, useEffect, useCallback } from "react";
-import productService from "../services/productService";
+import {
+  useCreateApi,
+  useEditApi,
+  useDeleteApi,
+  useFetchApi,
+} from "../../../hooks";
 
-export const useProduct = (id) => {
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+// Hook để tạo product mới
+export const useCreateProduct = (options = {}) => {
+  return useCreateApi("/products", {
+    invalidateQueries: [["products"]],
+    ...options,
+  });
+};
 
-  // Fetch single product
-  const fetchProduct = useCallback(async (productId) => {
-    if (!productId) return;
+// Hook để cập nhật product
+export const useEditProduct = (options = {}) => {
+  const defaultInvalidateQueries = [["products"], ["product"]];
 
-    setLoading(true);
-    setError(null);
+  return useEditApi("/products", {
+    invalidateQueries: options.invalidateQueries || defaultInvalidateQueries,
+    ...options,
+  });
+};
 
-    try {
-      const response = await productService.getProduct(productId);
-      setProduct(response.data);
-    } catch (err) {
-      setError(err.message);
-      console.error("Error fetching product:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+// Hook để xóa product
+export const useDeleteProduct = (options = {}) => {
+  return useDeleteApi("/products", {
+    invalidateQueries: [["products"]],
+    ...options,
+  });
+};
 
-  // Initial fetch when id changes
-  useEffect(() => {
-    if (id) {
-      fetchProduct(id);
-    }
-  }, [id, fetchProduct]);
+// Hook để lấy danh sách products
+export const useProducts = (filters = {}, options = {}) => {
+  const queryParams = new URLSearchParams();
 
-  // Create product
-  const createProduct = useCallback(async (productData) => {
-    setLoading(true);
-    setError(null);
+  if (filters.search) queryParams.append("search", filters.search);
+  if (filters.page) queryParams.append("page", filters.page);
+  if (filters.limit) queryParams.append("limit", filters.limit);
 
-    try {
-      const response = await productService.createProduct(productData);
-      setProduct(response.data);
-      return response.data;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const url = `/products${
+    queryParams.toString() ? `?${queryParams.toString()}` : ""
+  }`;
 
-  // Update product
-  const updateProduct = useCallback(async (productId, productData) => {
-    setLoading(true);
-    setError(null);
+  return useFetchApi(["products", filters], url, options);
+};
 
-    try {
-      const response = await productService.updateProduct(
-        productId,
-        productData
-      );
-      setProduct(response.data);
-      return response.data;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Delete product
-  const deleteProduct = useCallback(async (productId) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await productService.deleteProduct(productId);
-      setProduct(null);
-      return response.data;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Update variant stock
-  const updateVariantStock = useCallback(
-    async (productId, variantId, newStock) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await productService.updateVariantStock(
-          productId,
-          variantId,
-          newStock
-        );
-        setProduct(response.data);
-        return response.data;
-      } catch (err) {
-        setError(err.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  // Reset product state
-  const resetProduct = useCallback(() => {
-    setProduct(null);
-    setError(null);
-  }, []);
-
-  return {
-    // State
-    product,
-    loading,
-    error,
-
-    // Actions
-    fetchProduct,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    updateVariantStock,
-    resetProduct,
-  };
+// Hook để lấy chi tiết product
+export const useProduct = (id, options = {}) => {
+  return useFetchApi(["product", id], `/products/${id}`, {
+    enabled: !!id,
+    ...options,
+  });
 };

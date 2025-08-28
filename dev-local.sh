@@ -60,7 +60,7 @@ kill_port() {
 kill_development_ports() {
     print_status "Checking and killing processes on development ports..."
     kill_port 8080 "Backend"
-    kill_port 3000 "Frontend"
+    kill_port 5173 "Frontend"
     kill_port 5434 "PostgreSQL"
     kill_port 6380 "Redis"
     kill_port 5051 "pgAdmin"
@@ -307,7 +307,7 @@ show_status() {
     echo "🚀 Backend API: http://localhost:8080"
     echo "   - Health check: http://localhost:8080/health"
     echo ""
-    echo "⚛️  Frontend: http://localhost:3000 (yarn)"
+    echo "⚛️  Frontend: http://localhost:5173 (yarn)"
     echo ""
 }
 

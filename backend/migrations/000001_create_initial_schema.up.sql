@@ -45,7 +45,7 @@ CREATE TABLE product_categories (
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
-    category_id INTEGER REFERENCES product_categories(id),
+    category_id INTEGER REFERENCES product_categories(id) NULL,
     unit VARCHAR(20) NOT NULL,
     notes TEXT,
     is_active BOOLEAN DEFAULT true,

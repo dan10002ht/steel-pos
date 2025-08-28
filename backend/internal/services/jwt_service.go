@@ -12,8 +12,7 @@ import (
 )
 
 type JWTService struct {
-	config            *config.Config
-	refreshTokenSvc   *RefreshTokenService
+	config *config.Config
 }
 
 type Claims struct {
@@ -23,10 +22,9 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTService(config *config.Config, refreshTokenSvc *RefreshTokenService) *JWTService {
+func NewJWTService(config *config.Config) *JWTService {
 	return &JWTService{
-		config:          config,
-		refreshTokenSvc: refreshTokenSvc,
+		config: config,
 	}
 }
 

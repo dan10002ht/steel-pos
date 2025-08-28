@@ -8,11 +8,10 @@ import InventoryReport from "./InventoryReport";
 const Inventory = () => {
   return (
     <Routes>
-      <Route path="dashboard" element={<InventoryDashboard />} />
       <Route path="list" element={<InventoryList />} />
       <Route path="create" element={<InventoryCreate />} />
       <Route path="report" element={<InventoryReport />} />
-      <Route index element={<Navigate to="dashboard" replace />} />
+      <Route index element={<Navigate to="list" replace />} />
     </Routes>
   );
 };

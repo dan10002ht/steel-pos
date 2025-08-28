@@ -17,12 +17,20 @@ func SetupProductRoutes(api *gin.RouterGroup, productHandler *handlers.ProductHa
 		products.GET("/:id", productHandler.GetProductByID)
 		products.PUT("/:id", authMiddleware.RequireManager(), productHandler.UpdateProduct)
 		products.DELETE("/:id", authMiddleware.RequireManager(), productHandler.DeleteProduct)
+	}
 
-		// Product variants
-		products.POST("/:productId/variants", authMiddleware.RequireManager(), productHandler.CreateVariant)
-		products.GET("/:productId/variants", productHandler.GetVariantsByProductID)
-		products.GET("/variants/:variantId", productHandler.GetVariantByID)
-		products.PUT("/variants/:variantId", authMiddleware.RequireManager(), productHandler.UpdateVariant)
-		products.DELETE("/variants/:variantId", authMiddleware.RequireManager(), productHandler.DeleteVariant)
+	// Product variants routes - use a separate group to avoid conflicts
+	productVariants := api.Group("/product-variants")
+	{
+		productVariants.POST("/:productId", authMiddleware.RequireManager(), productHandler.CreateVariant)
+		productVariants.GET("/:productId", productHandler.GetVariantsByProductID)
+	}
+
+	// Variant-specific routes (separate group)
+	variants := api.Group("/variants")
+	{
+		variants.GET("/:variantId", productHandler.GetVariantByID)
+		variants.PUT("/:variantId", authMiddleware.RequireManager(), productHandler.UpdateVariant)
+		variants.DELETE("/:variantId", authMiddleware.RequireManager(), productHandler.DeleteVariant)
 	}
 }

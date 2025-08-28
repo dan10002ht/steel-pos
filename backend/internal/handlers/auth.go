@@ -311,3 +311,29 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 		"data":    user,
 	})
 }
+
+// WhoAmI verify token và lấy thông tin user hiện tại
+func (h *AuthHandler) WhoAmI(c *gin.Context) {
+	userID, exists := middleware.GetCurrentUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error":   "Authentication required",
+			"message": "User not authenticated",
+		})
+		return
+	}
+
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error":   "User not found",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    user,
+	})
+}
