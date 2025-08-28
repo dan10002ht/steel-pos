@@ -4,7 +4,6 @@ import {
   VStack,
   HStack,
   Text,
-  StatArrow,
   Card,
   CardBody,
   Icon,
@@ -15,6 +14,8 @@ import {
   DollarSign,
   ShoppingCart,
   Users,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 const SalesStats = ({ invoices = [] }) => {
@@ -115,7 +116,7 @@ const SalesStats = ({ invoices = [] }) => {
           {stats.totalInvoices} hoá đơn
         </Text>
         <HStack spacing={1}>
-          <StatArrow type="increase" />
+          <Icon as={ArrowUp} color="green.500" boxSize={4} />
           <Text fontSize="sm" color="gray.600">
             Tổng doanh thu: {stats.totalRevenue.toLocaleString("vi-VN")} VNĐ
           </Text>
@@ -135,11 +136,12 @@ const SalesStats = ({ invoices = [] }) => {
                     {item.value}
                   </Text>
                   <HStack spacing={1}>
-                    <StatArrow
-                      type={item.changeType}
+                    <Icon
+                      as={item.changeType === "increase" ? ArrowUp : ArrowDown}
                       color={
                         item.changeType === "increase" ? "green.500" : "red.500"
                       }
+                      boxSize={4}
                     />
                     <Text color="gray.600" fontSize="sm">
                       {item.change}

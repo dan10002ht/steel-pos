@@ -32,6 +32,12 @@ const InvoiceSummary = ({
     return subtotal - discount;
   };
 
+  const calculateRemainingAmount = () => {
+    const totalAmount = calculateFinalAmount();
+    const paidAmount = invoice.paidAmount || 0;
+    return totalAmount - paidAmount;
+  };
+
   return (
     <VStack spacing={4} align="stretch">
       <Text fontSize="lg" fontWeight="bold">
@@ -100,6 +106,41 @@ const InvoiceSummary = ({
             {calculateFinalAmount().toLocaleString("vi-VN")} VNĐ
           </Text>
         </HStack>
+
+        <Divider />
+
+        {/* Payment Amount Fields */}
+        <HStack justify="space-between">
+          <Text>Đã thanh toán:</Text>
+          <NumberInput
+            value={invoice.paidAmount || 0}
+            min={0}
+            max={calculateFinalAmount()}
+            onChange={(value) => onUpdateInvoice("paidAmount", parseInt(value))}
+            maxW="150px"
+          >
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
+        </HStack>
+
+        <HStack justify="space-between">
+          <Text
+            fontWeight="bold"
+            color={calculateRemainingAmount() > 0 ? "red.500" : "green.500"}
+          >
+            Còn lại:
+          </Text>
+          <Text
+            fontWeight="bold"
+            color={calculateRemainingAmount() > 0 ? "red.500" : "green.500"}
+          >
+            {calculateRemainingAmount().toLocaleString("vi-VN")} VNĐ
+          </Text>
+        </HStack>
       </VStack>
 
       <Button
@@ -116,4 +157,3 @@ const InvoiceSummary = ({
 };
 
 export default InvoiceSummary;
-
