@@ -32,3 +32,4 @@ const InvoiceTabManager = ({ invoice, onUpdate }) => {
 
 export default InvoiceTabManager;
 
+

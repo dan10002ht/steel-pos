@@ -184,3 +184,4 @@ const ProductSearch = ({ invoice, onUpdate }) => {
 
 export default ProductSearch;
 
+
