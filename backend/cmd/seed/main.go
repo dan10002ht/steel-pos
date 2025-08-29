@@ -188,12 +188,14 @@ func seedData(db *sql.DB) error {
 
 		// Insert category
 		_, err = db.Exec(`
-			INSERT INTO product_categories (name, description, is_active, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5)
+			INSERT INTO product_categories (name, description, is_active, created_by, created_by_name, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 		`,
 			category.name,
 			category.description,
 			true,
+			nil,      // created_by is NULL for seed data
+			"System", // created_by_name for seed data
 			time.Now(),
 			time.Now(),
 		)
@@ -205,79 +207,66 @@ func seedData(db *sql.DB) error {
 		fmt.Printf("Category %s created successfully!\n", category.name)
 	}
 
-	// Insert sample suppliers
-	suppliers := []struct {
-		name           string
-		code           string
-		phone          string
-		email          string
-		address        string
-		taxCode        string
-		contactPerson  string
+	// Insert sample products
+	products := []struct {
+		name       string
+		categoryID int
+		unit       string
+		notes      string
 	}{
 		{
-			name:          "Công ty Thép ABC",
-			code:          "SUP001",
-			phone:         "0123456789",
-			email:         "info@thepabc.com",
-			address:       "123 Đường ABC, Quận 1, TP.HCM",
-			taxCode:       "0123456789",
-			contactPerson: "Nguyễn Văn A",
+			name:       "Ống phi",
+			categoryID: 1, // Vật liệu xây dựng
+			unit:       "m",
+			notes:      "Ống phi các loại",
 		},
 		{
-			name:          "Công ty Thép XYZ",
-			code:          "SUP002",
-			phone:         "0987654321",
-			email:         "contact@thepxyz.com",
-			address:       "456 Đường XYZ, Quận 2, TP.HCM",
-			taxCode:       "0987654321",
-			contactPerson: "Trần Thị B",
+			name:       "Thép hộp",
+			categoryID: 1, // Vật liệu xây dựng
+			unit:       "m",
+			notes:      "Thép hộp các loại",
 		},
 		{
-			name:          "Công ty Vật liệu DEF",
-			code:          "SUP003",
-			phone:         "0369852147",
-			email:         "sales@vatlieudef.com",
-			address:       "789 Đường DEF, Quận 3, TP.HCM",
-			taxCode:       "0369852147",
-			contactPerson: "Lê Văn C",
+			name:       "Thép tấm",
+			categoryID: 1, // Vật liệu xây dựng
+			unit:       "m²",
+			notes:      "Thép tấm các loại",
 		},
 	}
 
-	for _, supplier := range suppliers {
-		// Check if supplier already exists
-		err = db.QueryRow("SELECT COUNT(*) FROM suppliers WHERE code = $1", supplier.code).Scan(&count)
+	for _, product := range products {
+		// Check if product already exists
+		err = db.QueryRow("SELECT COUNT(*) FROM products WHERE name = $1", product.name).Scan(&count)
 		if err != nil {
-			return fmt.Errorf("failed to check existing supplier %s: %v", supplier.code, err)
+			return fmt.Errorf("failed to check existing product %s: %v", product.name, err)
 		}
 
 		if count > 0 {
-			fmt.Printf("Supplier %s already exists, skipping...\n", supplier.code)
+			fmt.Printf("Product %s already exists, skipping...\n", product.name)
 			continue
 		}
 
-		// Insert supplier
+		// Insert product
 		_, err = db.Exec(`
-			INSERT INTO suppliers (name, code, phone, email, address, tax_code, contact_person, is_active, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			INSERT INTO products (name, category_id, unit, notes, is_active, created_by, created_by_name, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`,
-			supplier.name,
-			supplier.code,
-			supplier.phone,
-			supplier.email,
-			supplier.address,
-			supplier.taxCode,
-			supplier.contactPerson,
+			product.name,
+			product.categoryID,
+			product.unit,
+			product.notes,
 			true,
+			nil,      // created_by is NULL for seed data
+			"System", // created_by_name for seed data
 			time.Now(),
 			time.Now(),
 		)
 
 		if err != nil {
-			return fmt.Errorf("failed to insert supplier %s: %v", supplier.code, err)
+			return fmt.Errorf("failed to insert product %s: %v", product.name, err)
 		}
 
-		fmt.Printf("Supplier %s created successfully!\n", supplier.code)
+		fmt.Printf("Product %s created successfully!\n", product.name)
 	}
 
 	return nil

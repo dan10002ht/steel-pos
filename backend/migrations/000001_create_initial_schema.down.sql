@@ -3,7 +3,6 @@
 
 -- Drop triggers first
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
-DROP TRIGGER IF EXISTS update_suppliers_updated_at ON suppliers;
 DROP TRIGGER IF EXISTS update_product_categories_updated_at ON product_categories;
 DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 DROP TRIGGER IF EXISTS update_product_variants_updated_at ON product_variants;
@@ -19,5 +18,4 @@ DROP TABLE IF EXISTS import_orders;
 DROP TABLE IF EXISTS product_variants;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS product_categories;
-DROP TABLE IF EXISTS suppliers;
 DROP TABLE IF EXISTS users;

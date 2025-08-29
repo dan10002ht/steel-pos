@@ -12,7 +12,7 @@ func SetupAllRoutes(
 	router *gin.Engine,
 	authHandler *handlers.AuthHandler,
 	productHandler *handlers.ProductHandler,
-	supplierHandler *handlers.SupplierHandler,
+	importOrderHandler *handlers.ImportOrderHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	tokenRefreshMiddleware *middleware.TokenRefreshMiddleware,
 ) {
@@ -33,5 +33,5 @@ func SetupAllRoutes(
 	// Setup individual route groups
 	SetupAuthRoutes(api, authHandler, authMiddleware)
 	SetupProductRoutes(api, productHandler, authMiddleware)
-	SetupSupplierRoutes(api, supplierHandler, authMiddleware)
+	SetupImportOrderRoutes(api, importOrderHandler, authMiddleware)
 }

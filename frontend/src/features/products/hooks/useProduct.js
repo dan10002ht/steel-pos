@@ -1,9 +1,7 @@
-import {
-  useCreateApi,
-  useEditApi,
-  useDeleteApi,
-  useFetchApi,
-} from "../../../hooks";
+import { useCreateApi } from "../../../hooks/useCreateApi";
+import { useDeleteApi } from "../../../hooks/useDeleteApi";
+import { useEditApi } from "../../../hooks/useEditApi";
+import { useFetchApi } from "../../../hooks/useFetchApi";
 
 // Hook để tạo product mới
 export const useCreateProduct = (options = {}) => {

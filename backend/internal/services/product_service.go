@@ -4,6 +4,7 @@ import (
 	"errors"
 	"steel-pos-backend/internal/models"
 	"steel-pos-backend/internal/repository"
+	"strings"
 	"time"
 )
 
@@ -18,17 +19,18 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 }
 
 // Product methods
-func (s *ProductService) CreateProduct(req *models.CreateProductRequest, createdBy int) (*models.Product, error) {
+func (s *ProductService) CreateProduct(req *models.CreateProductRequest, createdBy int, createdByName string) (*models.Product, error) {
 	// Create product
 	product := &models.Product{
-		Name:       req.Name,
-		CategoryID: req.CategoryID,
-		Unit:       req.Unit,
-		Notes:      req.Notes,
-		IsActive:   true,
-		CreatedBy:  createdBy,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		Name:          req.Name,
+		CategoryID:    req.CategoryID,
+		Unit:          req.Unit,
+		Notes:         req.Notes,
+		IsActive:      true,
+		CreatedBy:     &createdBy,
+		CreatedByName: &createdByName,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	err := s.productRepo.Create(product)
@@ -40,16 +42,17 @@ func (s *ProductService) CreateProduct(req *models.CreateProductRequest, created
 	if len(req.Variants) > 0 {
 		for _, variantReq := range req.Variants {
 			variant := &models.ProductVariant{
-				ProductID: product.ID,
-				Name:      variantReq.Name,
-				SKU:       variantReq.SKU,
-				Stock:     variantReq.Stock,
-				Price:     variantReq.Price,
-				Unit:      variantReq.Unit,
-				IsActive:  true,
-				CreatedBy: createdBy,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				ProductID:     product.ID,
+				Name:          variantReq.Name,
+				SKU:           variantReq.SKU,
+				Stock:         variantReq.Stock,
+				Price:         variantReq.Price,
+				Unit:          variantReq.Unit,
+				IsActive:      true,
+				CreatedBy:     &createdBy,
+				CreatedByName: &createdByName,
+				CreatedAt:     time.Now(),
+				UpdatedAt:     time.Now(),
 			}
 
 			err := s.productRepo.CreateVariant(variant)
@@ -194,7 +197,7 @@ func (s *ProductService) UpdateProduct(id int, req *models.UpdateProductRequest,
 					Price:     *variantReq.Price,
 					Unit:      variantReq.Unit,
 					IsActive:  true,
-					CreatedBy: updatedBy,
+					CreatedBy: &updatedBy,
 					CreatedAt: time.Now(),
 					UpdatedAt: time.Now(),
 				}
@@ -235,7 +238,7 @@ func (s *ProductService) CreateVariant(productID int, req *models.CreateProductV
 		Price:     req.Price,
 		Unit:      req.Unit,
 		IsActive:  true,
-		CreatedBy: createdBy,
+		CreatedBy: &createdBy,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -321,4 +324,109 @@ func (s *ProductService) DeleteVariant(id int) error {
 
 func (s *ProductService) UpdateStock(variantID int, quantity int) error {
 	return s.productRepo.UpdateStock(variantID, quantity)
+}
+
+// SearchProductsHybrid searches products using hybrid approach (ILIKE + full-text search)
+func (s *ProductService) SearchProductsHybrid(query string, limit int, page int) (*models.ProductListResponse, error) {
+	// Validate query
+	if len(strings.TrimSpace(query)) < 1 {
+		return nil, errors.New("search query is required")
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	products, err := s.productRepo.SearchProductsHybrid(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.productRepo.CountSearchResults(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.ProductListResponse{
+		Products: products,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
+	}, nil
+}
+
+// SearchProductsWithVariants searches products including variant information
+func (s *ProductService) SearchProductsWithVariants(query string, limit int) (*models.ProductListResponse, error) {
+	// Validate query
+	if len(strings.TrimSpace(query)) < 1 {
+		return nil, errors.New("search query is required")
+	}
+
+	products, err := s.productRepo.SearchProductsWithVariants(query, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.productRepo.CountSearchResults(query)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.ProductListResponse{
+		Products: products,
+		Total:    total,
+		Page:     1,
+		Limit:    limit,
+	}, nil
+}
+
+// SearchProductsForImportOrder searches products specifically for import order selection
+func (s *ProductService) SearchProductsForImportOrder(query string, limit int) ([]*models.ProductSearchResult, error) {
+	// Validate query
+	if len(strings.TrimSpace(query)) < 1 {
+		return nil, errors.New("search query is required")
+	}
+
+	products, err := s.productRepo.SearchProductsWithVariants(query, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	// Transform to search result format
+	var results []*models.ProductSearchResult
+	for _, product := range products {
+		result := &models.ProductSearchResult{
+			ID:       product.ID,
+			Name:     product.Name,
+			Unit:     product.Unit,
+			Notes:    product.Notes,
+			Variants: make([]*models.VariantSearchResult, 0),
+		}
+
+		// Add variants
+		for _, variant := range product.Variants {
+			variantResult := &models.VariantSearchResult{
+				ID:    variant.ID,
+				Name:  variant.Name,
+				SKU:   variant.SKU,
+				Price: variant.Price,
+				Unit:  variant.Unit,
+			}
+			result.Variants = append(result.Variants, variantResult)
+		}
+
+		// If no variants, create a default one
+		if len(result.Variants) == 0 {
+			result.Variants = append(result.Variants, &models.VariantSearchResult{
+				ID:    0,
+				Name:  "Default",
+				SKU:   "",
+				Price: 0,
+				Unit:  product.Unit,
+			})
+		}
+
+		results = append(results, result)
+	}
+
+	return results, nil
 }

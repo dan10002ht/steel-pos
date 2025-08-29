@@ -34,10 +34,13 @@ import {
 } from "@chakra-ui/react";
 import { Plus, Trash2, Upload } from "lucide-react";
 import ProductCreateModal from "./ProductCreateModal";
+import ProductSearch from "./ProductSearch";
+import { useCreateApi } from "../hooks/useCreateApi";
+import { importOrderService } from "../services/importOrderService";
 
 const ImportOrderForm = ({ onNavigateToList }) => {
   const [formData, setFormData] = useState({
-    importCode: "0001",
+    importCode: `IMP${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Date.now()).slice(-4)}`,
     supplier: "",
     importDate: new Date().toISOString().split("T")[0],
     documents: [],
@@ -45,40 +48,14 @@ const ImportOrderForm = ({ onNavigateToList }) => {
 
   const [products, setProducts] = useState([
     {
-      id: 1,
-      productName: "Ống phi",
-      variant: "Phi 12",
-      unit: "m",
-      quantity: 18,
-      unitPrice: 50000,
-      total: 900000,
-    },
-    {
-      id: 2,
+      id: Date.now(),
       productName: "",
       variant: "",
       unit: "",
       quantity: 0,
       unitPrice: 0,
       total: 0,
-    },
-    {
-      id: 3,
-      productName: "",
-      variant: "",
-      unit: "",
-      quantity: 0,
-      unitPrice: 0,
-      total: 0,
-    },
-    {
-      id: 4,
-      productName: "",
-      variant: "",
-      unit: "",
-      quantity: 0,
-      unitPrice: 0,
-      total: 0,
+      productId: null,
     },
   ]);
 
@@ -86,22 +63,36 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const toast = useToast();
 
-  // Mock product data
-  const [availableProducts, setAvailableProducts] = useState([
-    {
-      id: 1,
-      name: "Ống phi",
-      variants: ["Phi 12", "Phi 16", "Phi 20"],
-      unit: "m",
+  // Create import order mutation
+  const createMutation = useCreateApi("/import-orders", {
+    invalidateQueries: [["import-orders"]],
+    onSuccess: () => {
+      toast({
+        title: "Thành công",
+        description: "Đơn nhập hàng đã được tạo và gửi phê duyệt",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      // Navigate to list page
+      if (onNavigateToList) {
+        onNavigateToList();
+      }
     },
-    {
-      id: 2,
-      name: "Thép hộp",
-      variants: ["40x40", "50x50", "60x60"],
-      unit: "m",
-    },
-    { id: 3, name: "Thép tấm", variants: ["3mm", "5mm", "8mm"], unit: "m²" },
-  ]);
+    onError: (error) => {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể tạo đơn nhập hàng",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  });
+
+  // Remove mock availableProducts - using ProductSearch instead
+  // const [availableProducts, setAvailableProducts] = useState([...]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -138,19 +129,22 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     setProducts(updatedProducts);
   };
 
-  const handleProductSelect = (index, productName) => {
-    if (productName === "__create_new__") {
+  const handleProductSelect = (index, selectedProduct) => {
+    if (selectedProduct === "__create_new__") {
       setIsProductModalOpen(true);
       return;
     }
 
-    const product = availableProducts.find((p) => p.name === productName);
-    if (product) {
+    // If selectedProduct is an object (from ProductSearch)
+    if (selectedProduct && typeof selectedProduct === "object") {
       const updatedProducts = [...products];
       updatedProducts[index] = {
         ...updatedProducts[index],
-        productName: product.name,
-        unit: product.unit,
+        productName: selectedProduct.name,
+        unit: selectedProduct.unit,
+        productId: selectedProduct.id,
+        // Reset variant when product changes
+        variant: "",
       };
       setProducts(updatedProducts);
     }
@@ -205,9 +199,10 @@ const ImportOrderForm = ({ onNavigateToList }) => {
       newErrors.importDate = "Không được bỏ trống ngày nhập kho";
     }
 
-    if (formData.documents.length === 0) {
-      newErrors.documents = "Không được bỏ trống chứng từ";
-    }
+    // Documents are optional for now
+    // if (formData.documents.length === 0) {
+    //   newErrors.documents = "Không được bỏ trống chứng từ";
+    // }
 
     // Check if at least one product is selected
     const hasProduct = products.some(
@@ -221,20 +216,22 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleProductCreated = (newProduct) => {
-    setAvailableProducts((prev) => [...prev, newProduct]);
+  const handleProductCreated = () => {
+    // Close modal
+    setIsProductModalOpen(false);
+    
+    // Show success message
+    toast({
+      title: "Thành công",
+      description: "Sản phẩm đã được tạo thành công",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
   const handleSubmit = () => {
-    if (validateForm()) {
-      toast({
-        title: "Thành công",
-        description: "Đơn nhập hàng đã được tạo và gửi phê duyệt",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } else {
+    if (!validateForm()) {
       toast({
         title: "Lỗi",
         description: "Vui lòng kiểm tra lại thông tin",
@@ -242,7 +239,19 @@ const ImportOrderForm = ({ onNavigateToList }) => {
         duration: 3000,
         isClosable: true,
       });
+      return;
     }
+
+    // Transform frontend data to backend format
+    const orderData = importOrderService.transformFrontendToBackend({
+      supplier: formData.supplier,
+      importDate: formData.importDate,
+      notes: "",
+      importImages: formData.documents.map(file => file.name), // For now, just use file names
+      products: products.filter(product => product.productName && product.quantity > 0)
+    });
+
+    createMutation.mutate(orderData);
   };
 
   return (
@@ -252,7 +261,7 @@ const ImportOrderForm = ({ onNavigateToList }) => {
         <Card>
           <CardBody>
             <VStack spacing={4} align="stretch">
-              <HStack spacing={6}>
+              <Flex flexDirection={{base: "column", md: "row"}} gap={6}>
                 {/* Import Code */}
                 <FormControl>
                   <FormLabel fontWeight="bold">Mã nhập kho</FormLabel>
@@ -292,32 +301,36 @@ const ImportOrderForm = ({ onNavigateToList }) => {
                     </Text>
                   )}
                 </FormControl>
-              </HStack>
+              </Flex>
 
               {/* Documents */}
               <FormControl isInvalid={!!errors.documents}>
-                <FormLabel fontWeight="bold">Chứng từ kèm theo *</FormLabel>
+                <FormLabel fontWeight="bold">Chứng từ kèm theo (tùy chọn)</FormLabel>
                 <InputGroup>
                   <Input
                     type="file"
                     multiple
-                    onChange={handleFileUpload}
                     accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleFileUpload}
                     display="none"
                     id="file-upload"
                   />
                   <Input
-                    placeholder="Chọn file chứng từ"
-                    value={formData.documents.map((f) => f.name).join(", ")}
+                    placeholder="Chọn file chứng từ..."
+                    value={
+                      formData.documents.length > 0
+                        ? `${formData.documents.length} file đã chọn`
+                        : ""
+                    }
                     isReadOnly
+                    onClick={() => document.getElementById("file-upload").click()}
                   />
                   <InputRightElement>
                     <IconButton
-                      as="label"
-                      htmlFor="file-upload"
-                      icon={<Upload size={20} />}
+                      icon={<Upload size={16} />}
                       variant="ghost"
-                      colorScheme="blue"
+                      size="sm"
+                      onClick={() => document.getElementById("file-upload").click()}
                     />
                   </InputRightElement>
                 </InputGroup>
@@ -326,16 +339,33 @@ const ImportOrderForm = ({ onNavigateToList }) => {
                     {errors.documents}
                   </Text>
                 )}
-                {formData.documents.length > 0 && (
-                  <VStack align="start" mt={2}>
-                    {formData.documents.map((file, index) => (
-                      <Text key={index} fontSize="sm" color="gray.600">
-                        📎 {file.name}
-                      </Text>
-                    ))}
-                  </VStack>
-                )}
               </FormControl>
+
+              {/* Selected Files */}
+              {formData.documents.length > 0 && (
+                <VStack align="stretch" spacing={2}>
+                  <Text fontSize="sm" fontWeight="medium">
+                    Files đã chọn:
+                  </Text>
+                  {formData.documents.map((file, index) => (
+                    <HStack key={index} justify="space-between" p={2} bg="gray.50" borderRadius="md">
+                      <Text fontSize="sm">{file.name}</Text>
+                      <IconButton
+                        icon={<Trash2 size={14} />}
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="red"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            documents: prev.documents.filter((_, i) => i !== index),
+                          }));
+                        }}
+                      />
+                    </HStack>
+                  ))}
+                </VStack>
+              )}
             </VStack>
           </CardBody>
         </Card>
@@ -343,184 +373,151 @@ const ImportOrderForm = ({ onNavigateToList }) => {
         {/* Products Section */}
         <Card>
           <CardBody>
-            <HStack justify="space-between" mb={4}>
-              <Heading size="md" color="gray.700">
-                Sản phẩm
-              </Heading>
-              <Button
-                leftIcon={<Plus size={16} />}
-                size="sm"
-                colorScheme="blue"
-                variant="outline"
-                onClick={addProduct}
-              >
-                Thêm sản phẩm
-              </Button>
-            </HStack>
+            <VStack spacing={4} align="stretch">
+              <HStack justify="space-between">
+                <Heading size="md">Danh sách sản phẩm</Heading>
+                <Button
+                  leftIcon={<Plus size={16} />}
+                  colorScheme="blue"
+                  size="sm"
+                  onClick={addProduct}
+                >
+                  Thêm sản phẩm
+                </Button>
+              </HStack>
 
-            <Box overflowX="auto">
-              <Table variant="simple" size="sm">
-                <Thead>
-                  <Tr>
-                    <Th>Tên sản phẩm</Th>
-                    <Th>Số lượng</Th>
-                    <Th>Đơn giá</Th>
-                    <Th>Thành tiền</Th>
-                    <Th width="50px"></Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {products.map((product, index) => (
-                    <Tr key={product.id}>
-                      <Td>
-                        <VStack align="start" spacing={1}>
-                          <Select
+              {errors.products && (
+                <Text color="red.500" fontSize="sm">
+                  {errors.products}
+                </Text>
+              )}
+
+              <Box overflowX="auto">
+                <Table variant="simple" size="sm">
+                  <Thead>
+                    <Tr>
+                      <Th minW="200px">Sản phẩm</Th>
+                      <Th minW="160px">Phiên bản</Th>
+                      <Th minW="100px">Số lượng</Th>
+                      <Th minW="120px">Đơn giá</Th>
+                      <Th minW="140px">Thành tiền</Th>
+                      <Th minW="80px">Actions</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {products.map((product, index) => (
+                      <Tr key={product.id}>
+                        <Td minW="200px">
+                          <ProductSearch
                             placeholder="Chọn sản phẩm"
                             value={product.productName}
+                            onSelect={(selectedProduct) =>
+                              handleProductSelect(index, selectedProduct)
+                            }
+                            onCreateNew={() => {
+                              setIsProductModalOpen(true);
+                            }}
+                            searchType="import-order"
+                          />
+                        </Td>
+                        <Td minW="160px">
+                          <Select
+                            placeholder="Chọn phiên bản"
+                            value={product.variant}
                             onChange={(e) =>
-                              handleProductSelect(index, e.target.value)
+                              handleVariantSelect(index, e.target.value)
                             }
                             size="sm"
+                            isDisabled={!product.productName}
                           >
-                            {availableProducts.map((p) => (
-                              <option key={p.id} value={p.name}>
-                                {p.name}
-                              </option>
-                            ))}
-                            <option value="__create_new__">
-                              + Tạo mới sản phẩm
-                            </option>
+                            {product.productName && product.productId && (
+                              // For now, show a default variant option
+                              // In the future, this should fetch variants from the selected product
+                              <option value="Default">Default</option>
+                            )}
                           </Select>
-                          {product.productName && (
-                            <>
-                              <Select
-                                placeholder="Chọn phân loại"
-                                value={product.variant}
-                                onChange={(e) =>
-                                  handleVariantSelect(index, e.target.value)
-                                }
-                                size="sm"
-                              >
-                                {availableProducts
-                                  .find((p) => p.name === product.productName)
-                                  ?.variants.map((variant) => (
-                                    <option key={variant} value={variant}>
-                                      {variant}
-                                    </option>
-                                  ))}
-                              </Select>
-                              <Text fontSize="xs" color="gray.500">
-                                Phân loại: {product.variant} | Đơn vị:{" "}
-                                {product.unit}
-                              </Text>
-                            </>
-                          )}
-                        </VStack>
-                      </Td>
-                      <Td>
-                        <NumberInput
-                          value={product.quantity}
-                          onChange={(value) =>
-                            handleProductChange(
-                              index,
-                              "quantity",
-                              parseInt(value) || 0
-                            )
-                          }
-                          min={0}
-                          size="sm"
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </Td>
-                      <Td>
-                        <NumberInput
-                          value={product.unitPrice}
-                          onChange={(value) =>
-                            handleProductChange(
-                              index,
-                              "unitPrice",
-                              parseInt(value) || 0
-                            )
-                          }
-                          min={0}
-                          size="sm"
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                      </Td>
-                      <Td>
-                        <Text fontWeight="bold">
-                          {formatCurrency(product.total)}
-                        </Text>
-                      </Td>
-                      <Td>
-                        {products.length > 1 && (
+                        </Td>
+                        <Td minW="100px">
+                          <NumberInput
+                            value={product.quantity}
+                            onChange={(value) =>
+                              handleProductChange(index, "quantity", parseInt(value) || 0)
+                            }
+                            min={0}
+                            size="sm"
+                          >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                        </Td>
+                        <Td minW="120px">
+                          <NumberInput
+                            value={product.unitPrice}
+                            onChange={(value) =>
+                              handleProductChange(index, "unitPrice", parseInt(value) || 0)
+                            }
+                            min={0}
+                            size="sm"
+                          >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                        </Td>
+                        <Td minW="140px">
+                          <Text fontWeight="medium">
+                            {formatCurrency(product.total)}
+                          </Text>
+                        </Td>
+                        <Td minW="80px">
                           <IconButton
                             icon={<Trash2 size={16} />}
                             size="sm"
-                            variant="ghost"
                             colorScheme="red"
+                            variant="ghost"
                             onClick={() => removeProduct(index)}
+                            isDisabled={products.length === 1}
                           />
-                        )}
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
 
-            {errors.products && (
-              <Text color="red.500" fontSize="sm" mt={2}>
-                {errors.products}
-              </Text>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Summary Section */}
-        <Card>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
+              {/* Total */}
+              <Divider />
               <HStack justify="space-between">
                 <Text fontSize="lg" fontWeight="bold">
-                  Tổng giá trị:
+                  Tổng cộng:
                 </Text>
-                <Text fontSize="xl" fontWeight="bold" color="blue.600">
+                <Text fontSize="lg" fontWeight="bold" color="blue.600">
                   {formatCurrency(calculateTotal())}
                 </Text>
-              </HStack>
-
-              <Divider />
-
-              <HStack justify="center" spacing={4}>
-                <Button
-                  colorScheme="blue"
-                  size="lg"
-                  onClick={handleSubmit}
-                  leftIcon={<Plus size={20} />}
-                >
-                  Gửi phê duyệt
-                </Button>
-                <Button variant="outline" size="lg">
-                  Lưu nháp
-                </Button>
-                <Button variant="ghost" size="lg">
-                  Hủy
-                </Button>
               </HStack>
             </VStack>
           </CardBody>
         </Card>
+
+        {/* Submit Button */}
+        <HStack justify="flex-end" spacing={4}>
+          <Button variant="outline" onClick={onNavigateToList}>
+            Hủy
+          </Button>
+          <Button
+            colorScheme="blue"
+            onClick={handleSubmit}
+            isLoading={createMutation.isPending}
+            loadingText="Đang tạo..."
+          >
+            Tạo đơn nhập hàng
+          </Button>
+        </HStack>
       </VStack>
 
       {/* Product Create Modal */}

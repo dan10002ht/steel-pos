@@ -17,6 +17,11 @@ func SetupProductRoutes(api *gin.RouterGroup, productHandler *handlers.ProductHa
 		products.GET("/:id", productHandler.GetProductByID)
 		products.PUT("/:id", authMiddleware.RequireManager(), productHandler.UpdateProduct)
 		products.DELETE("/:id", authMiddleware.RequireManager(), productHandler.DeleteProduct)
+
+		// Search endpoints
+		products.GET("/search", productHandler.SearchProducts)
+		products.GET("/search/variants", productHandler.SearchProductsWithVariants)
+		products.GET("/search/import-order", productHandler.SearchProductsForImportOrder)
 	}
 
 	// Product variants routes - use a separate group to avoid conflicts
