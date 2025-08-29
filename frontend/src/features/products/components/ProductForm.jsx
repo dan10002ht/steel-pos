@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   VStack,
@@ -15,64 +15,63 @@ import {
   CardHeader,
   Text,
   Divider,
-} from "@chakra-ui/react";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+} from '@chakra-ui/react';
+import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-import VariantForm from "./VariantForm";
+import VariantForm from './VariantForm';
 
 const ProductForm = ({
   product = null,
   onSubmit,
   isLoading = false,
-  title = "Tạo sản phẩm mới",
-  submitText = "Tạo sản phẩm",
+  title = 'Tạo sản phẩm mới',
+  submitText = 'Tạo sản phẩm',
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
-    name: product?.name || "",
-    unit: product?.unit || "",
-    notes: product?.notes || "",
-    variants: product?.variants?.length > 0 ? product.variants.map(variant => ({
-      id: variant.id?.toString() || null, // Use null for new variants
-      name: variant.name || "",
-      sku: variant.sku || "",
-      stock: variant.stock || 0,
-      price: variant.price || 0,
-      unit: variant.unit || "",
-      sold: variant.sold || 0,
-    })) : [
-      {
-        id: null, // Use null for new variants
-        name: "",
-        sku: "",
-        stock: 0,
-        price: 0,
-        unit: "",
-        sold: 0,
-      },
-    ],
+    name: product?.name || '',
+    unit: product?.unit || '',
+    notes: product?.notes || '',
+    variants:
+      product?.variants?.length > 0
+        ? product.variants.map(variant => ({
+            id: variant.id?.toString() || null, // Use null for new variants
+            name: variant.name || '',
+            stock: variant.stock || 0,
+            price: variant.price || 0,
+            sold: variant.sold || 0,
+          }))
+        : [
+            {
+              id: null, // Use null for new variants
+              name: '',
+              stock: 0,
+              price: 0,
+              sold: 0,
+            },
+          ],
   });
 
   const [errors, setErrors] = React.useState({});
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({
+      setErrors(prev => ({
         ...prev,
-        [field]: "",
+        [field]: '',
       }));
     }
   };
 
   const handleVariantChange = (index, field, value) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       variants: prev.variants.map((variant, i) =>
         i === index ? { ...variant, [field]: value } : variant
@@ -81,29 +80,27 @@ const ProductForm = ({
   };
 
   const addVariant = () => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       variants: [
         ...prev.variants,
         {
           id: null, // Use null for new variants
-          name: "",
-          sku: "",
+          name: '',
           stock: 0,
           price: 0,
-          unit: formData.unit || "",
           sold: 0,
         },
       ],
     }));
   };
 
-  const removeVariant = (index) => {
+  const removeVariant = index => {
     if (formData.variants.length > 1) {
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
-        variants: prev.variants.map((variant, i) => 
-          i === index 
+        variants: prev.variants.map((variant, i) =>
+          i === index
             ? { ...variant, isDeleted: !variant.isDeleted } // Toggle deleted state
             : variant
         ),
@@ -116,12 +113,12 @@ const ProductForm = ({
 
     // Validate product name
     if (!formData.name.trim()) {
-      newErrors.name = "Tên sản phẩm là bắt buộc";
+      newErrors.name = 'Tên sản phẩm là bắt buộc';
     }
 
     // Validate unit
     if (!formData.unit.trim()) {
-      newErrors.unit = "Đơn vị là bắt buộc";
+      newErrors.unit = 'Đơn vị là bắt buộc';
     }
 
     // Validate variants (skip deleted ones)
@@ -135,23 +132,15 @@ const ProductForm = ({
       const variantError = {};
 
       if (!variant.name.trim()) {
-        variantError.name = "Tên variant là bắt buộc";
-      }
-
-      if (!variant.sku.trim()) {
-        variantError.sku = "SKU là bắt buộc";
+        variantError.name = 'Tên variant là bắt buộc';
       }
 
       if (variant.stock < 0) {
-        variantError.stock = "Số lượng tồn kho không được âm";
+        variantError.stock = 'Số lượng tồn kho không được âm';
       }
 
       if (variant.price <= 0) {
-        variantError.price = "Giá phải lớn hơn 0";
-      }
-
-      if (!variant.unit.trim()) {
-        variantError.unit = "Đơn vị variant là bắt buộc";
+        variantError.price = 'Giá phải lớn hơn 0';
       }
 
       if (Object.keys(variantError).length > 0) {
@@ -167,34 +156,38 @@ const ProductForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
 
     if (validateForm()) {
       const productData = {
         ...formData,
         // Process variants for API
-        variants: formData.variants.map(variant => {
-          const baseVariant = {
-            name: variant.name,
-            sku: variant.sku,
-            stock: variant.stock,
-            price: variant.price,
-            unit: variant.unit,
-          };
+        variants: formData.variants
+          .map(variant => {
+            const baseVariant = {
+              name: variant.name,
+              sku: `${formData.name}-${variant.name}`
+                .toLowerCase()
+                .replace(/\s+/g, '-'), // Auto generate SKU
+              stock: variant.stock,
+              price: variant.price,
+              unit: formData.unit, // Use product unit for all variants
+            };
 
-          // Add id if exists (for UPDATE/DELETE)
-          if (variant.id) {
-            baseVariant.id = parseInt(variant.id);
-          }
+            // Add id if exists (for UPDATE/DELETE)
+            if (variant.id) {
+              baseVariant.id = parseInt(variant.id);
+            }
 
-          // Add isDeleted flag if marked for deletion
-          if (variant.isDeleted) {
-            baseVariant.isDeleted = true;
-          }
+            // Add isDeleted flag if marked for deletion
+            if (variant.isDeleted) {
+              baseVariant.isDeleted = true;
+            }
 
-          return baseVariant;
-        }).filter(variant => !variant.isDeleted), // Remove deleted variants from request
+            return baseVariant;
+          })
+          .filter(variant => !variant.isDeleted), // Remove deleted variants from request
       };
 
       onSubmit(productData);
@@ -202,49 +195,58 @@ const ProductForm = ({
   };
 
   return (
-    <Box as="form" onSubmit={handleSubmit}>
-      <VStack spacing={6} align="stretch">
+    <Box as='form' onSubmit={handleSubmit}>
+      <VStack spacing={6} align='stretch'>
         {/* Header */}
-        <HStack justify="space-between" align="center">
-          <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+        <HStack justify='space-between' align='center'>
+          <Text fontSize='2xl' fontWeight='bold' color='gray.800'>
             {title}
           </Text>
           <Button
             leftIcon={<ArrowLeft size={16} />}
-            variant="outline"
-            onClick={() => navigate("/products")}
+            variant='outline'
+            onClick={() => navigate('/products')}
           >
             Quay lại
           </Button>
         </HStack>
 
         {/* Product Information */}
-        <Card shadow="sm">
+        <Card shadow='sm'>
           <CardHeader>
-            <Text fontSize="lg" fontWeight="bold">
+            <Text fontSize='lg' fontWeight='bold'>
               Thông tin sản phẩm
             </Text>
           </CardHeader>
           <CardBody>
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={4} align='stretch'>
               <FormControl isInvalid={!!errors.name} isRequired>
                 <FormLabel>Tên sản phẩm</FormLabel>
                 <Input
                   value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Nhập tên sản phẩm"
+                  onChange={e => handleInputChange('name', e.target.value)}
+                  placeholder='Nhập tên sản phẩm'
                 />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
               </FormControl>
 
               <HStack spacing={4}>
                 <FormControl isInvalid={!!errors.unit} isRequired>
-                  <FormLabel>Đơn vị chung</FormLabel>
-                  <Input
+                  <FormLabel>Đơn vị</FormLabel>
+                  <Select
+                    placeholder='Chọn đơn vị'
                     value={formData.unit}
-                    onChange={(e) => handleInputChange("unit", e.target.value)}
-                    placeholder="VD: cái, kg, m"
-                  />
+                    onChange={e => handleInputChange('unit', e.target.value)}
+                  >
+                    <option value='m'>Mét (m)</option>
+                    <option value='m²'>Mét vuông (m²)</option>
+                    <option value='kg'>Kilogram (kg)</option>
+                    <option value='cái'>Cái</option>
+                    <option value='bộ'>Bộ</option>
+                    <option value='cuộn'>Cuộn</option>
+                    <option value='tấm'>Tấm</option>
+                    <option value='ống'>Ống</option>
+                  </Select>
                   <FormErrorMessage>{errors.unit}</FormErrorMessage>
                 </FormControl>
 
@@ -252,8 +254,8 @@ const ProductForm = ({
                   <FormLabel>Ghi chú</FormLabel>
                   <Textarea
                     value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Ghi chú về sản phẩm (tùy chọn)"
+                    onChange={e => handleInputChange('notes', e.target.value)}
+                    placeholder='Ghi chú về sản phẩm (tùy chọn)'
                     rows={3}
                   />
                 </FormControl>
@@ -263,27 +265,27 @@ const ProductForm = ({
         </Card>
 
         {/* Variants */}
-        <Card shadow="sm">
+        <Card shadow='sm'>
           <CardHeader>
-            <HStack justify="space-between" align="center">
-              <Text fontSize="lg" fontWeight="bold">
-                Variants của sản phẩm
+            <HStack justify='space-between' align='center'>
+              <Text fontSize='lg' fontWeight='bold'>
+                Phân loại sản phẩm
               </Text>
               <Button
                 leftIcon={<Plus size={16} />}
-                colorScheme="blue"
-                variant="outline"
+                colorScheme='blue'
+                variant='outline'
                 onClick={addVariant}
-                size="sm"
+                size='sm'
               >
-                Thêm variant
+                Thêm phân loại
               </Button>
             </HStack>
           </CardHeader>
           <CardBody>
-            <VStack spacing={4} align="stretch">
-                             {formData.variants.map((variant, index) => (
-                 <Box key={variant.id || `new-${index}`}>
+            <VStack spacing={4} align='stretch'>
+              {formData.variants.map((variant, index) => (
+                <Box key={variant.id || `new-${index}`}>
                   <VariantForm
                     variant={variant}
                     index={index}
@@ -295,6 +297,7 @@ const ProductForm = ({
                     canRemove={formData.variants.length > 1}
                     defaultUnit={formData.unit}
                     isReadOnly={false}
+                    simplified={true} // Add this prop to indicate simplified form
                   />
                   {index < formData.variants.length - 1 && <Divider my={4} />}
                 </Box>
@@ -304,20 +307,20 @@ const ProductForm = ({
         </Card>
 
         {/* Submit Button */}
-        <HStack justify="flex-end" spacing={4}>
+        <HStack justify='flex-end' spacing={4}>
           <Button
-            variant="outline"
-            onClick={() => navigate("/products")}
+            variant='outline'
+            onClick={() => navigate('/products')}
             isDisabled={isLoading}
           >
             Hủy
           </Button>
           <Button
-            type="submit"
-            colorScheme="blue"
+            type='submit'
+            colorScheme='blue'
             leftIcon={<Save size={16} />}
             isLoading={isLoading}
-            loadingText="Đang lưu..."
+            loadingText='Đang lưu...'
           >
             {submitText}
           </Button>

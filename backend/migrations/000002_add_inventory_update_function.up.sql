@@ -62,15 +62,6 @@ BEGIN
         
     END LOOP;
     
-    -- Update import order status
-    UPDATE import_orders 
-    SET 
-        status = 'approved',
-        approved_by = p_approved_by,
-        approved_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = p_import_order_id;
-    
 END;
 $$ LANGUAGE plpgsql;
 

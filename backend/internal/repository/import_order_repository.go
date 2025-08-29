@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"steel-pos-backend/internal/models"
+
+	"github.com/lib/pq"
 )
 
 type ImportOrderRepository struct {
@@ -31,7 +33,7 @@ func (r *ImportOrderRepository) Create(order *models.ImportOrder) error {
 		order.TotalAmount,
 		order.Status,
 		order.Notes,
-		order.ImportImages,
+		pq.Array(order.ImportImages),
 		order.CreatedBy,
 		order.CreatedAt,
 		order.UpdatedAt,
@@ -48,6 +50,7 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 	`
 
 	order := &models.ImportOrder{}
+	var importImages pq.StringArray
 	err := r.db.QueryRow(query, id).Scan(
 		&order.ID,
 		&order.ImportCode,
@@ -56,7 +59,7 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 		&order.TotalAmount,
 		&order.Status,
 		&order.Notes,
-		&order.ImportImages,
+		&importImages,
 		&order.ApprovedBy,
 		&order.ApprovedAt,
 		&order.ApprovalNote,
@@ -71,6 +74,9 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 		}
 		return nil, err
 	}
+
+	// Convert pq.StringArray to []string
+	order.ImportImages = []string(importImages)
 
 	return order, nil
 }
@@ -103,6 +109,7 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 	var orders []*models.ImportOrder
 	for rows.Next() {
 		order := &models.ImportOrder{}
+		var importImages pq.StringArray
 		err := rows.Scan(
 			&order.ID,
 			&order.ImportCode,
@@ -111,7 +118,7 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 			&order.TotalAmount,
 			&order.Status,
 			&order.Notes,
-			&order.ImportImages,
+			&importImages,
 			&order.ApprovedBy,
 			&order.ApprovedAt,
 			&order.ApprovalNote,
@@ -122,6 +129,8 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 		if err != nil {
 			return nil, err
 		}
+		// Convert pq.StringArray to []string
+		order.ImportImages = []string(importImages)
 		orders = append(orders, order)
 	}
 
@@ -142,7 +151,7 @@ func (r *ImportOrderRepository) Update(order *models.ImportOrder) error {
 		order.TotalAmount,
 		order.Status,
 		order.Notes,
-		order.ImportImages,
+		pq.Array(order.ImportImages),
 		order.UpdatedAt,
 		order.ID,
 	)
@@ -164,13 +173,21 @@ func (r *ImportOrderRepository) Update(order *models.ImportOrder) error {
 }
 
 func (r *ImportOrderRepository) Approve(id int, approvedBy int, approvalNote string) error {
-	query := `
+	// Start transaction
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Update import order status
+	updateQuery := `
 		UPDATE import_orders
 		SET status = 'approved', approved_by = $1, approved_at = NOW(), approval_note = $2, updated_at = NOW()
 		WHERE id = $3
 	`
 
-	result, err := r.db.Exec(query, approvedBy, approvalNote, id)
+	result, err := tx.Exec(updateQuery, approvedBy, approvalNote, id)
 	if err != nil {
 		return err
 	}
@@ -184,7 +201,15 @@ func (r *ImportOrderRepository) Approve(id int, approvedBy int, approvalNote str
 		return errors.New("import order not found")
 	}
 
-	return nil
+	// Call function to update inventory
+	inventoryQuery := `SELECT update_inventory_on_import_approval($1, $2)`
+	_, err = tx.Exec(inventoryQuery, id, approvedBy)
+	if err != nil {
+		return err
+	}
+
+	// Commit transaction
+	return tx.Commit()
 }
 
 func (r *ImportOrderRepository) Count(status string) (int, error) {
