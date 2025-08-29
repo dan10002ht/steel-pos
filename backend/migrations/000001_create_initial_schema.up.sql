@@ -14,22 +14,6 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create suppliers table
-CREATE TABLE suppliers (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,
-    code VARCHAR(50) UNIQUE,
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    address TEXT,
-    tax_code VARCHAR(50),
-    contact_person VARCHAR(100),
-    is_active BOOLEAN DEFAULT true,
-    created_by INTEGER, -- No foreign key constraint to avoid cascade delete
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Create product_categories table
 CREATE TABLE product_categories (
     id SERIAL PRIMARY KEY,
@@ -75,7 +59,7 @@ CREATE TABLE product_variants (
 CREATE TABLE import_orders (
     id SERIAL PRIMARY KEY,
     import_code VARCHAR(50) UNIQUE NOT NULL,
-    supplier_id INTEGER NOT NULL REFERENCES suppliers(id),
+    supplier_name VARCHAR(200) NOT NULL,
     import_date DATE NOT NULL,
     total_value DECIMAL(15,2) DEFAULT 0,
     import_images TEXT[], -- Array of image URLs
@@ -123,7 +107,7 @@ CREATE TABLE inventory_history (
 CREATE INDEX idx_products_category_id ON products(category_id);
 CREATE INDEX idx_product_variants_product_id ON product_variants(product_id);
 CREATE INDEX idx_product_variants_sku ON product_variants(sku);
-CREATE INDEX idx_import_orders_supplier_id ON import_orders(supplier_id);
+CREATE INDEX idx_import_orders_supplier_name ON import_orders(supplier_name);
 CREATE INDEX idx_import_orders_status ON import_orders(status);
 CREATE INDEX idx_import_orders_created_by ON import_orders(created_by);
 CREATE INDEX idx_import_order_items_import_order_id ON import_order_items(import_order_id);
@@ -143,7 +127,6 @@ $$ language 'plpgsql';
 
 -- Create triggers for updated_at
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_product_categories_updated_at BEFORE UPDATE ON product_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_product_variants_updated_at BEFORE UPDATE ON product_variants FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

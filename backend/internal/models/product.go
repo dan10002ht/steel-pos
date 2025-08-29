@@ -4,15 +4,16 @@ import "time"
 
 // Product represents a product in the system
 type Product struct {
-	ID         int       `json:"id" db:"id"`
-	Name       string    `json:"name" db:"name"`
-	CategoryID *int      `json:"category_id" db:"category_id"`
-	Unit       string    `json:"unit" db:"unit"`
-	Notes      string    `json:"notes" db:"notes"`
-	IsActive   bool      `json:"is_active" db:"is_active"`
-	CreatedBy  int       `json:"created_by" db:"created_by"`
-	CreatedAt  time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at" db:"updated_at"`
+	ID            int       `json:"id" db:"id"`
+	Name          string    `json:"name" db:"name"`
+	CategoryID    *int      `json:"category_id" db:"category_id"`
+	Unit          string    `json:"unit" db:"unit"`
+	Notes         string    `json:"notes" db:"notes"`
+	IsActive      bool      `json:"is_active" db:"is_active"`
+	CreatedBy     *int      `json:"created_by" db:"created_by"`
+	CreatedByName *string   `json:"created_by_name" db:"created_by_name"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 
 	// Relations
 	Category *ProductCategory  `json:"category,omitempty"`
@@ -21,18 +22,19 @@ type Product struct {
 
 // ProductVariant represents a product variant
 type ProductVariant struct {
-	ID        int       `json:"id" db:"id"`
-	ProductID int       `json:"product_id" db:"product_id"`
-	Name      string    `json:"name" db:"name"`
-	SKU       string    `json:"sku" db:"sku"`
-	Stock     int       `json:"stock" db:"stock"`
-	Sold      int       `json:"sold" db:"sold"`
-	Price     float64   `json:"price" db:"price"`
-	Unit      string    `json:"unit" db:"unit"`
-	IsActive  bool      `json:"is_active" db:"is_active"`
-	CreatedBy int       `json:"created_by" db:"created_by"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	ID            int       `json:"id" db:"id"`
+	ProductID     int       `json:"product_id" db:"product_id"`
+	Name          string    `json:"name" db:"name"`
+	SKU           string    `json:"sku" db:"sku"`
+	Stock         int       `json:"stock" db:"stock"`
+	Sold          int       `json:"sold" db:"sold"`
+	Price         float64   `json:"price" db:"price"`
+	Unit          string    `json:"unit" db:"unit"`
+	IsActive      bool      `json:"is_active" db:"is_active"`
+	CreatedBy     *int      `json:"created_by" db:"created_by"`
+	CreatedByName *string   `json:"created_by_name" db:"created_by_name"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 
 	// Relations
 	Product *Product `json:"product,omitempty"`
@@ -40,13 +42,14 @@ type ProductVariant struct {
 
 // ProductCategory represents a product category
 type ProductCategory struct {
-	ID          int       `json:"id" db:"id"`
-	Name        string    `json:"name" db:"name"`
-	Description string    `json:"description" db:"description"`
-	IsActive    bool      `json:"is_active" db:"is_active"`
-	CreatedBy   int       `json:"created_by" db:"created_by"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	ID            int       `json:"id" db:"id"`
+	Name          string    `json:"name" db:"name"`
+	Description   string    `json:"description" db:"description"`
+	IsActive      bool      `json:"is_active" db:"is_active"`
+	CreatedBy     *int      `json:"created_by" db:"created_by"`
+	CreatedByName *string   `json:"created_by_name" db:"created_by_name"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Request/Response structs
@@ -109,4 +112,40 @@ type ProductVariantListResponse struct {
 	Total    int               `json:"total"`
 	Page     int               `json:"page"`
 	Limit    int               `json:"limit"`
+}
+
+// ProductSearchResult represents a product search result for import orders
+type ProductSearchResult struct {
+	ID       int                    `json:"id"`
+	Name     string                 `json:"name"`
+	Unit     string                 `json:"unit"`
+	Notes    string                 `json:"notes"`
+	Variants []*VariantSearchResult `json:"variants"`
+}
+
+// VariantSearchResult represents a variant search result
+type VariantSearchResult struct {
+	ID    int     `json:"id"`
+	Name  string  `json:"name"`
+	SKU   string  `json:"sku"`
+	Price float64 `json:"price"`
+	Unit  string  `json:"unit"`
+}
+
+// SearchProductsRequest represents a search request
+type SearchProductsRequest struct {
+	Query           string   `json:"query" binding:"required"`
+	Limit           int      `json:"limit,default=10"`
+	IncludeVariants bool     `json:"include_variants,default=true"`
+	CategoryID      *int     `json:"category_id"`
+	MinPrice        *float64 `json:"min_price"`
+	MaxPrice        *float64 `json:"max_price"`
+}
+
+// SearchProductsResponse represents a search response
+type SearchProductsResponse struct {
+	Products []*Product `json:"products"`
+	Total    int        `json:"total"`
+	Query    string     `json:"query"`
+	Took     int64      `json:"took_ms"` // Search time in milliseconds
 }

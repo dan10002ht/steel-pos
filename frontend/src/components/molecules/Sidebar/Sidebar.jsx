@@ -14,8 +14,6 @@ const Sidebar = () => {
   return (
     <Box
       bg={bgColor}
-      borderRight={{ lg: "1px" }}
-      borderColor={borderColor}
       h="100vh"
       overflow="hidden"
       position={{ base: "fixed", lg: "static" }}

@@ -398,6 +398,33 @@ seed_database() {
     print_success "Database seeding completed successfully!"
 }
 
+# Function to reset database (drop, migrate, seed)
+reset_database() {
+    print_status "Resetting database (drop, migrate, seed)..."
+
+    # Check if PostgreSQL is running
+    if ! docker-compose -f docker-compose.dev.yml exec -T postgres pg_isready -U postgres > /dev/null 2>&1; then
+        print_error "PostgreSQL is not running. Please start the development environment first."
+        return 1
+    fi
+
+    # Drop and recreate database
+    print_status "Dropping and recreating database..."
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS steel_pos;"
+    docker-compose -f docker-compose.dev.yml exec -T postgres psql -U postgres -c "CREATE DATABASE steel_pos;"
+    print_success "Database dropped and recreated"
+
+    # Run migrations
+    print_status "Running migrations..."
+    run_migrations
+
+    # Seed database
+    print_status "Seeding database..."
+    seed_database
+
+    print_success "Database reset completed successfully!"
+}
+
 # Function to clean up
 cleanup() {
     print_status "Cleaning up..."
@@ -448,6 +475,7 @@ main() {
     echo "  ./dev-local.sh restart  - Restart all services"
     echo "  ./dev-local.sh status   - Show service status"
     echo "  ./dev-local.sh cleanup  - Clean up everything"
+    echo "  ./dev-local.sh reset    - Reset database (drop, migrate, seed)"
     echo ""
     print_warning "Frontend is running via yarn. Use 'pkill -f \"yarn dev\"' to stop it manually."
 }
@@ -481,6 +509,9 @@ case "${1:-}" in
     "seed")
         seed_database
         ;;
+    "reset")
+        reset_database
+        ;;
     "killports")
         kill_development_ports
         ;;
@@ -503,6 +534,7 @@ case "${1:-}" in
         echo "  cleanup   - Clean up everything"
         echo "  migrate   - Run all database migrations"
         echo "  seed      - Seed database"
+        echo "  reset     - Reset database (drop, migrate, seed)"
         echo "  killports - Kill processes on development ports"
         echo "  force-kill - Force kill all development processes"
         echo "  help      - Show this help"

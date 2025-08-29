@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useCreateApi, useFetchApi } from "./index";
 import { apiUtils } from "../shared/services/api";
+import { useCreateApi } from "./useCreateApi";
+import { useFetchApi } from "./useFetchApi";
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);

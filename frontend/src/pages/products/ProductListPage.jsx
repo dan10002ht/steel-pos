@@ -26,20 +26,29 @@ import {
   AlertDescription,
   Box,
   Button,
+  Select,
+  Flex,
 } from "@chakra-ui/react";
 import { MoreVertical, Eye, Edit, Edit2, Plus, Upload, Download, Trash2, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Page from "../../components/organisms/Page";
 import SearchInput from "../../components/atoms/SearchInput";
 import FilterDropdown from "../../components/atoms/FilterDropdown";
+import Pagination from "../../components/atoms/Pagination";
 import { useFetchApi } from "../../hooks/useFetchApi";
 import { useDeleteApi } from "../../hooks/useDeleteApi";
+import { useDebounce } from "../../hooks/useDebounce";
 import { formatPrice } from "../../utils/formatters";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
+  // Debounce search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Filter options
   const categoryOptions = [
@@ -49,15 +58,17 @@ const ProductListPage = () => {
     { value: "Thép ống", label: "Thép ống" },
   ];
 
-  // Fetch products from API
+  // Fetch products from API with debounced search and pagination
   const {
     data,
     isLoading,
     error,
     refetch,
   } = useFetchApi(
-    ["products", { search: searchTerm, category: filterCategory }],
-    `/products?search=${searchTerm}&limit=100`,
+    ["products", "search", { search: debouncedSearchTerm, category: filterCategory, page: currentPage, limit: pageSize }],
+    debouncedSearchTerm 
+      ? `/products/search?q=${debouncedSearchTerm}&page=${currentPage}&limit=${pageSize}` 
+      : `/products?page=${currentPage}&limit=${pageSize}`,
     {
       enabled: true,
     }
@@ -72,7 +83,27 @@ const ProductListPage = () => {
   });
 
   // Use products data or empty array if not available
-  const productsList = data?.products || [];
+  const productsList = data?.products || data?.data?.products || [];
+  const totalCount = data?.total || data?.data?.total || 0;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(parseInt(newPageSize));
+    setCurrentPage(1); // Reset to first page
+  };
+
+  // Reset to first page when search or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, filterCategory]);
 
   // Filter products by category (search is handled by API)
   const filteredProducts = productsList.filter((product) => {
@@ -324,6 +355,23 @@ const ProductListPage = () => {
            )}
         </CardBody>
       </Card>
+
+      {/* Pagination */}
+      {!isLoading && !error && totalCount > 0 && (
+        <Card shadow="sm" mt={4}>
+          <CardBody>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={[5, 10, 20, 50]}
+            />
+          </CardBody>
+        </Card>
+      )}
     </Page>
   );
 };

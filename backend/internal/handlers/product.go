@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 
 	"steel-pos-backend/internal/middleware"
 	"steel-pos-backend/internal/models"
@@ -30,7 +31,9 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	}
 
 	userID, _ := middleware.GetCurrentUserID(c)
-	product, err := h.productService.CreateProduct(&req, userID)
+	userName, _ := middleware.GetCurrentUsername(c)
+
+	product, err := h.productService.CreateProduct(&req, userID, userName)
 	if err != nil {
 		response.ServiceError(c, err)
 		return
@@ -234,4 +237,86 @@ func (h *ProductHandler) DeleteVariant(c *gin.Context) {
 	}
 
 	response.Success(c, nil, "Product variant deleted successfully")
+}
+
+// SearchProducts searches products using hybrid approach
+func (h *ProductHandler) SearchProducts(c *gin.Context) {
+	query := c.Query("q")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+
+	if query == "" {
+		response.BadRequest(c, "Search query is required")
+		return
+	}
+
+	start := time.Now()
+	result, err := h.productService.SearchProductsHybrid(query, limit, page)
+	searchTime := time.Since(start).Milliseconds()
+
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"products": result.Products,
+		"total":    result.Total,
+		"query":    query,
+		"took_ms":  searchTime,
+	}, "Products found")
+}
+
+// SearchProductsForImportOrder searches products specifically for import order selection
+func (h *ProductHandler) SearchProductsForImportOrder(c *gin.Context) {
+	query := c.Query("q")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if query == "" {
+		response.BadRequest(c, "Search query is required")
+		return
+	}
+
+	start := time.Now()
+	results, err := h.productService.SearchProductsForImportOrder(query, limit)
+	searchTime := time.Since(start).Milliseconds()
+
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"products": results,
+		"total":    len(results),
+		"query":    query,
+		"took_ms":  searchTime,
+	}, "Products found for import order")
+}
+
+// SearchProductsWithVariants searches products including variant information
+func (h *ProductHandler) SearchProductsWithVariants(c *gin.Context) {
+	query := c.Query("q")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if query == "" {
+		response.BadRequest(c, "Search query is required")
+		return
+	}
+
+	start := time.Now()
+	result, err := h.productService.SearchProductsWithVariants(query, limit)
+	searchTime := time.Since(start).Milliseconds()
+
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"products": result.Products,
+		"total":    result.Total,
+		"query":    query,
+		"took_ms":  searchTime,
+	}, "Products with variants found")
 }

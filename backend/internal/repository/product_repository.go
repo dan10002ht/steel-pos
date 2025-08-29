@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"steel-pos-backend/internal/models"
+	"strings"
 )
 
 type ProductRepository struct {
@@ -18,8 +19,8 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 // Product methods
 func (r *ProductRepository) Create(product *models.Product) error {
 	query := `
-		INSERT INTO products (name, category_id, unit, notes, is_active, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO products (name, category_id, unit, notes, is_active, created_by, created_by_name, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -31,6 +32,7 @@ func (r *ProductRepository) Create(product *models.Product) error {
 		product.Notes,
 		product.IsActive,
 		product.CreatedBy,
+		product.CreatedByName,
 		product.CreatedAt,
 		product.UpdatedAt,
 	).Scan(&product.ID, &product.CreatedAt, &product.UpdatedAt)
@@ -86,7 +88,7 @@ func (r *ProductRepository) GetAll(limit, offset int, search string) ([]*models.
 	argCount := 1
 
 	if search != "" {
-		query += fmt.Sprintf(" AND (name ILIKE $%d OR notes ILIKE $%d)", argCount, argCount)
+		query += fmt.Sprintf(" AND normalize_vietnamese(name) ILIKE $%d", argCount)
 		args = append(args, "%"+search+"%")
 		argCount++
 	}
@@ -192,12 +194,206 @@ func (r *ProductRepository) Count(search string) (int, error) {
 	argCount := 1
 
 	if search != "" {
-		query += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", argCount, argCount)
+		query += fmt.Sprintf(" AND normalize_vietnamese(name) ILIKE $%d", argCount)
 		args = append(args, "%"+search+"%")
 	}
 
 	var count int
 	err := r.db.QueryRow(query, args...).Scan(&count)
+	return count, err
+}
+
+// SearchProductsHybrid combines ILIKE and full-text search for better results
+func (r *ProductRepository) SearchProductsHybrid(query string, limit int, offset int) ([]*models.Product, error) {
+	if query == "" {
+		return r.GetAll(limit, offset, "")
+	}
+
+	// Normalize query for full-text search
+	searchQuery := strings.ReplaceAll(query, " ", " & ")
+
+	sqlQuery := `
+		SELECT p.id, p.name, p.category_id, p.unit, p.notes,
+			   p.is_active, p.created_by, p.created_at, p.updated_at,
+			   GREATEST(
+				   CASE WHEN normalize_vietnamese(p.name) = normalize_vietnamese($1) THEN 1.0 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(p.name) LIKE normalize_vietnamese($2) THEN 0.8 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(p.name) LIKE normalize_vietnamese($3) THEN 0.6 ELSE 0 END,
+				   COALESCE(ts_rank(to_tsvector('simple', p.name), to_tsquery('simple', $4)), 0) * 0.5
+			   ) as relevance_score
+		FROM products p
+		WHERE p.is_active = true 
+		AND (
+			normalize_vietnamese(p.name) LIKE normalize_vietnamese($3) 
+			OR to_tsvector('simple', p.name) @@ to_tsquery('simple', $4)
+		)
+		ORDER BY relevance_score DESC, p.name
+		LIMIT $5 OFFSET $6
+	`
+
+	// Prepare search parameters
+	exactQuery := query
+	startsWithQuery := query + "%"
+	containsQuery := "%" + query + "%"
+
+	rows, err := r.db.Query(sqlQuery, exactQuery, startsWithQuery, containsQuery, searchQuery, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*models.Product
+	for rows.Next() {
+		product := &models.Product{}
+		var relevanceScore float64
+		err := rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.CategoryID,
+			&product.Unit,
+			&product.Notes,
+			&product.IsActive,
+			&product.CreatedBy,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+			&relevanceScore,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Load variants for this product
+		variants, err := r.GetVariantsByProductID(product.ID)
+		if err != nil {
+			return nil, err
+		}
+		product.Variants = variants
+
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
+// SearchProductsWithVariants searches products and includes variant information in search
+func (r *ProductRepository) SearchProductsWithVariants(query string, limit int) ([]*models.Product, error) {
+	if query == "" {
+		return r.GetAll(limit, 0, "")
+	}
+
+	// Normalize query for full-text search
+	searchQuery := strings.ReplaceAll(query, " ", " & ")
+
+	sqlQuery := `
+		SELECT DISTINCT p.id, p.name, p.category_id, p.unit, p.notes,
+			   p.is_active, p.created_by, p.created_at, p.updated_at,
+			   GREATEST(
+				   CASE WHEN normalize_vietnamese(p.name) = normalize_vietnamese($1) THEN 1.0 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(p.name) LIKE normalize_vietnamese($2) THEN 0.8 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(p.name) LIKE normalize_vietnamese($3) THEN 0.6 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(pv.name) LIKE normalize_vietnamese($3) THEN 0.5 ELSE 0 END,
+				   CASE WHEN normalize_vietnamese(pv.sku) LIKE normalize_vietnamese($3) THEN 0.7 ELSE 0 END,
+				   COALESCE(ts_rank(to_tsvector('simple', p.name), to_tsquery('simple', $4)), 0) * 0.5,
+				   COALESCE(ts_rank(to_tsvector('simple', pv.name), to_tsquery('simple', $4)), 0) * 0.4,
+				   COALESCE(ts_rank(to_tsvector('simple', pv.sku), to_tsquery('simple', $4)), 0) * 0.6
+			   ) as relevance_score
+		FROM products p
+		LEFT JOIN product_variants pv ON p.id = pv.product_id AND pv.is_active = true
+		WHERE p.is_active = true 
+		AND (
+			normalize_vietnamese(p.name) LIKE normalize_vietnamese($3) 
+			OR normalize_vietnamese(COALESCE(pv.name, '')) LIKE normalize_vietnamese($3)
+			OR normalize_vietnamese(COALESCE(pv.sku, '')) LIKE normalize_vietnamese($3)
+			OR to_tsvector('simple', p.name) @@ to_tsquery('simple', $4)
+			OR to_tsvector('simple', COALESCE(pv.name, '')) @@ to_tsquery('simple', $4)
+			OR to_tsvector('simple', COALESCE(pv.sku, '')) @@ to_tsquery('simple', $4)
+		)
+		ORDER BY relevance_score DESC, p.name
+		LIMIT $5
+	`
+
+	// Prepare search parameters
+	exactQuery := query
+	startsWithQuery := query + "%"
+	containsQuery := "%" + query + "%"
+
+	rows, err := r.db.Query(sqlQuery, exactQuery, startsWithQuery, containsQuery, searchQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*models.Product
+	productMap := make(map[int]*models.Product)
+
+	for rows.Next() {
+		product := &models.Product{}
+		var relevanceScore float64
+		err := rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.CategoryID,
+			&product.Unit,
+			&product.Notes,
+			&product.IsActive,
+			&product.CreatedBy,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+			&relevanceScore,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check if product already exists in map
+		if existingProduct, exists := productMap[product.ID]; exists {
+			// Product already exists, just load variants
+			variants, err := r.GetVariantsByProductID(product.ID)
+			if err != nil {
+				return nil, err
+			}
+			existingProduct.Variants = variants
+		} else {
+			// New product, load variants and add to map
+			variants, err := r.GetVariantsByProductID(product.ID)
+			if err != nil {
+				return nil, err
+			}
+			product.Variants = variants
+			productMap[product.ID] = product
+			products = append(products, product)
+		}
+	}
+
+	return products, nil
+}
+
+// Count search results
+func (r *ProductRepository) CountSearchResults(query string) (int, error) {
+	if query == "" {
+		return r.Count("")
+	}
+
+	searchQuery := strings.ReplaceAll(query, " ", " & ")
+
+	sqlQuery := `
+		SELECT COUNT(DISTINCT p.id)
+		FROM products p
+		LEFT JOIN product_variants pv ON p.id = pv.product_id AND pv.is_active = true
+		WHERE p.is_active = true 
+		AND (
+			normalize_vietnamese(p.name) LIKE normalize_vietnamese($1) 
+			OR normalize_vietnamese(COALESCE(pv.name, '')) LIKE normalize_vietnamese($1)
+			OR normalize_vietnamese(COALESCE(pv.sku, '')) LIKE normalize_vietnamese($1)
+			OR to_tsvector('simple', p.name) @@ to_tsquery('simple', $2)
+			OR to_tsvector('simple', COALESCE(pv.name, '')) @@ to_tsquery('simple', $2)
+			OR to_tsvector('simple', COALESCE(pv.sku, '')) @@ to_tsquery('simple', $2)
+		)
+	`
+
+	containsQuery := "%" + query + "%"
+	var count int
+	err := r.db.QueryRow(sqlQuery, containsQuery, searchQuery).Scan(&count)
 	return count, err
 }
 
