@@ -245,7 +245,7 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     // Transform frontend data to backend format
     const orderData = importOrderService.transformFrontendToBackend({
       supplier: formData.supplier,
-      importDate: formData.importDate,
+      importDate: new Date(formData.importDate),
       notes: "",
       importImages: formData.documents.map(file => file.name), // For now, just use file names
       products: products.filter(product => product.productName && product.quantity > 0)

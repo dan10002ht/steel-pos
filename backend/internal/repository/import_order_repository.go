@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"steel-pos-backend/internal/models"
+
+	"github.com/lib/pq"
 )
 
 type ImportOrderRepository struct {
@@ -31,7 +33,7 @@ func (r *ImportOrderRepository) Create(order *models.ImportOrder) error {
 		order.TotalAmount,
 		order.Status,
 		order.Notes,
-		order.ImportImages,
+		pq.Array(order.ImportImages),
 		order.CreatedBy,
 		order.CreatedAt,
 		order.UpdatedAt,
@@ -48,6 +50,7 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 	`
 
 	order := &models.ImportOrder{}
+	var importImages pq.StringArray
 	err := r.db.QueryRow(query, id).Scan(
 		&order.ID,
 		&order.ImportCode,
@@ -56,7 +59,7 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 		&order.TotalAmount,
 		&order.Status,
 		&order.Notes,
-		&order.ImportImages,
+		&importImages,
 		&order.ApprovedBy,
 		&order.ApprovedAt,
 		&order.ApprovalNote,
@@ -64,6 +67,10 @@ func (r *ImportOrderRepository) GetByID(id int) (*models.ImportOrder, error) {
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)
+
+	if err == nil {
+		order.ImportImages = []string(importImages)
+	}
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -103,6 +110,7 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 	var orders []*models.ImportOrder
 	for rows.Next() {
 		order := &models.ImportOrder{}
+		var importImages pq.StringArray
 		err := rows.Scan(
 			&order.ID,
 			&order.ImportCode,
@@ -111,7 +119,7 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 			&order.TotalAmount,
 			&order.Status,
 			&order.Notes,
-			&order.ImportImages,
+			&importImages,
 			&order.ApprovedBy,
 			&order.ApprovedAt,
 			&order.ApprovalNote,
@@ -122,6 +130,7 @@ func (r *ImportOrderRepository) GetAll(limit, offset int, status string) ([]*mod
 		if err != nil {
 			return nil, err
 		}
+		order.ImportImages = []string(importImages)
 		orders = append(orders, order)
 	}
 
@@ -142,7 +151,7 @@ func (r *ImportOrderRepository) Update(order *models.ImportOrder) error {
 		order.TotalAmount,
 		order.Status,
 		order.Notes,
-		order.ImportImages,
+		pq.Array(order.ImportImages),
 		order.UpdatedAt,
 		order.ID,
 	)
