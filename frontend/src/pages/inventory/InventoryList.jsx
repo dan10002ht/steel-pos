@@ -1,28 +1,29 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
-  VStack,
-  HStack,
+  Card,
+  CardBody,
+  CardHeader,
   Heading,
+  Text,
+  Badge,
   Button,
+  HStack,
+  VStack,
+  FormControl,
+  FormLabel,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Select,
+  useToast,
   Table,
   Thead,
   Tbody,
   Tr,
   Th,
   Td,
-  Badge,
   IconButton,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Select,
-  Flex,
-  Spacer,
-  Text,
-  useToast,
-  Card,
-  CardBody,
   Menu,
   MenuButton,
   MenuList,
@@ -35,13 +36,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -50,38 +44,39 @@ import {
   PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
 import {
   Plus,
   Search,
   Filter,
+  Download,
+  MoreVertical,
   Edit,
   Trash2,
   Check,
-  MoreVertical,
-  Download,
   Printer,
   Calendar,
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import Page from "../../components/organisms/Page";
-import Pagination from "../../components/atoms/Pagination";
-import { useFetchApi } from "../../hooks/useFetchApi";
-import { useEditApi } from "../../hooks/useEditApi";
-import { useDeleteApi } from "../../hooks/useDeleteApi";
-import { importOrderService } from "../../services/importOrderService";
-import { useDebounce } from "../../hooks/useDebounce";
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Page from '../../components/organisms/Page';
+import Pagination from '../../components/atoms/Pagination';
+import { useFetchApi } from '../../hooks/useFetchApi';
+import { useEditApi } from '../../hooks/useEditApi';
+import { useDeleteApi } from '../../hooks/useDeleteApi';
+import { importOrderService } from '../../services/importOrderService';
+import { useDebounce } from '../../hooks/useDebounce';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const InventoryList = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [supplierFilter, setSupplierFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [supplierFilter, setSupplierFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [approvalNote, setApprovalNote] = useState("");
+  const [approvalNote, setApprovalNote] = useState('');
   const toast = useToast();
 
   // Debounce search term
@@ -89,106 +84,95 @@ const InventoryList = () => {
 
   // Build query parameters
   const queryParams = new URLSearchParams();
-  if (currentPage) queryParams.append("page", currentPage);
-  if (pageSize) queryParams.append("limit", pageSize);
-  if (statusFilter) queryParams.append("status", statusFilter);
-  if (supplierFilter) queryParams.append("supplier_name", supplierFilter);
-  if (debouncedSearchTerm) queryParams.append("search", debouncedSearchTerm);
+  if (currentPage) queryParams.append('page', currentPage);
+  if (pageSize) queryParams.append('limit', pageSize);
+  if (statusFilter) queryParams.append('status', statusFilter);
+  if (supplierFilter) queryParams.append('supplier_name', supplierFilter);
+  if (debouncedSearchTerm) queryParams.append('search', debouncedSearchTerm);
 
   const queryString = queryParams.toString();
-  const apiUrl = `/import-orders${queryString ? `?${queryString}` : ""}`;
+  const apiUrl = `/import-orders${queryString ? `?${queryString}` : ''}`;
 
   // Fetch import orders
-  const {
-    data: importOrdersData,
-    error
-  } = useFetchApi(
-    ["import-orders", { page: currentPage, limit: pageSize, status: statusFilter, supplierName: supplierFilter, search: debouncedSearchTerm }],
+  const { data: importOrdersData, error } = useFetchApi(
+    [
+      'import-orders',
+      {
+        page: currentPage,
+        limit: pageSize,
+        status: statusFilter,
+        supplierName: supplierFilter,
+        search: debouncedSearchTerm,
+      },
+    ],
     apiUrl
   );
 
   // Approve import order mutation
-  const approveMutation = useEditApi("/import-orders", {
-    method: "POST",
-    invalidateQueries: [["import-orders"]],
+  const approveMutation = useEditApi('/import-orders', {
+    method: 'POST',
+    invalidateQueries: [['import-orders']],
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Đơn nhập hàng đã được phê duyệt",
-        status: "success",
+        title: 'Thành công',
+        description: 'Đơn nhập hàng đã được phê duyệt',
+        status: 'success',
         duration: 3000,
         isClosable: true,
       });
       setIsApprovalModalOpen(false);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể phê duyệt đơn nhập hàng",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  });
-
-  // Delete import order mutation
-  const deleteMutation = useDeleteApi("/import-orders", {
-    invalidateQueries: [["import-orders"]],
-    onSuccess: () => {
-      toast({
-        title: "Thành công",
-        description: "Đơn nhập hàng đã được xóa",
-        status: "success",
+        title: 'Lỗi',
+        description: error.message || 'Không thể phê duyệt đơn nhập hàng',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
     },
-    onError: (error) => {
+  });
+
+  // Delete import order mutation
+  const deleteMutation = useDeleteApi('/import-orders', {
+    invalidateQueries: [['import-orders']],
+    onSuccess: () => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể xóa đơn nhập hàng",
-        status: "error",
+        title: 'Thành công',
+        description: 'Đơn nhập hàng đã được xóa',
+        status: 'success',
         duration: 3000,
         isClosable: true,
       });
-    }
+    },
+    onError: error => {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể xóa đơn nhập hàng',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    },
   });
 
   // Transform data from API response
-  const importOrders = importOrdersData?.import_orders?.map(order => 
-    importOrderService.transformBackendToFrontend(order)
-  ) || [];
+  const importOrders =
+    importOrdersData?.import_orders?.map(order =>
+      importOrderService.transformBackendToFrontend(order)
+    ) || [];
   const totalCount = importOrdersData?.total || 0;
 
   const suppliers = [
-    "Công ty Thép ABC",
-    "Công ty Thép XYZ",
-    "Công ty Thép DEF",
-    "Công ty Thép GHI",
+    'Công ty Thép ABC',
+    'Công ty Thép XYZ',
+    'Công ty Thép DEF',
+    'Công ty Thép GHI',
   ];
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("vi-VN");
-  };
-
-  const getStatusBadge = (status) => {
-    if (status === "approved") {
-      return <Badge colorScheme="green">Đã phê duyệt</Badge>;
-    }
-    return <Badge colorScheme="orange">Chờ phê duyệt</Badge>;
-  };
-
-  const handleApproval = (order) => {
+  const handleApproval = order => {
     setSelectedOrder(order);
-    setApprovalNote("");
+    setApprovalNote('');
     setIsApprovalModalOpen(true);
   };
 
@@ -196,20 +180,49 @@ const InventoryList = () => {
     if (!selectedOrder) return;
 
     approveMutation.mutate({
-      id: selectedOrder.id,
-      data: { approval_note: approvalNote }
+      url: `/import-orders/${selectedOrder.id}/approve`,
+      data: { approval_note: approvalNote },
     });
   };
 
-  const handleDelete = (orderId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa đơn nhập hàng này?")) {
+  const handleDelete = orderId => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa đơn nhập hàng này?')) {
       deleteMutation.mutate(orderId);
     }
   };
 
-  const handleEdit = (orderId) => {
+  const handleEdit = orderId => {
     // Navigate to edit page
-    navigate(`/inventory/edit/${orderId}`);
+    navigate(`/inventory/${orderId}/edit`);
+  };
+
+  const handleViewDetail = orderId => {
+    // Navigate to detail page
+    navigate(`/inventory/${orderId}`);
+  };
+
+  const handleExportExcel = order => {
+    // Export to Excel functionality
+    console.log('Exporting order:', order.importCode);
+    toast({
+      title: 'Thông báo',
+      description: 'Chức năng xuất Excel sẽ được implement sau',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  const handlePrint = order => {
+    // Print functionality
+    console.log('Printing order:', order.importCode);
+    toast({
+      title: 'Thông báo',
+      description: 'Chức năng in phiếu sẽ được implement sau',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
   };
 
   // Handle filter changes
@@ -241,9 +254,9 @@ const InventoryList = () => {
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("");
-    setSupplierFilter("");
+    setSearchTerm('');
+    setStatusFilter('');
+    setSupplierFilter('');
     setCurrentPage(1);
   };
 
@@ -254,9 +267,9 @@ const InventoryList = () => {
   React.useEffect(() => {
     if (error) {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể tải danh sách đơn nhập hàng",
-        status: "error",
+        title: 'Lỗi',
+        description: error.message || 'Không thể tải danh sách đơn nhập hàng',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -265,86 +278,90 @@ const InventoryList = () => {
 
   return (
     <Page
-      title="Quản lý kho"
-      subtitle="Danh sách đơn nhập hàng và quản lý tồn kho"
+      title='Quản lý kho'
+      subtitle='Danh sách đơn nhập hàng và quản lý tồn kho'
       primaryActions={[
         {
-          label: "Tạo đơn nhập hàng",
-          onClick: () => navigate("/inventory/create"),
-          colorScheme: "blue",
+          label: 'Tạo đơn nhập hàng',
+          onClick: () => navigate('/inventory/create'),
+          colorScheme: 'blue',
           leftIcon: <Plus size={16} />,
         },
       ]}
       secondaryActions={[
         {
-          label: "Xuất báo cáo",
+          label: 'Xuất báo cáo',
           onClick: () => {
             toast({
-              title: "Thông báo",
-              description: "Chức năng xuất báo cáo sẽ được implement sau",
-              status: "info",
+              title: 'Thông báo',
+              description: 'Chức năng xuất báo cáo sẽ được implement sau',
+              status: 'info',
               duration: 3000,
               isClosable: true,
             });
           },
-          variant: "outline",
+          variant: 'outline',
           leftIcon: <Download size={16} />,
         },
       ]}
     >
-      <Box w="100%" maxW="100%" mx="auto">
+      <Box w='100%' maxW='100%' mx='auto'>
         {/* Filters Section */}
         <Card mb={6}>
           <CardBody>
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={4} align='stretch'>
               {/* Desktop: Row layout */}
               <HStack
                 spacing={3}
-                align="flex-end"
-                display={{ base: "none", md: "flex" }}
-                wrap="wrap"
+                align='flex-end'
+                display={{ base: 'none', md: 'flex' }}
+                wrap='wrap'
               >
                 {/* Search Input */}
-                <FormControl flex="1">
-                  <FormLabel fontSize="sm">Tìm kiếm</FormLabel>
-                  <InputGroup size="sm">
+                <FormControl flex='1'>
+                  <FormLabel fontSize='sm'>Tìm kiếm</FormLabel>
+                  <InputGroup size='sm'>
                     <Input
-                      placeholder="Tìm kiếm..."
+                      placeholder='Tìm kiếm...'
                       value={searchTerm}
-                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      onChange={e =>
+                        handleFilterChange('search', e.target.value)
+                      }
                     />
                     <InputRightElement>
-                      <Search size={16} color="gray.500" />
+                      <Search size={16} color='gray.500' />
                     </InputRightElement>
                   </InputGroup>
                 </FormControl>
 
                 {/* Status Filter */}
-                <FormControl w="fit-content">
-                  <FormLabel fontSize="sm">Trạng thái</FormLabel>
+                <FormControl w='fit-content'>
+                  <FormLabel fontSize='sm'>Trạng thái</FormLabel>
                   <Select
-                    placeholder="Tất cả"
+                    placeholder='Tất cả'
                     value={statusFilter}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    size="sm"
-                    w="120px"
+                    onChange={e => handleFilterChange('status', e.target.value)}
+                    size='sm'
+                    w='120px'
                   >
-                    <option value="pending">Chờ phê duyệt</option>
-                    <option value="approved">Đã phê duyệt</option>
+                    <option value='pending'>Chờ phê duyệt</option>
+                    <option value='approved'>Đã phê duyệt</option>
                   </Select>
                 </FormControl>
 
                 {/* Supplier Filter */}
-                <FormControl w="fit-content">
-                  <FormLabel fontSize="sm">Nhà cung cấp</FormLabel>
+                <FormControl w='fit-content'>
+                  <FormLabel fontSize='sm'>Nhà cung cấp</FormLabel>
                   <Select
-                    placeholder="Tất cả"
+                    placeholder='Tất cả'
                     value={supplierFilter}
-                    onChange={(e) => handleFilterChange('supplier', e.target.value)}
-                    size="sm"
-                    w="150px"
+                    onChange={e =>
+                      handleFilterChange('supplier', e.target.value)
+                    }
+                    size='sm'
+                    w='150px'
                   >
-                    {suppliers.map((supplier) => (
+                    {suppliers.map(supplier => (
                       <option key={supplier} value={supplier}>
                         {supplier}
                       </option>
@@ -354,9 +371,9 @@ const InventoryList = () => {
 
                 {/* Clear Filters Button */}
                 <Button
-                  size="sm"
-                  variant="outline"
-                  w="fit-content"
+                  size='sm'
+                  variant='outline'
+                  w='fit-content'
                   onClick={clearFilters}
                 >
                   Xóa bộ lọc
@@ -366,48 +383,52 @@ const InventoryList = () => {
               {/* Mobile: Column layout */}
               <VStack
                 spacing={3}
-                align="stretch"
-                display={{ base: "flex", md: "none" }}
+                align='stretch'
+                display={{ base: 'flex', md: 'none' }}
               >
                 {/* Search Input */}
                 <FormControl>
-                  <FormLabel fontSize="sm">Tìm kiếm</FormLabel>
-                  <InputGroup size="sm">
+                  <FormLabel fontSize='sm'>Tìm kiếm</FormLabel>
+                  <InputGroup size='sm'>
                     <Input
-                      placeholder="Tìm kiếm..."
+                      placeholder='Tìm kiếm...'
                       value={searchTerm}
-                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      onChange={e =>
+                        handleFilterChange('search', e.target.value)
+                      }
                     />
                     <InputRightElement>
-                      <Search size={16} color="gray.500" />
+                      <Search size={16} color='gray.500' />
                     </InputRightElement>
                   </InputGroup>
                 </FormControl>
 
                 {/* Status Filter */}
                 <FormControl>
-                  <FormLabel fontSize="sm">Trạng thái</FormLabel>
+                  <FormLabel fontSize='sm'>Trạng thái</FormLabel>
                   <Select
-                    placeholder="Tất cả"
+                    placeholder='Tất cả'
                     value={statusFilter}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                    size="sm"
+                    onChange={e => handleFilterChange('status', e.target.value)}
+                    size='sm'
                   >
-                    <option value="pending">Chờ phê duyệt</option>
-                    <option value="approved">Đã phê duyệt</option>
+                    <option value='pending'>Chờ phê duyệt</option>
+                    <option value='approved'>Đã phê duyệt</option>
                   </Select>
                 </FormControl>
 
                 {/* Supplier Filter */}
                 <FormControl>
-                  <FormLabel fontSize="sm">Nhà cung cấp</FormLabel>
+                  <FormLabel fontSize='sm'>Nhà cung cấp</FormLabel>
                   <Select
-                    placeholder="Tất cả"
+                    placeholder='Tất cả'
                     value={supplierFilter}
-                    onChange={(e) => handleFilterChange('supplier', e.target.value)}
-                    size="sm"
+                    onChange={e =>
+                      handleFilterChange('supplier', e.target.value)
+                    }
+                    size='sm'
                   >
-                    {suppliers.map((supplier) => (
+                    {suppliers.map(supplier => (
                       <option key={supplier} value={supplier}>
                         {supplier}
                       </option>
@@ -416,11 +437,7 @@ const InventoryList = () => {
                 </FormControl>
 
                 {/* Clear Filters Button */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={clearFilters}
-                >
+                <Button size='sm' variant='outline' onClick={clearFilters}>
                   Xóa bộ lọc
                 </Button>
               </VStack>
@@ -431,8 +448,8 @@ const InventoryList = () => {
         {/* Data Table */}
         <Card>
           <CardBody>
-            <Box overflowX="auto">
-              <Table variant="simple" size="sm">
+            <Box overflowX='auto'>
+              <Table variant='simple' size='sm'>
                 <Thead>
                   <Tr>
                     <Th>Mã đơn</Th>
@@ -445,7 +462,7 @@ const InventoryList = () => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {importOrders.map((order) => (
+                  {importOrders.map(order => (
                     <Tr key={order.id}>
                       <Td>{order.importCode}</Td>
                       <Td>{order.supplier}</Td>
@@ -455,37 +472,39 @@ const InventoryList = () => {
                       <Td>
                         <Badge
                           colorScheme={
-                            order.status === "approved" ? "green" : "orange"
+                            order.status === 'approved' ? 'green' : 'orange'
                           }
                         >
-                          {order.status === "approved"
-                            ? "Đã phê duyệt"
-                            : "Chờ phê duyệt"}
+                          {order.status === 'approved'
+                            ? 'Đã phê duyệt'
+                            : 'Chờ phê duyệt'}
                         </Badge>
                       </Td>
                       <Td>
                         <HStack spacing={1}>
-                          {order.status === "pending" && (
+                          {order.status === 'pending' && (
                             <IconButton
                               icon={<Check size={18} />}
-                              size="sm"
-                              colorScheme="green"
-                              aria-label="Phê duyệt"
+                              size='sm'
+                              colorScheme='green'
+                              aria-label='Phê duyệt'
                               onClick={() => handleApproval(order)}
                               isLoading={approveMutation.isPending}
                             />
                           )}
-                          <IconButton
-                            icon={<Edit size={18} />}
-                            size="sm"
-                            aria-label="Sửa"
-                            onClick={() => handleEdit(order.id)}
-                          />
+                          {order.status === 'pending' && (
+                            <IconButton
+                              icon={<Edit size={18} />}
+                              size='sm'
+                              aria-label='Sửa'
+                              onClick={() => handleEdit(order.id)}
+                            />
+                          )}
                           <IconButton
                             icon={<Trash2 size={18} />}
-                            size="sm"
-                            colorScheme="red"
-                            aria-label="Xóa"
+                            size='sm'
+                            colorScheme='red'
+                            aria-label='Xóa'
                             onClick={() => handleDelete(order.id)}
                             isLoading={deleteMutation.isPending}
                           />
@@ -493,19 +512,29 @@ const InventoryList = () => {
                             <MenuButton
                               as={IconButton}
                               icon={<MoreVertical size={18} />}
-                              size="sm"
-                              variant="ghost"
-                              aria-label="More actions"
+                              size='sm'
+                              variant='ghost'
+                              aria-label='More actions'
                             />
                             <MenuList>
-                              <MenuItem icon={<Download size={16} />}>
+                              <MenuItem
+                                icon={<Download size={16} />}
+                                onClick={() => handleExportExcel(order)}
+                              >
                                 Xuất Excel
                               </MenuItem>
-                              <MenuItem icon={<Printer size={16} />}>
+                              <MenuItem
+                                icon={<Printer size={16} />}
+                                onClick={() => handlePrint(order)}
+                              >
                                 In phiếu
                               </MenuItem>
                               <MenuDivider />
-                              <MenuItem>Xem chi tiết</MenuItem>
+                              <MenuItem
+                                onClick={() => handleViewDetail(order.id)}
+                              >
+                                Xem chi tiết
+                              </MenuItem>
                             </MenuList>
                           </Menu>
                         </HStack>
@@ -523,8 +552,8 @@ const InventoryList = () => {
                 totalPages={totalPages}
                 totalItems={totalCount}
                 pageSize={pageSize}
-                onPageChange={(page) => handleFilterChange('page', page)}
-                onPageSizeChange={(limit) => handleFilterChange('limit', limit)}
+                onPageChange={page => handleFilterChange('page', page)}
+                onPageSizeChange={limit => handleFilterChange('limit', limit)}
                 pageSizeOptions={[10, 25, 50, 100]}
               />
             </Box>
@@ -533,7 +562,10 @@ const InventoryList = () => {
       </Box>
 
       {/* Approval Modal */}
-      <Modal isOpen={isApprovalModalOpen} onClose={() => setIsApprovalModalOpen(false)}>
+      <Modal
+        isOpen={isApprovalModalOpen}
+        onClose={() => setIsApprovalModalOpen(false)}
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Phê duyệt đơn nhập hàng</ModalHeader>
@@ -541,25 +573,29 @@ const InventoryList = () => {
           <ModalBody>
             <VStack spacing={4}>
               <Text>
-                Bạn có chắc chắn muốn phê duyệt đơn nhập hàng{" "}
+                Bạn có chắc chắn muốn phê duyệt đơn nhập hàng{' '}
                 <strong>{selectedOrder?.importCode}</strong>?
               </Text>
               <FormControl>
                 <FormLabel>Ghi chú phê duyệt</FormLabel>
                 <Input
                   value={approvalNote}
-                  onChange={(e) => setApprovalNote(e.target.value)}
-                  placeholder="Nhập ghi chú phê duyệt (tùy chọn)"
+                  onChange={e => setApprovalNote(e.target.value)}
+                  placeholder='Nhập ghi chú phê duyệt (tùy chọn)'
                 />
               </FormControl>
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setIsApprovalModalOpen(false)}>
+            <Button
+              variant='ghost'
+              mr={3}
+              onClick={() => setIsApprovalModalOpen(false)}
+            >
               Hủy
             </Button>
-            <Button 
-              colorScheme="green" 
+            <Button
+              colorScheme='green'
               onClick={handleApprovalConfirmed}
               isLoading={approveMutation.isPending}
             >

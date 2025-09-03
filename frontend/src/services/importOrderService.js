@@ -1,18 +1,18 @@
-import api from "../shared/services/api";
+import api from '../shared/services/api';
 
-const BASE_URL = "/api/import-orders";
+const BASE_URL = '/api/import-orders';
 
 export const importOrderService = {
   // Get all import orders with pagination and filters
   async getAllImportOrders(params = {}) {
     const queryParams = new URLSearchParams();
 
-    if (params.page) queryParams.append("page", params.page);
-    if (params.limit) queryParams.append("limit", params.limit);
-    if (params.status) queryParams.append("status", params.status);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.status) queryParams.append('status', params.status);
     if (params.supplierName)
-      queryParams.append("supplier_name", params.supplierName);
-    if (params.search) queryParams.append("search", params.search);
+      queryParams.append('supplier_name', params.supplierName);
+    if (params.search) queryParams.append('search', params.search);
 
     const url = `${BASE_URL}?${queryParams.toString()}`;
     const response = await api.get(url);
@@ -67,7 +67,7 @@ export const importOrderService = {
       createdAt: backendOrder.created_at,
       updatedAt: backendOrder.updated_at,
       products:
-        backendOrder.items?.map((item) => ({
+        backendOrder.items?.map(item => ({
           name: item.product_name,
           variant: item.variant_name,
           quantity: item.quantity,
@@ -80,13 +80,26 @@ export const importOrderService = {
 
   // Transform frontend data to backend format
   transformFrontendToBackend(frontendOrder) {
+    // Convert date string (YYYY-MM-DD) to ISO 8601 format
+    let importDate = frontendOrder.importDate;
+    if (importDate && typeof importDate === 'string') {
+      // If it's already in ISO format, use as is
+      if (importDate.includes('T')) {
+        // Already in ISO format
+      } else {
+        // Convert YYYY-MM-DD to ISO format with timezone
+        const date = new Date(importDate);
+        importDate = date.toISOString();
+      }
+    }
+
     return {
       supplier_name: frontendOrder.supplier,
-      import_date: frontendOrder.importDate,
-      notes: frontendOrder.notes || "",
+      import_date: importDate,
+      notes: frontendOrder.notes || '',
       import_images: frontendOrder.importImages || [],
       items:
-        frontendOrder.products?.map((product) => ({
+        frontendOrder.products?.map(product => ({
           product_id: product.productId || 1, // Default value, should be selected from dropdown
           variant_id: product.variantId || 1, // Default value, should be selected from dropdown
           product_name: product.name,
@@ -94,7 +107,7 @@ export const importOrderService = {
           quantity: product.quantity,
           unit_price: product.unitPrice,
           unit: product.unit,
-          notes: product.notes || "",
+          notes: product.notes || '',
         })) || [],
     };
   },

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -31,31 +31,41 @@ import {
   Badge,
   Flex,
   Spacer,
-} from "@chakra-ui/react";
-import { Plus, Trash2, Upload } from "lucide-react";
-import ProductCreateModal from "./ProductCreateModal";
-import ProductSearch from "./ProductSearch";
-import { useCreateApi } from "../hooks/useCreateApi";
-import { importOrderService } from "../services/importOrderService";
+} from '@chakra-ui/react';
+import { Plus, Trash2, Upload } from 'lucide-react';
+import ProductCreateModal from './ProductCreateModal';
+import ProductSearch from './ProductSearch';
+import { useCreateApi } from '../hooks/useCreateApi';
+import { formatCurrency } from '../utils/formatters';
 
-const ImportOrderForm = ({ onNavigateToList }) => {
+const ImportOrderForm = ({
+  onNavigateToList,
+  isEditing = false,
+  initialData = null,
+  onSubmit = null,
+  onCancel = null,
+  isLoading = false,
+}) => {
   const [formData, setFormData] = useState({
     importCode: `IMP${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(Date.now()).slice(-4)}`,
-    supplier: "",
-    importDate: new Date().toISOString().split("T")[0],
+    supplier: '',
+    importDate: new Date().toISOString().split('T')[0],
+    notes: '',
     documents: [],
   });
 
   const [products, setProducts] = useState([
     {
       id: Date.now(),
-      productName: "",
-      variant: "",
-      unit: "",
+      productName: '',
+      variant: '',
+      unit: '',
       quantity: 0,
       unitPrice: 0,
       total: 0,
       productId: null,
+      variantId: null,
+      notes: '',
     },
   ]);
 
@@ -63,53 +73,74 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const toast = useToast();
 
-  // Create import order mutation
-  const createMutation = useCreateApi("/import-orders", {
-    invalidateQueries: [["import-orders"]],
+  // Initialize form data when editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setFormData({
+        importCode: initialData.importCode || formData.importCode,
+        supplier: initialData.supplier || '',
+        importDate: initialData.importDate
+          ? new Date(initialData.importDate).toISOString().split('T')[0]
+          : formData.importDate,
+        notes: initialData.notes || '',
+        documents: initialData.importImages || [],
+      });
+
+      if (initialData.products && initialData.products.length > 0) {
+        const formattedProducts = initialData.products.map((item, index) => ({
+          id: Date.now() + index,
+          productName: item.name || '',
+          variant: item.variant || '',
+          unit: item.unit || '',
+          quantity: item.quantity || 0,
+          unitPrice: item.unitPrice || 0,
+          total: (item.quantity || 0) * (item.unitPrice || 0),
+          productId: item.productId || null,
+          variantId: item.variantId || null,
+          notes: item.notes || '',
+        }));
+        setProducts(formattedProducts);
+      }
+    }
+  }, [isEditing, initialData]);
+
+  // Create import order mutation using hook directly (only for create mode)
+  const createMutation = useCreateApi('/import-orders', {
+    invalidateQueries: [['import-orders']],
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Đơn nhập hàng đã được tạo và gửi phê duyệt",
-        status: "success",
+        title: 'Thành công',
+        description: 'Đơn nhập hàng đã được tạo và gửi phê duyệt',
+        status: 'success',
         duration: 3000,
         isClosable: true,
       });
-      
+
       // Navigate to list page
       if (onNavigateToList) {
         onNavigateToList();
       }
     },
-    onError: (error) => {
+    onError: error => {
       toast({
-        title: "Lỗi",
-        description: error.message || "Không thể tạo đơn nhập hàng",
-        status: "error",
+        title: 'Lỗi',
+        description: error.message || 'Không thể tạo đơn nhập hàng',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
-    }
+    },
   });
-
-  // Remove mock availableProducts - using ProductSearch instead
-  // const [availableProducts, setAvailableProducts] = useState([...]);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
   const calculateTotal = () => {
     return products.reduce((sum, product) => sum + product.total, 0);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -118,11 +149,11 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     updatedProducts[index] = { ...updatedProducts[index], [field]: value };
 
     // Auto-calculate total for this product
-    if (field === "quantity" || field === "unitPrice") {
+    if (field === 'quantity' || field === 'unitPrice') {
       const quantity =
-        field === "quantity" ? value : updatedProducts[index].quantity;
+        field === 'quantity' ? value : updatedProducts[index].quantity;
       const unitPrice =
-        field === "unitPrice" ? value : updatedProducts[index].unitPrice;
+        field === 'unitPrice' ? value : updatedProducts[index].unitPrice;
       updatedProducts[index].total = quantity * unitPrice;
     }
 
@@ -130,32 +161,33 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   };
 
   const handleProductSelect = (index, selectedProduct) => {
-    if (selectedProduct === "__create_new__") {
-      setIsProductModalOpen(true);
-      return;
-    }
-
-    // If selectedProduct is an object (from ProductSearch)
-    if (selectedProduct && typeof selectedProduct === "object") {
-      const updatedProducts = [...products];
-      updatedProducts[index] = {
-        ...updatedProducts[index],
-        productName: selectedProduct.name,
-        unit: selectedProduct.unit,
-        productId: selectedProduct.id,
-        // Reset variant when product changes
-        variant: "",
-      };
-      setProducts(updatedProducts);
-    }
-  };
-
-  const handleVariantSelect = (index, variant) => {
     const updatedProducts = [...products];
     updatedProducts[index] = {
       ...updatedProducts[index],
-      variant: variant,
+      productName: selectedProduct.name,
+      variant: selectedProduct.variants?.[0]?.name || '',
+      unit: selectedProduct.unit,
+      productId: selectedProduct.id,
+      variantId: selectedProduct.variants?.[0]?.id || null,
+      variants: selectedProduct.variants || [], // Lưu danh sách variants để chọn
     };
+
+    // Auto-calculate total
+    updatedProducts[index].total =
+      updatedProducts[index].quantity * updatedProducts[index].unitPrice;
+
+    setProducts(updatedProducts);
+  };
+
+  const handleVariantSelect = (index, selectedVariant) => {
+    const updatedProducts = [...products];
+    updatedProducts[index] = {
+      ...updatedProducts[index],
+      variant: selectedVariant.name,
+      variantId: selectedVariant.id,
+    };
+    updatedProducts[index].total =
+      updatedProducts[index].quantity * updatedProducts[index].unitPrice;
     setProducts(updatedProducts);
   };
 
@@ -164,25 +196,28 @@ const ImportOrderForm = ({ onNavigateToList }) => {
       ...products,
       {
         id: Date.now(),
-        productName: "",
-        variant: "",
-        unit: "",
+        productName: '',
+        variant: '',
+        unit: '',
         quantity: 0,
         unitPrice: 0,
         total: 0,
+        productId: null,
+        variantId: null,
+        notes: '',
       },
     ]);
   };
 
-  const removeProduct = (index) => {
+  const removeProduct = index => {
     if (products.length > 1) {
       setProducts(products.filter((_, i) => i !== index));
     }
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = event => {
     const files = Array.from(event.target.files);
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       documents: [...prev.documents, ...files],
     }));
@@ -192,11 +227,11 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     const newErrors = {};
 
     if (!formData.supplier.trim()) {
-      newErrors.supplier = "Không được bỏ trống nhà cung cấp";
+      newErrors.supplier = 'Không được bỏ trống nhà cung cấp';
     }
 
     if (!formData.importDate) {
-      newErrors.importDate = "Không được bỏ trống ngày nhập kho";
+      newErrors.importDate = 'Không được bỏ trống ngày nhập kho';
     }
 
     // Documents are optional for now
@@ -206,10 +241,10 @@ const ImportOrderForm = ({ onNavigateToList }) => {
 
     // Check if at least one product is selected
     const hasProduct = products.some(
-      (product) => product.productName && product.quantity > 0
+      product => product.productName && product.quantity > 0
     );
     if (!hasProduct) {
-      newErrors.products = "Không được bỏ trống sản phẩm";
+      newErrors.products = 'Không được bỏ trống sản phẩm';
     }
 
     setErrors(newErrors);
@@ -219,12 +254,12 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   const handleProductCreated = () => {
     // Close modal
     setIsProductModalOpen(false);
-    
+
     // Show success message
     toast({
-      title: "Thành công",
-      description: "Sản phẩm đã được tạo thành công",
-      status: "success",
+      title: 'Thành công',
+      description: 'Sản phẩm đã được tạo thành công',
+      status: 'success',
       duration: 3000,
       isClosable: true,
     });
@@ -233,9 +268,9 @@ const ImportOrderForm = ({ onNavigateToList }) => {
   const handleSubmit = () => {
     if (!validateForm()) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng kiểm tra lại thông tin",
-        status: "error",
+        title: 'Lỗi',
+        description: 'Vui lòng kiểm tra lại thông tin',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -243,43 +278,60 @@ const ImportOrderForm = ({ onNavigateToList }) => {
     }
 
     // Transform frontend data to backend format
-    const orderData = importOrderService.transformFrontendToBackend({
-      supplier: formData.supplier,
-      importDate: new Date(formData.importDate),
-      notes: "",
-      importImages: formData.documents.map(file => file.name), // For now, just use file names
-      products: products.filter(product => product.productName && product.quantity > 0)
-    });
+    const orderData = {
+      supplier_name: formData.supplier,
+      import_date: new Date(formData.importDate).toISOString(), // Convert to ISO format
+      notes: formData.notes,
+      import_images: formData.documents.map(file => file.name), // For now, just use file names
+      items: products
+        .filter(product => product.productName && product.quantity > 0)
+        .map(product => ({
+          product_id: product.productId || 1,
+          variant_id: product.variantId || 1,
+          product_name: product.productName,
+          variant_name: product.variant,
+          quantity: product.quantity,
+          unit_price: product.unitPrice,
+          unit: product.unit,
+          notes: product.notes,
+        })),
+    };
 
-    createMutation.mutate(orderData);
+    if (isEditing && onSubmit) {
+      // Edit mode - call the provided onSubmit function
+      onSubmit(orderData);
+    } else {
+      // Create mode - use the mutation
+      createMutation.mutate(orderData);
+    }
   };
 
   return (
     <>
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={6} align='stretch'>
         {/* Import Order Details Section */}
         <Card>
           <CardBody>
-            <VStack spacing={4} align="stretch">
-              <Flex flexDirection={{base: "column", md: "row"}} gap={6}>
+            <VStack spacing={4} align='stretch'>
+              <Flex flexDirection={{ base: 'column', md: 'row' }} gap={6}>
                 {/* Import Code */}
                 <FormControl>
-                  <FormLabel fontWeight="bold">Mã nhập kho</FormLabel>
-                  <Input value={formData.importCode} isReadOnly bg="gray.50" />
+                  <FormLabel fontWeight='bold'>Mã nhập kho</FormLabel>
+                  <Input value={formData.importCode} isReadOnly bg='gray.50' />
                 </FormControl>
 
                 {/* Supplier */}
                 <FormControl isInvalid={!!errors.supplier}>
-                  <FormLabel fontWeight="bold">Nhà cung cấp *</FormLabel>
+                  <FormLabel fontWeight='bold'>Nhà cung cấp *</FormLabel>
                   <Input
-                    placeholder="Nhập tên nhà cung cấp"
+                    placeholder='Nhập tên nhà cung cấp'
                     value={formData.supplier}
-                    onChange={(e) =>
-                      handleInputChange("supplier", e.target.value)
+                    onChange={e =>
+                      handleInputChange('supplier', e.target.value)
                     }
                   />
                   {errors.supplier && (
-                    <Text color="red.500" fontSize="sm" mt={1}>
+                    <Text color='red.500' fontSize='sm' mt={1}>
                       {errors.supplier}
                     </Text>
                   )}
@@ -287,16 +339,16 @@ const ImportOrderForm = ({ onNavigateToList }) => {
 
                 {/* Import Date */}
                 <FormControl isInvalid={!!errors.importDate}>
-                  <FormLabel fontWeight="bold">Ngày nhập kho *</FormLabel>
+                  <FormLabel fontWeight='bold'>Ngày nhập kho *</FormLabel>
                   <Input
-                    type="date"
+                    type='date'
                     value={formData.importDate}
-                    onChange={(e) =>
-                      handleInputChange("importDate", e.target.value)
+                    onChange={e =>
+                      handleInputChange('importDate', e.target.value)
                     }
                   />
                   {errors.importDate && (
-                    <Text color="red.500" fontSize="sm" mt={1}>
+                    <Text color='red.500' fontSize='sm' mt={1}>
                       {errors.importDate}
                     </Text>
                   )}
@@ -305,67 +357,39 @@ const ImportOrderForm = ({ onNavigateToList }) => {
 
               {/* Documents */}
               <FormControl isInvalid={!!errors.documents}>
-                <FormLabel fontWeight="bold">Chứng từ kèm theo (tùy chọn)</FormLabel>
+                <FormLabel fontWeight='bold'>Chứng từ kèm theo</FormLabel>
                 <InputGroup>
                   <Input
-                    type="file"
+                    type='file'
                     multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={handleFileUpload}
-                    display="none"
-                    id="file-upload"
+                    accept='.pdf,.jpg,.jpeg,.png,.doc,.docx'
+                    display='none'
+                    id='file-upload'
                   />
                   <Input
-                    placeholder="Chọn file chứng từ..."
-                    value={
-                      formData.documents.length > 0
-                        ? `${formData.documents.length} file đã chọn`
-                        : ""
-                    }
+                    placeholder='Chọn file chứng từ...'
+                    value={formData.documents.map(f => f.name).join(', ') || ''}
                     isReadOnly
-                    onClick={() => document.getElementById("file-upload").click()}
+                    bg='gray.50'
                   />
                   <InputRightElement>
                     <IconButton
+                      as='label'
+                      htmlFor='file-upload'
                       icon={<Upload size={16} />}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => document.getElementById("file-upload").click()}
+                      variant='ghost'
+                      size='sm'
+                      cursor='pointer'
                     />
                   </InputRightElement>
                 </InputGroup>
                 {errors.documents && (
-                  <Text color="red.500" fontSize="sm" mt={1}>
+                  <Text color='red.500' fontSize='sm' mt={1}>
                     {errors.documents}
                   </Text>
                 )}
               </FormControl>
-
-              {/* Selected Files */}
-              {formData.documents.length > 0 && (
-                <VStack align="stretch" spacing={2}>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Files đã chọn:
-                  </Text>
-                  {formData.documents.map((file, index) => (
-                    <HStack key={index} justify="space-between" p={2} bg="gray.50" borderRadius="md">
-                      <Text fontSize="sm">{file.name}</Text>
-                      <IconButton
-                        icon={<Trash2 size={14} />}
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="red"
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            documents: prev.documents.filter((_, i) => i !== index),
-                          }));
-                        }}
-                      />
-                    </HStack>
-                  ))}
-                </VStack>
-              )}
             </VStack>
           </CardBody>
         </Card>
@@ -373,151 +397,170 @@ const ImportOrderForm = ({ onNavigateToList }) => {
         {/* Products Section */}
         <Card>
           <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack justify="space-between">
-                <Heading size="md">Danh sách sản phẩm</Heading>
+            <HStack justify='space-between' align='center' mb={4}>
+              <Heading size='md'>Sản phẩm</Heading>
+              <HStack spacing={2}>
                 <Button
                   leftIcon={<Plus size={16} />}
-                  colorScheme="blue"
-                  size="sm"
+                  colorScheme='blue'
+                  variant='outline'
                   onClick={addProduct}
+                  size='sm'
                 >
                   Thêm sản phẩm
                 </Button>
+                <Button
+                  leftIcon={<Plus size={16} />}
+                  colorScheme='green'
+                  variant='outline'
+                  onClick={() => setIsProductModalOpen(true)}
+                  size='sm'
+                >
+                  Tạo sản phẩm mới
+                </Button>
               </HStack>
+            </HStack>
 
-              {errors.products && (
-                <Text color="red.500" fontSize="sm">
-                  {errors.products}
-                </Text>
-              )}
+            <Table variant='simple'>
+              <Thead>
+                <Tr>
+                  <Th>Tên sản phẩm</Th>
+                  <Th>Phân loại</Th>
+                  <Th>Số lượng</Th>
+                  <Th>Đơn giá</Th>
+                  <Th>Thành tiền</Th>
+                  <Th>Thao tác</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {products.map((product, index) => (
+                  <Tr key={product.id}>
+                    <Td>
+                      <VStack align='start' spacing={2}>
+                        <ProductSearch
+                          onSelect={selectedProduct =>
+                            handleProductSelect(index, selectedProduct)
+                          }
+                          placeholder='Chọn sản phẩm'
+                        />
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <Select
+                        placeholder='Chọn phân loại'
+                        value={product.variant || ''}
+                        onChange={e => {
+                          const selectedVariant = product.variants.find(
+                            v => v.name === e.target.value
+                          );
+                          if (selectedVariant) {
+                            handleVariantSelect(index, selectedVariant);
+                          }
+                        }}
+                        size='sm'
+                      >
+                        {product?.variants &&
+                          product.variants.map(variant => (
+                            <option key={variant.id} value={variant.name}>
+                              {variant.name} - {variant.sku}
+                            </option>
+                          ))}
+                      </Select>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={product.quantity}
+                        onChange={value =>
+                          handleProductChange(
+                            index,
+                            'quantity',
+                            parseInt(value) || 0
+                          )
+                        }
+                        min={0}
+                        size='sm'
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </Td>
+                    <Td>
+                      <NumberInput
+                        value={product.unitPrice}
+                        onChange={value =>
+                          handleProductChange(
+                            index,
+                            'unitPrice',
+                            parseFloat(value) || 0
+                          )
+                        }
+                        min={0}
+                        size='sm'
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </Td>
+                    <Td>
+                      <Text fontWeight='bold' color='blue.600'>
+                        {formatCurrency(product.total)}
+                      </Text>
+                    </Td>
+                    <Td>
+                      <IconButton
+                        icon={<Trash2 size={14} />}
+                        colorScheme='red'
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => removeProduct(index)}
+                        isDisabled={products.length === 1}
+                      />
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
 
-              <Box overflowX="auto">
-                <Table variant="simple" size="sm">
-                  <Thead>
-                    <Tr>
-                      <Th minW="200px">Sản phẩm</Th>
-                      <Th minW="160px">Phiên bản</Th>
-                      <Th minW="100px">Số lượng</Th>
-                      <Th minW="120px">Đơn giá</Th>
-                      <Th minW="140px">Thành tiền</Th>
-                      <Th minW="80px">Actions</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
-                    {products.map((product, index) => (
-                      <Tr key={product.id}>
-                        <Td minW="200px">
-                          <ProductSearch
-                            placeholder="Chọn sản phẩm"
-                            value={product.productName}
-                            onSelect={(selectedProduct) =>
-                              handleProductSelect(index, selectedProduct)
-                            }
-                            onCreateNew={() => {
-                              setIsProductModalOpen(true);
-                            }}
-                            searchType="import-order"
-                          />
-                        </Td>
-                        <Td minW="160px">
-                          <Select
-                            placeholder="Chọn phiên bản"
-                            value={product.variant}
-                            onChange={(e) =>
-                              handleVariantSelect(index, e.target.value)
-                            }
-                            size="sm"
-                            isDisabled={!product.productName}
-                          >
-                            {product.productName && product.productId && (
-                              // For now, show a default variant option
-                              // In the future, this should fetch variants from the selected product
-                              <option value="Default">Default</option>
-                            )}
-                          </Select>
-                        </Td>
-                        <Td minW="100px">
-                          <NumberInput
-                            value={product.quantity}
-                            onChange={(value) =>
-                              handleProductChange(index, "quantity", parseInt(value) || 0)
-                            }
-                            min={0}
-                            size="sm"
-                          >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
-                        </Td>
-                        <Td minW="120px">
-                          <NumberInput
-                            value={product.unitPrice}
-                            onChange={(value) =>
-                              handleProductChange(index, "unitPrice", parseInt(value) || 0)
-                            }
-                            min={0}
-                            size="sm"
-                          >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
-                        </Td>
-                        <Td minW="140px">
-                          <Text fontWeight="medium">
-                            {formatCurrency(product.total)}
-                          </Text>
-                        </Td>
-                        <Td minW="80px">
-                          <IconButton
-                            icon={<Trash2 size={16} />}
-                            size="sm"
-                            colorScheme="red"
-                            variant="ghost"
-                            onClick={() => removeProduct(index)}
-                            isDisabled={products.length === 1}
-                          />
-                        </Td>
-                      </Tr>
-                    ))}
-                  </Tbody>
-                </Table>
-              </Box>
+            {errors.products && (
+              <Text color='red.500' fontSize='sm' mt={2}>
+                {errors.products}
+              </Text>
+            )}
 
-              {/* Total */}
-              <Divider />
-              <HStack justify="space-between">
-                <Text fontSize="lg" fontWeight="bold">
-                  Tổng cộng:
-                </Text>
-                <Text fontSize="lg" fontWeight="bold" color="blue.600">
-                  {formatCurrency(calculateTotal())}
-                </Text>
+            <Divider my={4} />
+
+            <Flex justify='space-between' align='center'>
+              <Text fontSize='lg' fontWeight='bold'>
+                Tổng cộng: {formatCurrency(calculateTotal())}
+              </Text>
+              <HStack spacing={3}>
+                {onCancel && (
+                  <Button
+                    variant='outline'
+                    onClick={onCancel}
+                    isDisabled={isLoading}
+                  >
+                    Hủy
+                  </Button>
+                )}
+                <Button
+                  colorScheme='blue'
+                  onClick={handleSubmit}
+                  isLoading={isLoading || createMutation.isPending}
+                  loadingText={isEditing ? 'Đang cập nhật...' : 'Đang tạo...'}
+                >
+                  {isEditing ? 'Cập nhật đơn nhập hàng' : 'Tạo đơn nhập hàng'}
+                </Button>
               </HStack>
-            </VStack>
+            </Flex>
           </CardBody>
         </Card>
-
-        {/* Submit Button */}
-        <HStack justify="flex-end" spacing={4}>
-          <Button variant="outline" onClick={onNavigateToList}>
-            Hủy
-          </Button>
-          <Button
-            colorScheme="blue"
-            onClick={handleSubmit}
-            isLoading={createMutation.isPending}
-            loadingText="Đang tạo..."
-          >
-            Tạo đơn nhập hàng
-          </Button>
-        </HStack>
       </VStack>
 
       {/* Product Create Modal */}

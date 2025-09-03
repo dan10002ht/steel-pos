@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchApi } from "../shared/services/api";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchApi } from '../shared/services/api';
 
 // Hook để cập nhật data (PUT/PATCH requests)
 export const useEditApi = (url, options = {}) => {
@@ -8,19 +8,19 @@ export const useEditApi = (url, options = {}) => {
     invalidateQueries = [],
     onSuccess,
     onError,
-    method = "PUT",
+    method = 'PUT',
     ...mutationOptions
   } = options;
 
   return useMutation({
-    mutationFn: async ({ id, data }) => {
-      const fullUrl = id ? `${url}/${id}` : url;
+    mutationFn: async ({ id, data, url: customUrl }) => {
+      const fullUrl = customUrl || (id ? `${url}/${id}` : url);
       const response = await fetchApi({ method, url: fullUrl, data });
       return response.data;
     },
     onSuccess: (data, variables, context) => {
       // Invalidate related queries
-      invalidateQueries.forEach((queryKey) => {
+      invalidateQueries.forEach(queryKey => {
         queryClient.invalidateQueries({
           queryKey: Array.isArray(queryKey) ? queryKey : [queryKey],
         });

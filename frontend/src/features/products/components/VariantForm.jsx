@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   VStack,
@@ -15,8 +15,8 @@ import {
   Button,
   Text,
   Badge,
-} from "@chakra-ui/react";
-import { Trash2 } from "lucide-react";
+} from '@chakra-ui/react';
+import { Trash2 } from 'lucide-react';
 
 const VariantForm = ({
   variant,
@@ -25,8 +25,9 @@ const VariantForm = ({
   onChange,
   onRemove,
   canRemove = true,
-  defaultUnit = "",
+  defaultUnit = '',
   isReadOnly = false,
+  simplified = false, // New prop for simplified form
 }) => {
   // Check if variant is marked for deletion
   const isDeleted = variant.isDeleted;
@@ -36,71 +37,76 @@ const VariantForm = ({
 
   return (
     <Box
-      border="1px"
-      borderColor={isDeleted ? "red.200" : "gray.200"}
-      borderRadius="md"
+      border='1px'
+      borderColor={isDeleted ? 'red.200' : 'gray.200'}
+      borderRadius='md'
       p={4}
-      bg={isDeleted ? "red.50" : "gray.50"}
-      position="relative"
+      bg={isDeleted ? 'red.50' : 'gray.50'}
+      position='relative'
       opacity={isDeleted ? 0.6 : 1}
     >
       {/* Variant Header */}
-      <HStack justify="space-between" align="center" mb={4}>
+      <HStack justify='space-between' align='center' mb={4}>
         <HStack spacing={2}>
-          <Badge colorScheme="blue" variant="subtle">
-            Variant {index + 1}
+          <Badge colorScheme='blue' variant='subtle'>
+            {simplified ? `Phân loại ${index + 1}` : `Variant ${index + 1}`}
           </Badge>
           {index === 0 && (
-            <Badge colorScheme="green" variant="subtle">
+            <Badge colorScheme='green' variant='subtle'>
               Mặc định
             </Badge>
           )}
           {isDeleted && (
-            <Badge colorScheme="red" variant="subtle">
+            <Badge colorScheme='red' variant='subtle'>
               Sẽ xóa
             </Badge>
           )}
         </HStack>
         {canRemove && !isReadOnly && (
           <Button
-            size="sm"
-            variant="ghost"
-            colorScheme={isDeleted ? "green" : "red"}
+            size='sm'
+            variant='ghost'
+            colorScheme={isDeleted ? 'green' : 'red'}
             onClick={onRemove}
             leftIcon={<Trash2 size={14} />}
           >
-            {isDeleted ? "Khôi phục" : "Xóa"}
+            {isDeleted ? 'Khôi phục' : 'Xóa'}
           </Button>
         )}
       </HStack>
 
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align='stretch'>
         {/* Variant Name and SKU */}
         <HStack spacing={4}>
           <FormControl isInvalid={!!errors.name} isRequired>
-            <FormLabel>Tên variant</FormLabel>
+            <FormLabel>
+              {simplified ? 'Tên phân loại' : 'Tên variant'}
+            </FormLabel>
             <Input
               value={variant.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="VD: Đỏ, XL, 100g"
+              onChange={e => handleChange('name', e.target.value)}
+              placeholder={simplified ? 'VD: 20x40, 30x60' : 'VD: Đỏ, XL, 100g'}
               isReadOnly={isReadOnly || isDeleted}
-              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
+              bg={isReadOnly || isDeleted ? 'gray.50' : 'white'}
             />
             <FormErrorMessage>{errors.name}</FormErrorMessage>
           </FormControl>
 
-          <FormControl isInvalid={!!errors.sku} isRequired>
-            <FormLabel>Mã SKU</FormLabel>
-            <Input
-              value={variant.sku}
-              onChange={(e) => handleChange("sku", e.target.value)}
-              placeholder="Mã sản phẩm"
-              isReadOnly={isReadOnly || isDeleted}
-              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
-              fontFamily={isReadOnly || isDeleted ? "mono" : "inherit"}
-            />
-            <FormErrorMessage>{errors.sku}</FormErrorMessage>
-          </FormControl>
+          {/* Only show SKU field if not simplified */}
+          {!simplified && (
+            <FormControl isInvalid={!!errors.sku} isRequired>
+              <FormLabel>Mã SKU</FormLabel>
+              <Input
+                value={variant.sku}
+                onChange={e => handleChange('sku', e.target.value)}
+                placeholder='Mã sản phẩm'
+                isReadOnly={isReadOnly || isDeleted}
+                bg={isReadOnly || isDeleted ? 'gray.50' : 'white'}
+                fontFamily={isReadOnly || isDeleted ? 'mono' : 'inherit'}
+              />
+              <FormErrorMessage>{errors.sku}</FormErrorMessage>
+            </FormControl>
+          )}
         </HStack>
 
         {/* Stock and Price */}
@@ -108,11 +114,11 @@ const VariantForm = ({
           <FormControl isInvalid={!!errors.stock} isRequired>
             <FormLabel>Số lượng tồn kho</FormLabel>
             {isReadOnly || isDeleted ? (
-              <Input value={variant.stock} isReadOnly bg="gray.50" />
+              <Input value={variant.stock} isReadOnly bg='gray.50' />
             ) : (
               <NumberInput
                 value={variant.stock}
-                onChange={(value) => handleChange("stock", Number(value))}
+                onChange={value => handleChange('stock', Number(value))}
                 min={0}
                 precision={0}
               >
@@ -132,14 +138,14 @@ const VariantForm = ({
               <Input
                 value={variant.price}
                 isReadOnly
-                bg="gray.50"
-                color="blue.600"
-                fontWeight="medium"
+                bg='gray.50'
+                color='blue.600'
+                fontWeight='medium'
               />
             ) : (
               <NumberInput
                 value={variant.price}
-                onChange={(value) => handleChange("price", Number(value))}
+                onChange={value => handleChange('price', Number(value))}
                 min={0}
                 precision={0}
               >
@@ -153,24 +159,27 @@ const VariantForm = ({
             <FormErrorMessage>{errors.price}</FormErrorMessage>
           </FormControl>
 
-          <FormControl isInvalid={!!errors.unit} isRequired>
-            <FormLabel>Đơn vị</FormLabel>
-            <Input
-              value={variant.unit}
-              onChange={(e) => handleChange("unit", e.target.value)}
-              placeholder={defaultUnit || "VD: cái, kg, m"}
-              isReadOnly={isReadOnly || isDeleted}
-              bg={isReadOnly || isDeleted ? "gray.50" : "white"}
-            />
-            <FormErrorMessage>{errors.unit}</FormErrorMessage>
-          </FormControl>
+          {/* Only show unit field if not simplified */}
+          {!simplified && (
+            <FormControl isInvalid={!!errors.unit} isRequired>
+              <FormLabel>Đơn vị</FormLabel>
+              <Input
+                value={variant.unit}
+                onChange={e => handleChange('unit', e.target.value)}
+                placeholder={defaultUnit || 'VD: cái, kg, m'}
+                isReadOnly={isReadOnly || isDeleted}
+                bg={isReadOnly || isDeleted ? 'gray.50' : 'white'}
+              />
+              <FormErrorMessage>{errors.unit}</FormErrorMessage>
+            </FormControl>
+          )}
         </HStack>
 
         {/* Sold Quantity - Only show in read-only mode */}
         {isReadOnly && (
           <FormControl>
             <FormLabel>Số lượng đã bán</FormLabel>
-            <Input value={variant.sold || 0} isReadOnly bg="gray.50" />
+            <Input value={variant.sold || 0} isReadOnly bg='gray.50' />
           </FormControl>
         )}
       </VStack>

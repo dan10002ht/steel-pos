@@ -319,3 +319,4 @@ const SalesDetailPage = () => {
 
 export default SalesDetailPage;
 
+
