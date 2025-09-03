@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Input,
@@ -26,13 +26,14 @@ const ProductSearch = ({
   searchType = "basic",
   limit = 10,
   isDisabled = false,
+  initialValue = null,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(initialValue);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const inputRef = useRef();
-
+ 
   // Determine API endpoint based on search type
   const getSearchEndpoint = () => {
     const basePath = '/products/search'
@@ -96,7 +97,11 @@ const ProductSearch = ({
     setSearchTerm("");
   };
 
-
+  useEffect(() => {
+    if (initialValue) {
+      setSelectedProduct(initialValue);
+    }
+  }, [initialValue]);
 
   return (
     <Popover

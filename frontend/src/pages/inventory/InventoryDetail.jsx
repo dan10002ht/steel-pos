@@ -25,7 +25,7 @@ import {
 import { ArrowLeft, Edit, Download, Printer } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFetchApi } from '../../hooks/useFetchApi';
-import { importOrderService } from '../../services/importOrderService';
+
 import Page from '../../components/organisms/Page';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -40,9 +40,7 @@ const InventoryDetail = () => {
     `/import-orders/${id}`
   );
 
-  const importOrder = importOrderData
-    ? importOrderService.transformBackendToFrontend(importOrderData)
-    : null;
+  const importOrder = importOrderData || null;
 
   const handleEdit = () => {
     navigate(`/inventory/${id}/edit`);
@@ -93,7 +91,7 @@ const InventoryDetail = () => {
   return (
     <Page
       title='Chi tiết đơn nhập hàng'
-      subtitle={`Mã đơn: ${importOrder.importCode}`}
+      subtitle={`Mã đơn: ${importOrder.import_code}`}
       onBack={handleBack}
       primaryActions={[
         {
@@ -122,7 +120,7 @@ const InventoryDetail = () => {
         {/* Order Information */}
         <Card mb={6}>
           <CardHeader>
-            <Heading size='md'>Thông tin đơn nhập hàng</Heading>
+            <Heading size={{base: 'sm', md: 'md'}}>Thông tin đơn nhập hàng</Heading>
           </CardHeader>
           <CardBody>
             <Grid
@@ -135,20 +133,20 @@ const InventoryDetail = () => {
                     <Text fontWeight='bold' color='gray.600' fontSize='sm'>
                       Mã đơn nhập hàng
                     </Text>
-                    <Text fontSize='lg'>{importOrder.importCode}</Text>
+                    <Text fontSize='lg'>{importOrder.import_code}</Text>
                   </Box>
                   <Box>
                     <Text fontWeight='bold' color='gray.600' fontSize='sm'>
                       Nhà cung cấp
                     </Text>
-                    <Text fontSize='lg'>{importOrder.supplier}</Text>
+                    <Text fontSize='lg'>{importOrder.supplier_name}</Text>
                   </Box>
                   <Box>
                     <Text fontWeight='bold' color='gray.600' fontSize='sm'>
                       Ngày nhập kho
                     </Text>
                     <Text fontSize='lg'>
-                      {formatDate(importOrder.importDate)}
+                      {formatDate(importOrder.import_date)}
                     </Text>
                   </Box>
                 </VStack>
@@ -177,14 +175,14 @@ const InventoryDetail = () => {
                       Tổng giá trị
                     </Text>
                     <Text fontSize='lg' fontWeight='bold' color='blue.600'>
-                      {formatCurrency(importOrder.totalValue)}
+                      {formatCurrency(importOrder.total_amount)}
                     </Text>
                   </Box>
                   <Box>
                     <Text fontWeight='bold' color='gray.600' fontSize='sm'>
                       Số lượng sản phẩm
                     </Text>
-                    <Text fontSize='lg'>{importOrder.productCount}</Text>
+                    <Text fontSize='lg'>{importOrder.items?.length || 0}</Text>
                   </Box>
                 </VStack>
               </GridItem>
@@ -206,7 +204,7 @@ const InventoryDetail = () => {
         {/* Items Table */}
         <Card>
           <CardHeader>
-            <Heading size='md'>Danh sách sản phẩm</Heading>
+            <Heading size={{base: 'sm', md: 'md'}}>Danh sách sản phẩm</Heading>
           </CardHeader>
           <CardBody>
             <Box overflowX='auto'>
@@ -224,15 +222,15 @@ const InventoryDetail = () => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {importOrder.products?.map((item, index) => (
+                  {importOrder.items?.map((item, index) => (
                     <Tr key={index}>
                       <Td>{index + 1}</Td>
-                      <Td>{item.name}</Td>
-                      <Td>{item.variant}</Td>
+                          <Td>{item.product_name}</Td>
+                        <Td>{item.variant_name}</Td>
                       <Td isNumeric>{item.quantity}</Td>
                       <Td>{item.unit}</Td>
-                      <Td isNumeric>{formatCurrency(item.unitPrice)}</Td>
-                      <Td isNumeric>{formatCurrency(item.total)}</Td>
+                          <Td isNumeric>{formatCurrency(item.unit_price)}</Td>
+                        <Td isNumeric>{formatCurrency(item.total_price)}</Td>
                       <Td>{item.notes || '-'}</Td>
                     </Tr>
                   ))}

@@ -66,8 +66,8 @@ const Header = () => {
       bg={bgColor}
       borderBottom="1px"
       borderColor={borderColor}
-      px={6}
-      py={4}
+      px={{base: "2", md: "6"}}
+      py={{base: "2", md: "4"}}
       position="sticky"
       top={0}
       zIndex={10}
@@ -76,22 +76,13 @@ const Header = () => {
         <HStack spacing={4}>
           <MenuButton onClick={toggleSidebar} isOpen={isSidebarOpen} />
           <Box>
-            <Text fontSize="2xl" fontWeight="bold" color="gray.800">
+            <Text fontSize={{base: "md", md: "2xl"}} fontWeight="bold" color="gray.800">
               {getCurrentPageTitle()}
             </Text>
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize={{base: "xs", md: "sm"}} color="gray.500">
               {getCurrentPageDescription()}
             </Text>
           </Box>
-        </HStack>
-
-        <HStack spacing={4}>
-          <Badge colorScheme="green" variant="subtle">
-            Online
-          </Badge>
-          <Text fontSize="sm" color="gray.600">
-            {new Date().toLocaleDateString("vi-VN")}
-          </Text>
         </HStack>
       </Flex>
     </Box>

@@ -56,6 +56,7 @@ import {
   Check,
   Printer,
   Calendar,
+  Package,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page';
@@ -63,7 +64,7 @@ import Pagination from '../../components/atoms/Pagination';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useEditApi } from '../../hooks/useEditApi';
 import { useDeleteApi } from '../../hooks/useDeleteApi';
-import { importOrderService } from '../../services/importOrderService';
+
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
@@ -94,7 +95,7 @@ const InventoryList = () => {
   const apiUrl = `/import-orders${queryString ? `?${queryString}` : ''}`;
 
   // Fetch import orders
-  const { data: importOrdersData, error } = useFetchApi(
+  const { data: importOrdersData, error, isPending: isLoading } = useFetchApi(
     [
       'import-orders',
       {
@@ -156,11 +157,8 @@ const InventoryList = () => {
     },
   });
 
-  // Transform data from API response
-  const importOrders =
-    importOrdersData?.import_orders?.map(order =>
-      importOrderService.transformBackendToFrontend(order)
-    ) || [];
+  // Use API response directly
+  const importOrders = importOrdersData?.import_orders || [];
   const totalCount = importOrdersData?.total || 0;
 
   const suppliers = [
@@ -203,7 +201,7 @@ const InventoryList = () => {
 
   const handleExportExcel = order => {
     // Export to Excel functionality
-    console.log('Exporting order:', order.importCode);
+    console.log('Exporting order:', order.import_code);
     toast({
       title: 'Thông báo',
       description: 'Chức năng xuất Excel sẽ được implement sau',
@@ -215,7 +213,7 @@ const InventoryList = () => {
 
   const handlePrint = order => {
     // Print functionality
-    console.log('Printing order:', order.importCode);
+    console.log('Printing order:', order.import_code);
     toast({
       title: 'Thông báo',
       description: 'Chức năng in phiếu sẽ được implement sau',
@@ -464,11 +462,11 @@ const InventoryList = () => {
                 <Tbody>
                   {importOrders.map(order => (
                     <Tr key={order.id}>
-                      <Td>{order.importCode}</Td>
-                      <Td>{order.supplier}</Td>
-                      <Td>{formatDate(order.importDate)}</Td>
-                      <Td isNumeric>{formatCurrency(order.totalValue)}</Td>
-                      <Td isNumeric>{order.productCount}</Td>
+                                      <Td>{order.import_code}</Td>
+                <Td>{order.supplier_name}</Td>
+                <Td>{formatDate(order.import_date)}</Td>
+                                      <Td isNumeric>{formatCurrency(order.total_amount)}</Td>
+                <Td isNumeric>{order.items?.length || 0}</Td>
                       <Td>
                         <Badge
                           colorScheme={
@@ -545,18 +543,75 @@ const InventoryList = () => {
               </Table>
             </Box>
 
-            {/* Pagination */}
-            <Box mt={6}>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalCount}
-                pageSize={pageSize}
-                onPageChange={page => handleFilterChange('page', page)}
-                onPageSizeChange={limit => handleFilterChange('limit', limit)}
-                pageSizeOptions={[10, 25, 50, 100]}
-              />
-            </Box>
+            {/* Empty State */}
+            {importOrders.length === 0 && !isLoading && !error && (
+              <Box
+                textAlign='center'
+                py={16}
+                px={6}
+                borderWidth='1px'
+                borderStyle='dashed'
+                borderColor='gray.200'
+                borderRadius='lg'
+                bg='gray.50'
+              >
+                <VStack spacing={4}>
+                  <Box
+                    w='16'
+                    h='16'
+                    borderRadius='full'
+                    bg='blue.100'
+                    display='flex'
+                    alignItems='center'
+                    justifyContent='center'
+                  >
+                    <Package size={32} color='#3182CE' />
+                  </Box>
+                  <VStack spacing={2}>
+                    <Heading size='md' color='gray.600'>
+                      Chưa có đơn nhập hàng nào
+                    </Heading>
+                    <Text color='gray.500' fontSize='sm'>
+                      {searchTerm || statusFilter || supplierFilter
+                        ? 'Không tìm thấy đơn nhập hàng phù hợp với bộ lọc hiện tại'
+                        : 'Bắt đầu tạo đơn nhập hàng đầu tiên để quản lý kho hàng'}
+                    </Text>
+                  </VStack>
+                  {!searchTerm && !statusFilter && !supplierFilter && (
+                    <Button
+                      colorScheme='blue'
+                      leftIcon={<Plus size={16} />}
+                      onClick={() => navigate('/inventory/create')}
+                    >
+                      Tạo đơn nhập hàng đầu tiên
+                    </Button>
+                  )}
+                  {(searchTerm || statusFilter || supplierFilter) && (
+                    <Button
+                      variant='outline'
+                      onClick={clearFilters}
+                    >
+                      Xóa bộ lọc
+                    </Button>
+                  )}
+                </VStack>
+              </Box>
+            )}
+
+            {/* Pagination - Only show if there are items */}
+            {importOrders.length > 0 && (
+              <Box mt={6}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={page => handleFilterChange('page', page)}
+                  onPageSizeChange={limit => handleFilterChange('limit', limit)}
+                  pageSizeOptions={[10, 25, 50, 100]}
+                />
+              </Box>
+            )}
           </CardBody>
         </Card>
       </Box>

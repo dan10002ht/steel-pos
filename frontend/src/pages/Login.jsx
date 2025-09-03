@@ -84,7 +84,7 @@ const Login = () => {
   };
 
   return (
-    <Box minH="100vh" bg="gray.50">
+    <Box h="100%" overflow={'auto'} bg="gray.50">
       <Container
         maxW="lg"
         py={{ base: "12", md: "24" }}
@@ -100,9 +100,9 @@ const Login = () => {
             w="full"
             maxW="md"
           >
-            <VStack spacing="8">
+            <VStack spacing={{base: "4", md: "8"}}>
               {/* Logo và tên ứng dụng */}
-              <VStack spacing="6">
+              <VStack spacing={{base: "2", md: "6"}}>
                 <Flex
                   w="16"
                   h="16"
@@ -126,11 +126,11 @@ const Login = () => {
 
               {/* Form đăng nhập */}
               <Box as="form" onSubmit={handleSubmit} w="full">
-                <VStack spacing="6">
+                <VStack spacing={{base: "2", md: "6"}}>
                   <FormControl isRequired>
                     <FormLabel
                       htmlFor="username"
-                      fontSize="sm"
+                      fontSize={{base: "xs", md: "sm"}}
                       fontWeight="medium"
                     >
                       Tên đăng nhập
@@ -142,7 +142,7 @@ const Login = () => {
                       value={formData.username}
                       onChange={handleInputChange}
                       placeholder="Nhập tên đăng nhập"
-                      size="lg"
+                      size={{base: "md", md: "lg"}}
                       bg="white"
                       border="1px"
                       borderColor="gray.300"
@@ -154,12 +154,12 @@ const Login = () => {
                   <FormControl isRequired>
                     <FormLabel
                       htmlFor="password"
-                      fontSize="sm"
+                      fontSize={{base: "xs", md: "sm"}}
                       fontWeight="medium"
                     >
                       Mật khẩu
                     </FormLabel>
-                    <InputGroup size="lg">
+                    <InputGroup size={{base: "md", md: "lg"}}>
                       <Input
                         id="password"
                         name="password"
@@ -184,7 +184,7 @@ const Login = () => {
                           icon={showPassword ? <EyeOff /> : <Eye />}
                           onClick={() => setShowPassword(!showPassword)}
                           variant="ghost"
-                          size="sm"
+                          size={{base: "xs", md: "sm"}}
                         />
                       </InputRightElement>
                     </InputGroup>
@@ -193,7 +193,7 @@ const Login = () => {
                   <Button
                     type="submit"
                     colorScheme="blue"
-                    size="lg"
+                    size={{base: "md", md: "lg"}}
                     fontSize="md"
                     w="full"
                     isLoading={isLoginLoading}
@@ -205,7 +205,7 @@ const Login = () => {
               </Box>
 
               {/* Thông tin demo */}
-              <VStack spacing="4" pt="4" borderTop="1px" borderColor="gray.200">
+              <VStack spacing={{base: "2", md: "4"}} pt={{base: "2", md: "4"}} borderTop="1px" borderColor="gray.200">
                 <Text fontSize="sm" color="gray.600" textAlign="center">
                   Tài khoản demo:
                 </Text>

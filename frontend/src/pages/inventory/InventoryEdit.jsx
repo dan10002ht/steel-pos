@@ -3,8 +3,6 @@ import {
   Box,
   Card,
   CardBody,
-  CardHeader,
-  Heading,
   Text,
   Badge,
   Button,
@@ -18,15 +16,15 @@ import { ArrowLeft, Save, X } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useEditApi } from '../../hooks/useEditApi';
-import { importOrderService } from '../../services/importOrderService';
 import Page from '../../components/organisms/Page';
-import ImportOrderForm from '../../components/ImportOrderForm';
+import ImportOrderForm from '../../features/import-orders/components/ImportOrderForm/ImportOrderForm';
 import { formatDate } from '../../utils/formatters';
 
 const InventoryEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+
 
   // Fetch import order detail
   const { data: importOrderData, error } = useFetchApi(
@@ -59,17 +57,17 @@ const InventoryEdit = () => {
     },
   });
 
-  const importOrder = importOrderData
-    ? importOrderService.transformBackendToFrontend(importOrderData)
-    : null;
+  const importOrder = importOrderData || null;
+  console.log({importOrder})
 
-  const handleSave = formData => {
+  const handleSave = (formDataFromComponent) => {
+    // formDataFromComponent đã có items rồi, không cần transform nữa
     const orderData = {
-      supplier_name: formData.supplier_name,
-      import_date: new Date(formData.import_date),
-      notes: formData.notes,
-      import_images: formData.import_images,
-      items: formData.items,
+      supplier_name: formDataFromComponent.supplier_name,
+      import_date: new Date(formDataFromComponent.import_date),
+      notes: formDataFromComponent.notes,
+      import_images: formDataFromComponent.import_images,
+      items: formDataFromComponent.items,
     };
 
     editMutation.mutate({
@@ -127,41 +125,13 @@ const InventoryEdit = () => {
 
   return (
     <Page
-      title='Chỉnh sửa đơn nhập hàng'
-      subtitle={`Mã đơn: ${importOrder.importCode}`}
-      onBack={handleBack}
-      primaryActions={[
-        {
-          label: 'Lưu',
-          onClick: () => handleSave(importOrder),
-          colorScheme: 'blue',
-          leftIcon: <Save size={16} />,
-          isLoading: editMutation.isPending,
-        },
-      ]}
-      secondaryActions={[
-        {
-          label: 'Hủy',
-          onClick: handleCancel,
-          variant: 'outline',
-          leftIcon: <X size={16} />,
-        },
-      ]}
-    >
-      <Box w='100%' maxW='100%' mx='auto'>
-        {/* Order Status Info */}
-        <Card mb={6}>
-          <CardBody>
-            <HStack justify='space-between' align='center'>
-              <VStack align='start' spacing={1}>
-                <Text fontSize='sm' color='gray.600'>
-                  Trạng thái
-                </Text>
-                <Badge
+      title={<HStack align='center'>
+        <Text>Chỉnh sửa đơn nhập hàng</Text>
+        <Badge
                   colorScheme={
                     importOrder.status === 'approved' ? 'green' : 'orange'
                   }
-                  fontSize='md'
+                  fontSize="sm"
                   px={3}
                   py={1}
                 >
@@ -169,14 +139,11 @@ const InventoryEdit = () => {
                     ? 'Đã phê duyệt'
                     : 'Chờ phê duyệt'}
                 </Badge>
-              </VStack>
-              <Text fontSize='sm' color='gray.600'>
-                Ngày tạo: {formatDate(importOrder.importDate)}
-              </Text>
-            </HStack>
-          </CardBody>
-        </Card>
-
+      </HStack>}
+      subtitle={`Ngày tạo: ${formatDate(importOrder.import_date)}`}
+      onBack={handleBack}
+    >
+      <Box w='100%' maxW='100%' mx='auto'>
         {/* Edit Form */}
         <ImportOrderForm
           isEditing={true}

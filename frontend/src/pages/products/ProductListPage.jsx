@@ -12,13 +12,6 @@ import {
   Text,
   VStack,
   HStack,
-  Badge,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Avatar,
   Spinner,
   Alert,
   AlertIcon,
@@ -26,10 +19,8 @@ import {
   AlertDescription,
   Box,
   Button,
-  Select,
-  Flex,
 } from "@chakra-ui/react";
-import { MoreVertical, Eye, Edit, Edit2, Plus, Upload, Download, Trash2, Package } from "lucide-react";
+import { Eye, Edit, Plus, Upload, Download, Trash2, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Page from "../../components/organisms/Page";
 import SearchInput from "../../components/atoms/SearchInput";

@@ -26,7 +26,7 @@ const Sidebar = () => {
     >
       <Flex direction="column" h="100vh" position="relative">
         {/* Logo Section - Fixed at top */}
-        <Box p={6} borderBottom="1px" borderColor={borderColor} flexShrink={0} position="relative">
+        <Box p={{base: "4", md: "6"}} borderBottom="1px" borderColor={borderColor} flexShrink={0} position="relative">
           <Logo />
           {/* Close Button - Mobile Only */}
           <Box display={{ base: "block", lg: "none" }} position="absolute" top={4} right={4}>
@@ -41,7 +41,7 @@ const Sidebar = () => {
 
         {/* User Section - Fixed at bottom */}
         <Box 
-          p={4} 
+          p={{base: "2", md: "6"}} 
           borderTop="1px" 
           borderColor={borderColor} 
           bg={bgColor}

@@ -350,3 +350,86 @@ func (r *ImportOrderRepository) DeleteItem(id int) error {
 
 	return nil
 }
+
+// GetItemsWithVariantsByOrderID gets import order items with their variant details
+func (r *ImportOrderRepository) GetItemsWithVariantsByOrderID(orderID int) ([]*models.ImportOrderItem, error) {
+	query := `
+		SELECT 
+			ioi.id, 
+			ioi.import_order_id, 
+			ioi.product_id, 
+			ioi.product_variant_id, 
+			ioi.product_name, 
+			ioi.variant_name, 
+			ioi.quantity, 
+			ioi.unit_price, 
+			ioi.total_price, 
+			ioi.unit, 
+			ioi.created_by, 
+			ioi.created_at,
+			pv.id as variant_id,
+			pv.name as variant_name_full,
+			pv.sku as variant_sku,
+			pv.stock as variant_stock,
+			pv.price as variant_price,
+			pv.unit as variant_unit
+		FROM import_order_items ioi
+		LEFT JOIN product_variants pv ON ioi.product_variant_id = pv.id
+		WHERE ioi.import_order_id = $1
+		ORDER BY ioi.created_at ASC
+	`
+
+	rows, err := r.db.Query(query, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*models.ImportOrderItem
+	for rows.Next() {
+		item := &models.ImportOrderItem{}
+		var variantID, variantStock sql.NullInt64
+		var variantName, variantSku, variantUnit sql.NullString
+		var variantPrice sql.NullFloat64
+
+		err := rows.Scan(
+			&item.ID,
+			&item.ImportOrderID,
+			&item.ProductID,
+			&item.VariantID,
+			&item.ProductName,
+			&item.VariantName,
+			&item.Quantity,
+			&item.UnitPrice,
+			&item.TotalPrice,
+			&item.Unit,
+			&item.CreatedBy,
+			&item.CreatedAt,
+			&variantID,
+			&variantName,
+			&variantSku,
+			&variantStock,
+			&variantPrice,
+			&variantUnit,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set variant data if available
+		if variantID.Valid {
+			item.Variant = &models.ProductVariant{
+				ID:    int(variantID.Int64),
+				Name:  variantName.String,
+				SKU:   variantSku.String,
+				Stock: int(variantStock.Int64),
+				Price: variantPrice.Float64,
+				Unit:  variantUnit.String,
+			}
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
+}

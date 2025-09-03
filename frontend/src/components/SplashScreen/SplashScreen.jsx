@@ -56,7 +56,7 @@ const SplashScreen = ({ duration = 2000, showProgress = false }) => {
             color="white"
             textShadow="0 2px 4px rgba(0,0,0,0.3)"
           >
-            Steel POS
+            Kiên Phước
           </Text>
           <Text
             fontSize="md"

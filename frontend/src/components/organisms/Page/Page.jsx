@@ -110,7 +110,7 @@ const Page = ({
           <HStack justify='space-between' align='flex-start' spacing={4}>
             {/* Left side - Title and subtitle */}
             <VStack align='flex-start' spacing={1} flex={1}>
-              <HStack spacing={3} align='center'>
+              <HStack spacing={0} align='center'>
                 {onBack && (
                   <IconButton
                     icon={<ArrowLeft size={16} />}
@@ -125,7 +125,7 @@ const Page = ({
                 </Heading>
               </HStack>
               {subtitle && (
-                <Text color='gray.600' fontSize={{ base: 'xs', md: 'sm' }}>
+                <Text pl={8} color='gray.600' fontSize={{ base: 'xs', md: 'sm' }}>
                   {subtitle}
                 </Text>
               )}

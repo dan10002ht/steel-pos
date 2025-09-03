@@ -15,14 +15,14 @@ const Logo = () => {
         color="white"
       >
         <Text fontSize="lg" fontWeight="bold">
-          SP
+          KP
         </Text>
       </Box>
       <VStack align="flex-start" spacing={0}>
-        <Text fontSize="lg" fontWeight="bold" color="gray.800">
-          Steel POS
+        <Text fontSize={{base: "md", md: "lg"}} fontWeight="bold" color="gray.800">
+          Kiên Phước
         </Text>
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize={{base: "xs", md: "sm"}} color="gray.500">
           Point of Sale System
         </Text>
       </VStack>

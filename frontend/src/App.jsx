@@ -12,19 +12,16 @@ import { UiProvider } from './contexts/UiContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Inventory from './pages/inventory';
-import InventoryList from './pages/inventory/InventoryList';
-import InventoryDetail from './pages/inventory/InventoryDetail';
-import InventoryEdit from './pages/inventory/InventoryEdit';
+import InventoryRoute from './routes/InventoryRoute';
+
+
+
 import Sales from './pages/sales';
 import Customers from './pages/Customers';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
-import ProductListPage from './pages/products/ProductListPage';
-import CreateProductPage from './pages/products/CreateProductPage';
-import EditProductPage from './pages/products/EditProductPage';
-import ProductDetailPage from './pages/products/ProductDetailPage';
-import ImportOrderPage from './pages/ImportOrderPage';
+import ProductsRoute from './routes/ProductsRoute';
+
 
 function App() {
   return (
@@ -40,14 +37,8 @@ function App() {
               <Route path='/' element={<ProtectedRoute />}>
                 <Route path='dashboard' element={<Dashboard />} />
                 <Route path='sales/*' element={<Sales />} />
-                <Route path='inventory' element={<InventoryList />} />
-                <Route path='inventory/create' element={<ImportOrderPage />} />
-                <Route path='inventory/:id' element={<InventoryDetail />} />
-                <Route path='inventory/:id/edit' element={<InventoryEdit />} />
-                <Route path='products' element={<ProductListPage />} />
-                <Route path='products/create' element={<CreateProductPage />} />
-                <Route path='products/:id' element={<ProductDetailPage />} />
-                <Route path='products/:id/edit' element={<EditProductPage />} />
+                <Route path='inventory/*' element={<InventoryRoute />} />
+                <Route path='products/*' element={<ProductsRoute />} />
                 <Route path='customers' element={<Customers />} />
                 <Route path='reports' element={<Reports />} />
                 <Route path='analytics' element={<Analytics />} />

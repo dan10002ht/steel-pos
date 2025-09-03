@@ -58,11 +58,12 @@ type CreateImportOrderRequest struct {
 }
 
 type UpdateImportOrderRequest struct {
-	SupplierName *string    `json:"supplier_name"`
-	ImportDate   *time.Time `json:"import_date"`
-	Notes        string     `json:"notes"`
-	ImportImages []string   `json:"import_images"`
-	Status       string     `json:"status"`
+	SupplierName *string                        `json:"supplier_name"`
+	ImportDate   *time.Time                     `json:"import_date"`
+	Notes        string                         `json:"notes"`
+	ImportImages []string                       `json:"import_images"`
+	Status       string                         `json:"status"`
+	Items        []UpdateImportOrderItemRequest `json:"items"` // Thêm items để update
 }
 
 type CreateImportOrderItemRequest struct {
@@ -77,6 +78,7 @@ type CreateImportOrderItemRequest struct {
 }
 
 type UpdateImportOrderItemRequest struct {
+	ID          *int     `json:"id"` // ID của item (có thể là "new_" prefix)
 	ProductID   *int     `json:"product_id"`
 	VariantID   *int     `json:"variant_id"`
 	ProductName *string  `json:"product_name"`
@@ -85,6 +87,7 @@ type UpdateImportOrderItemRequest struct {
 	UnitPrice   *float64 `json:"unit_price"`
 	Unit        string   `json:"unit"`
 	Notes       string   `json:"notes"`
+	IsDeleted   *bool    `json:"is_deleted"` // Flag để đánh dấu item bị xóa
 }
 
 type ApproveImportOrderRequest struct {
