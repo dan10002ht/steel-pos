@@ -3,19 +3,14 @@ import {
   Box,
   Card,
   CardBody,
-  CardHeader,
-  Heading,
-  Text,
-  Badge,
   Button,
   HStack,
   VStack,
   FormControl,
   FormLabel,
-  Input,
   InputGroup,
+  Input,
   InputRightElement,
-  Select,
   useToast,
   Table,
   Thead,
@@ -44,11 +39,12 @@ import {
   PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
+  Select,
+  Heading,
+  Text,
 } from '@chakra-ui/react';
 import {
   Plus,
-  Search,
-  Filter,
   Download,
   MoreVertical,
   Edit,
@@ -57,6 +53,7 @@ import {
   Printer,
   Calendar,
   Package,
+  Search,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page';
@@ -67,6 +64,9 @@ import { useDeleteApi } from '../../hooks/useDeleteApi';
 
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import StatusBadge from '../../components/atoms/StatusBadge';
+import InventoryFilters from '../../components/molecules/inventory/InventoryFilters';
+import { TOAST_DURATION } from '../../constants/options';
 
 const InventoryList = () => {
   const navigate = useNavigate();
@@ -118,7 +118,7 @@ const InventoryList = () => {
         title: 'Thành công',
         description: 'Đơn nhập hàng đã được phê duyệt',
         status: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
       setIsApprovalModalOpen(false);
@@ -128,7 +128,7 @@ const InventoryList = () => {
         title: 'Lỗi',
         description: error.message || 'Không thể phê duyệt đơn nhập hàng',
         status: 'error',
-        duration: 3000,
+        duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
     },
@@ -142,7 +142,7 @@ const InventoryList = () => {
         title: 'Thành công',
         description: 'Đơn nhập hàng đã được xóa',
         status: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
     },
@@ -151,7 +151,7 @@ const InventoryList = () => {
         title: 'Lỗi',
         description: error.message || 'Không thể xóa đơn nhập hàng',
         status: 'error',
-        duration: 3000,
+        duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
     },
@@ -268,7 +268,7 @@ const InventoryList = () => {
         title: 'Lỗi',
         description: error.message || 'Không thể tải danh sách đơn nhập hàng',
         status: 'error',
-        duration: 3000,
+        duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
     }
@@ -294,7 +294,7 @@ const InventoryList = () => {
               title: 'Thông báo',
               description: 'Chức năng xuất báo cáo sẽ được implement sau',
               status: 'info',
-              duration: 3000,
+              duration: TOAST_DURATION.MEDIUM,
               isClosable: true,
             });
           },
@@ -308,75 +308,26 @@ const InventoryList = () => {
         <Card mb={6}>
           <CardBody>
             <VStack spacing={4} align='stretch'>
-              {/* Desktop: Row layout */}
-              <HStack
-                spacing={3}
-                align='flex-end'
-                display={{ base: 'none', md: 'flex' }}
-                wrap='wrap'
+              <InventoryFilters
+                searchTerm={searchTerm}
+                onSearchChange={(value) => handleFilterChange('search', value)}
+                statusFilter={statusFilter}
+                onStatusChange={(value) => handleFilterChange('status', value)}
+                supplierFilter={supplierFilter}
+                onSupplierChange={(value) => handleFilterChange('supplier', value)}
+                pageSize={pageSize}
+                onPageSizeChange={(value) => handleFilterChange('pageSize', value)}
+                suppliers={suppliers.map(name => ({ name }))}
+              />
+              
+              <Button
+                size='sm'
+                variant='outline'
+                w='fit-content'
+                onClick={clearFilters}
               >
-                {/* Search Input */}
-                <FormControl flex='1'>
-                  <FormLabel fontSize='sm'>Tìm kiếm</FormLabel>
-                  <InputGroup size='sm'>
-                    <Input
-                      placeholder='Tìm kiếm...'
-                      value={searchTerm}
-                      onChange={e =>
-                        handleFilterChange('search', e.target.value)
-                      }
-                    />
-                    <InputRightElement>
-                      <Search size={16} color='gray.500' />
-                    </InputRightElement>
-                  </InputGroup>
-                </FormControl>
-
-                {/* Status Filter */}
-                <FormControl w='fit-content'>
-                  <FormLabel fontSize='sm'>Trạng thái</FormLabel>
-                  <Select
-                    placeholder='Tất cả'
-                    value={statusFilter}
-                    onChange={e => handleFilterChange('status', e.target.value)}
-                    size='sm'
-                    w='120px'
-                  >
-                    <option value='pending'>Chờ phê duyệt</option>
-                    <option value='approved'>Đã phê duyệt</option>
-                  </Select>
-                </FormControl>
-
-                {/* Supplier Filter */}
-                <FormControl w='fit-content'>
-                  <FormLabel fontSize='sm'>Nhà cung cấp</FormLabel>
-                  <Select
-                    placeholder='Tất cả'
-                    value={supplierFilter}
-                    onChange={e =>
-                      handleFilterChange('supplier', e.target.value)
-                    }
-                    size='sm'
-                    w='150px'
-                  >
-                    {suppliers.map(supplier => (
-                      <option key={supplier} value={supplier}>
-                        {supplier}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Clear Filters Button */}
-                <Button
-                  size='sm'
-                  variant='outline'
-                  w='fit-content'
-                  onClick={clearFilters}
-                >
-                  Xóa bộ lọc
-                </Button>
-              </HStack>
+                Xóa bộ lọc
+              </Button>
 
               {/* Mobile: Column layout */}
               <VStack
@@ -468,15 +419,7 @@ const InventoryList = () => {
                                       <Td isNumeric>{formatCurrency(order.total_amount)}</Td>
                 <Td isNumeric>{order.items?.length || 0}</Td>
                       <Td>
-                        <Badge
-                          colorScheme={
-                            order.status === 'approved' ? 'green' : 'orange'
-                          }
-                        >
-                          {order.status === 'approved'
-                            ? 'Đã phê duyệt'
-                            : 'Chờ phê duyệt'}
-                        </Badge>
+                        <StatusBadge status={order.status} />
                       </Td>
                       <Td>
                         <HStack spacing={1}>

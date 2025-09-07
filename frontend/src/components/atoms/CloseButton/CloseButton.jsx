@@ -1,16 +1,21 @@
-import React from "react";
-import { IconButton } from "@chakra-ui/react";
-import { X } from "lucide-react";
+import React from 'react';
+import { Box } from '@chakra-ui/react';
+import { X } from 'lucide-react';
 
-const CloseButton = ({ onClick }) => {
+const CloseButton = ({ onClick, size = 12, ...props }) => {
   return (
-    <IconButton
-      icon={<X size={20} />}
-      variant="ghost"
-      size="md"
+    <Box
+      as="span"
       onClick={onClick}
-      aria-label="Close sidebar"
-    />
+      cursor="pointer"
+      p={1}
+      borderRadius="md"
+      _hover={{ bg: "red.100" }}
+      color="red.500"
+      {...props}
+    >
+      <X size={size} />
+    </Box>
   );
 };
 

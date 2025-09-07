@@ -29,17 +29,23 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
 	importOrderRepo := repository.NewImportOrderRepository(db)
+	invoiceRepo := repository.NewInvoiceRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
 
 	// Initialize services
 	jwtService := services.NewJWTService(cfg)
 	authService := services.NewAuthService(userRepo, jwtService, cfg)
 	productService := services.NewProductService(productRepo)
 	importOrderService := services.NewImportOrderService(importOrderRepo)
+	customerService := services.NewCustomerService(customerRepo)
+	invoiceService := services.NewInvoiceService(invoiceRepo, customerService)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	productHandler := handlers.NewProductHandler(productService)
 	importOrderHandler := handlers.NewImportOrderHandler(importOrderService)
+	customerHandler := handlers.NewCustomerHandler(customerService)
+	invoiceHandler := handlers.NewInvoiceHandler(invoiceService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
@@ -71,7 +77,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.SetupAllRoutes(router, authHandler, productHandler, importOrderHandler, authMiddleware, tokenRefreshMiddleware)
+	routes.SetupAllRoutes(router, authHandler, productHandler, importOrderHandler, invoiceHandler, customerHandler, authMiddleware, tokenRefreshMiddleware)
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.Server.Port)

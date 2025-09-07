@@ -4,8 +4,8 @@ import CustomerForm from "./CustomerForm";
 import InvoiceItemList from "./InvoiceItemList";
 import InvoiceSummary from "./InvoiceSummary";
 
-const InvoiceForm = ({ invoice, onUpdate }) => {
-  const [customer, setCustomer] = useState(invoice.customer || null);
+const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
+  const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
 
   const handleUpdateItem = (itemId, field, value) => {
@@ -55,23 +55,15 @@ const InvoiceForm = ({ invoice, onUpdate }) => {
     onUpdate(updatedInvoice);
   };
 
-  const handleCustomerUpdate = (newCustomer) => {
-    setCustomer(newCustomer);
-    handleUpdateInvoice("customer", newCustomer);
+  const handleCustomerUpdate = (field, value) => {
+    const updatedInvoice = {
+      ...invoice,
+      [field]: value,
+    };
+    onUpdate(updatedInvoice);
   };
 
-  const handleCreateInvoice = () => {
-    if (!customer) {
-      toast({
-        title: "Thiếu thông tin khách hàng",
-        description: "Vui lòng nhập thông tin khách hàng",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
+  const handleCreateInvoice = async () => {
     if (invoice.items.length === 0) {
       toast({
         title: "Hoá đơn trống",
@@ -83,14 +75,30 @@ const InvoiceForm = ({ invoice, onUpdate }) => {
       return;
     }
 
-    // TODO: Implement API call to create invoice
-    toast({
-      title: "Chức năng đang phát triển",
-      description: "Tính năng tạo hoá đơn sẽ được cập nhật sau",
-      status: "info",
-      duration: 3000,
-      isClosable: true,
-    });
+    // Validate required customer fields
+    if (!invoice.customer_name || !invoice.customer_phone) {
+      toast({
+        title: "Thiếu thông tin khách hàng",
+        description: "Vui lòng nhập đầy đủ tên và số điện thoại khách hàng",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    
+    try {
+      // Call parent callback to handle invoice creation
+      if (onInvoiceCreated) {
+        await onInvoiceCreated(invoice);
+      }
+    } catch (error) {
+      console.error('Failed to create invoice:', error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -101,7 +109,15 @@ const InvoiceForm = ({ invoice, onUpdate }) => {
           <Text fontSize="lg" fontWeight="bold" mb={4}>
             Thông tin khách hàng
           </Text>
-          <CustomerForm customer={customer} onUpdate={handleCustomerUpdate} />
+          <CustomerForm 
+            customer={{
+              id: invoice.customer_id,
+              name: invoice.customer_name,
+              phone: invoice.customer_phone,
+              address: invoice.customer_address
+            }}
+            onUpdate={handleCustomerUpdate} 
+          />
         </CardBody>
       </Card>
 
@@ -127,7 +143,8 @@ const InvoiceForm = ({ invoice, onUpdate }) => {
             invoice={invoice}
             onUpdateInvoice={handleUpdateInvoice}
             onCreateInvoice={handleCreateInvoice}
-            isDisabled={!customer || invoice.items.length === 0}
+            isDisabled={invoice.items.length === 0 || isCreating}
+            isLoading={isCreating}
           />
         </CardBody>
       </Card>

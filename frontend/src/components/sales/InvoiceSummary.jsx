@@ -21,6 +21,7 @@ const InvoiceSummary = ({
   onUpdateInvoice,
   onCreateInvoice,
   isDisabled = false,
+  isLoading = false,
 }) => {
   const calculateSubtotal = () => {
     return invoice.items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -149,6 +150,8 @@ const InvoiceSummary = ({
         size="lg"
         onClick={onCreateInvoice}
         isDisabled={isDisabled}
+        isLoading={isLoading}
+        loadingText="Đang tạo..."
       >
         Tạo hoá đơn
       </Button>

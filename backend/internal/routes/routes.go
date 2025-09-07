@@ -13,6 +13,8 @@ func SetupAllRoutes(
 	authHandler *handlers.AuthHandler,
 	productHandler *handlers.ProductHandler,
 	importOrderHandler *handlers.ImportOrderHandler,
+	invoiceHandler *handlers.InvoiceHandler,
+	customerHandler *handlers.CustomerHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	tokenRefreshMiddleware *middleware.TokenRefreshMiddleware,
 ) {
@@ -34,4 +36,6 @@ func SetupAllRoutes(
 	SetupAuthRoutes(api, authHandler, authMiddleware)
 	SetupProductRoutes(api, productHandler, authMiddleware)
 	SetupImportOrderRoutes(api, importOrderHandler, authMiddleware)
+	SetupInvoiceRoutes(api, invoiceHandler, authMiddleware)
+	SetupCustomerRoutes(api, customerHandler, authMiddleware)
 }

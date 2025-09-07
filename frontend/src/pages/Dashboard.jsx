@@ -3,24 +3,18 @@ import {
   Box,
   Grid,
   GridItem,
-  Card,
-  CardBody,
-  CardHeader,
-  Heading,
   Text,
   VStack,
-  HStack,
-  Icon,
-  SimpleGrid,
 } from "@chakra-ui/react";
 import {
   TrendingUp,
   Package,
   ShoppingCart,
   Users,
-  DollarSign,
-  Activity,
 } from "lucide-react";
+import StatsGrid from "../components/molecules/dashboard/StatsGrid";
+import RecentActivities from "../components/molecules/dashboard/RecentActivities";
+import QuickActions from "../components/molecules/dashboard/QuickActions";
 
 const Dashboard = () => {
   const stats = [
@@ -75,157 +69,43 @@ const Dashboard = () => {
     },
   ];
 
+  const quickActions = [
+    {
+      icon: ShoppingCart,
+      label: "Tạo đơn hàng mới",
+      color: "blue",
+      onClick: () => console.log("Create new order"),
+    },
+    {
+      icon: Package,
+      label: "Nhập kho",
+      color: "green",
+      onClick: () => console.log("Import inventory"),
+    },
+    {
+      icon: Users,
+      label: "Thêm khách hàng",
+      color: "purple",
+      onClick: () => console.log("Add customer"),
+    },
+  ];
+
   return (
     <VStack spacing={6} align="stretch">
-      {/* Dashboard Content */}
       <Box>
         <Text color="gray.600" fontSize="lg">
           Chào mừng bạn trở lại! Đây là tổng quan hoạt động hôm nay.
         </Text>
       </Box>
 
-      {/* Stats Grid */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
-        {stats.map((stat, index) => (
-          <Card key={index} shadow="sm">
-            <CardBody>
-              <HStack justify="space-between" align="flex-start" w="full">
-                <VStack align="flex-start" spacing={1} flex={1}>
-                  <Text color="gray.600" fontSize="sm" fontWeight="medium">
-                    {stat.label}
-                  </Text>
-                  <Text fontSize="2xl" fontWeight="bold" color="gray.800">
-                    {stat.value}
-                  </Text>
-                  <HStack spacing={1} align="center">
-                    <Icon
-                      as={
-                        stat.change.startsWith("+") ? "arrow-up" : "arrow-down"
-                      }
-                      color={
-                        stat.change.startsWith("+") ? "green.500" : "red.500"
-                      }
-                      boxSize={3}
-                    />
-                    <Text
-                      fontSize="sm"
-                      color={
-                        stat.change.startsWith("+") ? "green.500" : "red.500"
-                      }
-                      fontWeight="medium"
-                    >
-                      {stat.change}
-                    </Text>
-                  </HStack>
-                </VStack>
-                <Icon
-                  as={stat.icon}
-                  boxSize={8}
-                  color={`${stat.color}.500`}
-                  opacity={0.8}
-                  flexShrink={0}
-                />
-              </HStack>
-            </CardBody>
-          </Card>
-        ))}
-      </SimpleGrid>
+      <StatsGrid stats={stats} />
 
-      {/* Content Grid */}
       <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
-        {/* Recent Activities */}
         <GridItem>
-          <Card shadow="sm">
-            <CardHeader>
-              <Heading size="md">Hoạt động gần đây</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack spacing={4} align="stretch">
-                {recentActivities.map((activity, index) => (
-                  <Box
-                    key={index}
-                    p={4}
-                    border="1px"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    bg="gray.50"
-                  >
-                    <HStack justify="space-between" align="flex-start" w="full">
-                      <VStack align="flex-start" spacing={1} flex={1}>
-                        <Text fontWeight="medium" fontSize="sm">
-                          {activity.title}
-                        </Text>
-                        <Text fontSize="xs" color="gray.600">
-                          {activity.description}
-                        </Text>
-                      </VStack>
-                      <Text fontSize="xs" color="gray.500" flexShrink={0}>
-                        {activity.time}
-                      </Text>
-                    </HStack>
-                  </Box>
-                ))}
-              </VStack>
-            </CardBody>
-          </Card>
+          <RecentActivities activities={recentActivities} />
         </GridItem>
-
-        {/* Quick Actions */}
         <GridItem>
-          <Card shadow="sm">
-            <CardHeader>
-              <Heading size="md">Thao tác nhanh</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack spacing={3} align="stretch">
-                <Box
-                  p={4}
-                  border="1px"
-                  borderColor="blue.200"
-                  borderRadius="md"
-                  bg="blue.50"
-                  cursor="pointer"
-                  _hover={{ bg: "blue.100" }}
-                  transition="all 0.2s"
-                >
-                  <HStack spacing={3}>
-                    <Icon as={ShoppingCart} color="blue.500" boxSize={5} />
-                    <Text fontWeight="medium">Tạo đơn hàng mới</Text>
-                  </HStack>
-                </Box>
-                <Box
-                  p={4}
-                  border="1px"
-                  borderColor="green.200"
-                  borderRadius="md"
-                  bg="green.50"
-                  cursor="pointer"
-                  _hover={{ bg: "green.100" }}
-                  transition="all 0.2s"
-                >
-                  <HStack spacing={3}>
-                    <Icon as={Package} color="green.500" boxSize={5} />
-                    <Text fontWeight="medium">Nhập kho</Text>
-                  </HStack>
-                </Box>
-                <Box
-                  p={4}
-                  border="1px"
-                  borderColor="purple.200"
-                  borderRadius="md"
-                  bg="purple.50"
-                  cursor="pointer"
-                  _hover={{ bg: "purple.100" }}
-                  transition="all 0.2s"
-                >
-                  <HStack spacing={3}>
-                    <Icon as={Users} color="purple.500" boxSize={5} />
-                    <Text fontWeight="medium">Thêm khách hàng</Text>
-                  </HStack>
-                </Box>
-              </VStack>
-            </CardBody>
-          </Card>
+          <QuickActions actions={quickActions} />
         </GridItem>
       </Grid>
     </VStack>

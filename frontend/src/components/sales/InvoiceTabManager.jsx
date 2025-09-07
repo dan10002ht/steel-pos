@@ -5,15 +5,15 @@ import {
   GridItem,
   VStack,
 } from "@chakra-ui/react";
-import ProductSearch from "./ProductSearch";
+import ProductVariantsSearch from "../molecules/sales/ProductVariantsSearch";
 import InvoiceForm from "./InvoiceForm";
 
-const InvoiceTabManager = ({ invoice, onUpdate }) => {
+const InvoiceTabManager = ({ invoice, onUpdate, onInvoiceCreated }) => {
   return (
     <Grid templateColumns="repeat(12, 1fr)" gap={6} h="calc(100vh - 200px)">
       {/* Left Panel - Product Search */}
       <GridItem colSpan={{ base: 12, lg: 5 }}>
-        <ProductSearch 
+        <ProductVariantsSearch
           invoice={invoice}
           onUpdate={onUpdate}
         />
@@ -21,9 +21,10 @@ const InvoiceTabManager = ({ invoice, onUpdate }) => {
 
       {/* Right Panel - Invoice Form */}
       <GridItem colSpan={{ base: 12, lg: 7 }}>
-        <InvoiceForm 
+        <InvoiceForm
           invoice={invoice}
           onUpdate={onUpdate}
+          onInvoiceCreated={onInvoiceCreated}
         />
       </GridItem>
     </Grid>

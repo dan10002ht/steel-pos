@@ -1,32 +1,18 @@
-import React from "react";
-import {
-  Input,
-  InputGroup,
-  InputLeftElement,
-} from "@chakra-ui/react";
-import { Search } from "lucide-react";
+import React from 'react';
+import { InputGroup, Input, InputRightElement, Icon } from '@chakra-ui/react';
+import { Search } from 'lucide-react';
 
-const SearchInput = ({
-  placeholder = "Tìm kiếm...",
-  value,
-  onChange,
-  maxW = "400px",
-  size = "md",
-  iconSize = 16,
-  ...props
-}) => {
+const SearchInput = ({ placeholder = "Tìm kiếm...", value, onChange, ...props }) => {
   return (
-    <InputGroup maxW={{base: "100%", md: maxW}}>
-      <InputLeftElement pointerEvents="none">
-        <Search size={iconSize} />
-      </InputLeftElement>
+    <InputGroup {...props}>
       <Input
         placeholder={placeholder}
         value={value}
-        onChange={onChange}
-        size={size}
-        {...props}
+        onChange={(e) => onChange(e.target.value)}
       />
+      <InputRightElement>
+        <Icon as={Search} color="gray.400" />
+      </InputRightElement>
     </InputGroup>
   );
 };

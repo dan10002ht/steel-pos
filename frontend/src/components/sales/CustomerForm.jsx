@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   VStack,
@@ -6,161 +6,112 @@ import {
   Text,
   Input,
   Button,
-  useToast,
+  Spinner,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
-import { User, Search } from "lucide-react";
+import { User, Search, X } from "lucide-react";
+import { useCustomerSearch } from "../../hooks/sales/useCustomerSearch";
 
 const CustomerForm = ({ customer, onUpdate }) => {
-  const [formData, setFormData] = useState({
-    name: customer?.name || "",
-    phone: customer?.phone || "",
-    address: customer?.address || "",
-    email: customer?.email || "",
-  });
-  const [isSearching, setIsSearching] = useState(false);
-  const toast = useToast();
-
-  // Mock data - sẽ được thay thế bằng API calls
-  const mockCustomers = [
-    {
-      id: 1,
-      name: "Nguyễn Văn A",
-      phone: "0123456789",
-      address: "123 Đường ABC, Quận 1, TP.HCM",
-      email: "nguyenvana@email.com",
-    },
-    {
-      id: 2,
-      name: "Trần Thị B",
-      phone: "0987654321",
-      address: "456 Đường XYZ, Quận 2, TP.HCM",
-      email: "tranthib@email.com",
-    },
-  ];
+  const [errors, setErrors] = useState({});
+  
+  // Customer search hook
+  const {
+    searchTerm,
+    isSearching,
+    searchResults,
+    isSearchLoading,
+    searchError,
+    searchCustomers,
+    clearSearch,
+    selectCustomer
+  } = useCustomerSearch();
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    // Map field names to invoice field names
+    const fieldMapping = {
+      'name': 'customer_name',
+      'phone': 'customer_phone', 
+      'address': 'customer_address'
+    };
+    
+    const invoiceField = fieldMapping[field];
+    onUpdate(invoiceField, value);
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
 
     // Auto-search khi nhập tên hoặc số điện thoại
     if (field === 'name' || field === 'phone') {
-      handleSearch(value);
-    }
-  };
-
-  const handleSearch = (searchTerm) => {
-    if (!searchTerm || searchTerm.length < 2) {
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    // TODO: Implement API search
-    // Mock search logic
-    const results = mockCustomers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm)
-    );
-
-    if (results.length > 0) {
-      toast({
-        title: "Tìm thấy khách hàng",
-        description: `Có ${results.length} khách hàng phù hợp`,
-        status: "info",
-        duration: 2000,
-        isClosable: true,
-      });
+      searchCustomers(value);
     }
   };
 
   const handleSelectCustomer = (selectedCustomer) => {
-    setFormData({
-      name: selectedCustomer.name,
-      phone: selectedCustomer.phone,
-      address: selectedCustomer.address,
-      email: selectedCustomer.email,
-    });
-
-    onUpdate(selectedCustomer);
-
-    toast({
-      title: "Đã chọn khách hàng",
-      description: `Khách hàng: ${selectedCustomer.name}`,
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-
-    setIsSearching(false);
-  };
-
-  const handleSaveCustomer = () => {
-    if (!formData.name || !formData.phone) {
-      toast({
-        title: "Thiếu thông tin",
-        description: "Vui lòng nhập đầy đủ tên và số điện thoại",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    const newCustomer = {
-      id: Date.now(),
-      name: formData.name,
-      phone: formData.phone,
-      address: formData.address,
-      email: formData.email,
-    };
-
-    onUpdate(newCustomer);
-
-    toast({
-      title: "Đã lưu thông tin khách hàng",
-      description: `Khách hàng: ${formData.name}`,
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
+    // Update invoice fields with selected customer data
+    onUpdate('customer_id', selectedCustomer.id);
+    onUpdate('customer_name', selectedCustomer.name);
+    onUpdate('customer_phone', selectedCustomer.phone);
+    onUpdate('customer_address', selectedCustomer.address || "");
+    
+    selectCustomer(selectedCustomer);
   };
 
   const handleClearForm = () => {
-    setFormData({
-      name: "",
-      phone: "",
-      address: "",
-      email: "",
-    });
-    onUpdate(null);
+    onUpdate('customer_id', null);
+    onUpdate('customer_name', "");
+    onUpdate('customer_phone', "");
+    onUpdate('customer_address', "");
+    clearSearch();
   };
 
   return (
     <VStack spacing={4} align="stretch">
-      <HStack justify="space-between">
         <Text fontSize="md" fontWeight="medium">
           Thông tin khách hàng
         </Text>
-        <HStack spacing={2}>
-          <Button
-            size="sm"
-            leftIcon={<Search size={14} />}
-            variant="outline"
-            onClick={() => handleSearch(formData.name || formData.phone)}
-          >
-            Tìm kiếm
-          </Button>
-          <Button
-            size="sm"
-            leftIcon={<User size={14} />}
-            onClick={handleSaveCustomer}
-          >
-            Lưu
-          </Button>
-        </HStack>
-      </HStack>
+
+      {/* Hiển thị khách hàng hiện tại nếu đã select */}
+      {customer?.id && (
+        <Box
+          p={3}
+          bg="green.50"
+          border="1px"
+          borderColor="green.200"
+          borderRadius="md"
+        >
+          <HStack justify="space-between">
+            <VStack align="start" spacing={1}>
+              <Text fontSize="sm" fontWeight="medium" color="green.700">
+                Khách hàng hiện tại
+              </Text>
+              <Text fontSize="sm" color="green.600">
+                {customer.name} - {customer.phone}
+              </Text>
+              {customer.address && (
+                <Text fontSize="xs" color="green.500">
+                  {customer.address}
+                </Text>
+              )}
+            </VStack>
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="green"
+              onClick={handleClearForm}
+              leftIcon={<X size={12} />}
+            >
+              Thay đổi
+            </Button>
+          </HStack>
+        </Box>
+      )}
 
       <VStack spacing={3} align="stretch">
         <Box>
@@ -168,10 +119,17 @@ const CustomerForm = ({ customer, onUpdate }) => {
             Họ và tên *
           </Text>
           <Input
-            value={formData.name}
+            value={customer.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
             placeholder="Nhập họ và tên khách hàng"
+            borderColor={errors.name ? "red.300" : undefined}
+            _focus={{ borderColor: errors.name ? "red.500" : "blue.500" }}
           />
+          {errors.name && (
+            <Text fontSize="xs" color="red.500" mt={1}>
+              {errors.name}
+            </Text>
+          )}
         </Box>
 
         <Box>
@@ -179,30 +137,24 @@ const CustomerForm = ({ customer, onUpdate }) => {
             Số điện thoại *
           </Text>
           <Input
-            value={formData.phone}
+            value={customer.phone}
             onChange={(e) => handleInputChange('phone', e.target.value)}
             placeholder="Nhập số điện thoại"
+            borderColor={errors.phone ? "red.300" : undefined}
+            _focus={{ borderColor: errors.phone ? "red.500" : "blue.500" }}
           />
+          {errors.phone && (
+            <Text fontSize="xs" color="red.500" mt={1}>
+              {errors.phone}
+            </Text>
+          )}
         </Box>
-
-        <Box>
-          <Text fontSize="sm" color="gray.600" mb={1}>
-            Email
-          </Text>
-          <Input
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            placeholder="Nhập email (không bắt buộc)"
-            type="email"
-          />
-        </Box>
-
         <Box>
           <Text fontSize="sm" color="gray.600" mb={1}>
             Địa chỉ
           </Text>
           <Input
-            value={formData.address}
+            value={customer.address}
             onChange={(e) => handleInputChange('address', e.target.value)}
             placeholder="Nhập địa chỉ (không bắt buộc)"
           />
@@ -210,24 +162,43 @@ const CustomerForm = ({ customer, onUpdate }) => {
       </VStack>
 
       {/* Search Results */}
-      {isSearching && (
+      {isSearching && searchTerm && (
         <Box
           border="1px"
           borderColor="gray.200"
           borderRadius="md"
           p={3}
           bg="gray.50"
+          maxH="200px"
+          overflowY="auto"
         >
-          <Text fontSize="sm" fontWeight="medium" mb={2}>
-            Kết quả tìm kiếm:
-          </Text>
-          <VStack spacing={2} align="stretch">
-            {mockCustomers
-              .filter(customer =>
-                customer.name.toLowerCase().includes((formData.name || "").toLowerCase()) ||
-                customer.phone.includes(formData.phone || "")
-              )
-              .map(customer => (
+          <HStack justify="space-between" mb={2}>
+            <Text fontSize="sm" fontWeight="medium">
+              Kết quả tìm kiếm:
+            </Text>
+            <Button
+              size="xs"
+              variant="ghost"
+              onClick={clearSearch}
+              leftIcon={<X size={12} />}
+            >
+              Đóng
+            </Button>
+          </HStack>
+          
+          {isSearchLoading ? (
+            <HStack justify="center" py={4}>
+              <Spinner size="sm" />
+              <Text fontSize="sm" color="gray.600">Đang tìm kiếm...</Text>
+            </HStack>
+          ) : searchError ? (
+            <Alert status="error" size="sm">
+              <AlertIcon />
+              <Text fontSize="sm">Lỗi tìm kiếm khách hàng</Text>
+            </Alert>
+          ) : searchResults.length > 0 ? (
+            <VStack spacing={2} align="stretch">
+              {searchResults.map(customer => (
                 <Box
                   key={customer.id}
                   p={2}
@@ -235,46 +206,24 @@ const CustomerForm = ({ customer, onUpdate }) => {
                   borderColor="gray.300"
                   borderRadius="md"
                   cursor="pointer"
-                  _hover={{ bg: "blue.50" }}
+                  _hover={{ bg: "blue.50", borderColor: "blue.300" }}
                   onClick={() => handleSelectCustomer(customer)}
                 >
                   <Text fontWeight="medium">{customer.name}</Text>
                   <Text fontSize="sm" color="gray.600">
-                    {customer.phone} • {customer.address}
+                    {customer.phone} • {customer.address || "Chưa có địa chỉ"}
                   </Text>
                 </Box>
               ))}
-          </VStack>
+            </VStack>
+          ) : (
+            <Text fontSize="sm" color="gray.600" textAlign="center" py={2}>
+              Không tìm thấy khách hàng nào
+            </Text>
+          )}
         </Box>
       )}
 
-      {/* Current Customer Info */}
-      {customer && (
-        <Box
-          border="1px"
-          borderColor="green.200"
-          borderRadius="md"
-          p={3}
-          bg="green.50"
-        >
-          <Text fontSize="sm" fontWeight="medium" color="green.700" mb={2}>
-            Khách hàng hiện tại:
-          </Text>
-          <Text fontWeight="medium">{customer.name}</Text>
-          <Text fontSize="sm" color="gray.600">
-            {customer.phone} • {customer.address}
-          </Text>
-          <Button
-            size="xs"
-            variant="ghost"
-            colorScheme="red"
-            mt={2}
-            onClick={handleClearForm}
-          >
-            Xóa thông tin
-          </Button>
-        </Box>
-      )}
     </VStack>
   );
 };
