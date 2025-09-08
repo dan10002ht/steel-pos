@@ -17,6 +17,10 @@ func NewPDFService() *PDFService {
 	return &PDFService{}
 }
 
+func (s *PDFService) FormatCurrency(amount float64) string {
+	return fmt.Sprintf("%.0f VNĐ", amount)
+}
+
 // GenerateInvoicePDF generates a PDF for the given invoice
 func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -35,9 +39,9 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.CellFormat(0, 12, "ĐẠI LÝ SẮT THÉP KIÊN PHƯỚC", "", 0, "C", false, 0, "")
 	pdf.Ln(10)
 
-	pdf.SetFont("NotoSans", "", 14)
-	pdf.SetTextColor(100, 100, 100)
-	pdf.CellFormat(0, 6, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "", 0, "C", false, 0, "")
+	// pdf.SetFont("NotoSans", "", 14)
+	// pdf.SetTextColor(100, 100, 100)
+	// pdf.CellFormat(0, 6, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "", 0, "C", false, 0, "")
 
 	pdf.SetFont("NotoSans", "", 12)
 	pdf.CellFormat(0, 6, "Địa chỉ: Trường Sơn Đức Thọ Hà Tĩnh", "", 0, "C", false, 0, "")
@@ -62,10 +66,9 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 		pdf.Cell(40, 6, fmt.Sprintf("Địa chỉ: %s", *invoice.CustomerAddress))
 		pdf.Ln(6)
 	}
-	pdf.Ln(3)
 
 	pdf.Cell(95, 6, fmt.Sprintf("Mã hoá đơn: %s", invoice.InvoiceCode))
-	pdf.Cell(95, 6, fmt.Sprintf("Ngày tạo: %s", invoice.CreatedAt.Format("02/01/2006")))
+	pdf.Cell(95, 6, fmt.Sprintf("Ngày tạo đơn: %s", invoice.CreatedAt.Format("02/01/2006")))
 	pdf.Ln(6)
 
 	pdf.SetFont("NotoSans", "B", 10)
@@ -123,8 +126,8 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 		pdf.CellFormat(w1, 10, item.ProductName, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(w2, 10, item.VariantName, "1", 0, "L", true, 0, "")
 		pdf.CellFormat(w3, 10, strconv.Itoa(int(item.Quantity)), "1", 0, "C", true, 0, "")
-		pdf.CellFormat(w4, 10, formatCurrency(item.UnitPrice), "1", 0, "R", true, 0, "")
-		pdf.CellFormat(w5, 10, formatCurrency(item.TotalPrice), "1", 1, "R", true, 0, "")
+		pdf.CellFormat(w4, 10, s.FormatCurrency(item.UnitPrice), "1", 0, "R", true, 0, "")
+		pdf.CellFormat(w5, 10, s.FormatCurrency(item.TotalPrice), "1", 1, "R", true, 0, "")
 	}
 
 	// Total row - single cell spanning all columns
@@ -134,7 +137,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	// Calculate total width of all columns
 	totalWidth := w1 + w2 + w3 + w4 + w5
-	pdf.CellFormat(totalWidth, 10, fmt.Sprintf("Thành tiền: %s", formatCurrency(invoice.TotalAmount)), "1", 1, "R", true, 0, "")
+	pdf.CellFormat(totalWidth, 10, fmt.Sprintf("Thành tiền: %s", s.FormatCurrency(invoice.TotalAmount)), "1", 1, "R", true, 0, "")
 
 	pdf.Ln(8)
 
@@ -155,7 +158,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	// Discount row
 	if invoice.DiscountAmount > 0 {
 		pdf.CellFormat(summaryW1, 6, "Giảm giá:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, "-"+formatCurrency(invoice.DiscountAmount), "", 1, "R", false, 0, "")
+		pdf.CellFormat(summaryW2, 6, "-"+s.FormatCurrency(invoice.DiscountAmount), "", 1, "R", false, 0, "")
 		pdf.SetX(startX) // Reset X position for next row
 	}
 
@@ -163,7 +166,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.SetFont("NotoSans", "B", 14)
 	pdf.SetTextColor(220, 38, 38) // Red color for total
 	pdf.CellFormat(summaryW1, 8, "TỔNG CỘNG:", "", 0, "L", false, 0, "")
-	pdf.CellFormat(summaryW2, 8, formatCurrency(invoice.TotalAmount), "", 1, "R", false, 0, "")
+	pdf.CellFormat(summaryW2, 8, s.FormatCurrency(invoice.TotalAmount), "", 1, "R", false, 0, "")
 	pdf.SetX(startX) // Reset X position for next row
 
 	// Paid amount row
@@ -171,7 +174,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 		pdf.SetFont("NotoSans", "", 11)
 		pdf.SetTextColor(0, 0, 0)
 		pdf.CellFormat(summaryW1, 6, "Đã thanh toán:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, formatCurrency(invoice.PaidAmount), "", 1, "R", false, 0, "")
+		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(invoice.PaidAmount), "", 1, "R", false, 0, "")
 		pdf.SetX(startX) // Reset X position for next row
 	}
 
@@ -181,7 +184,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 		pdf.SetFont("NotoSans", "B", 11)
 		pdf.SetTextColor(220, 38, 38) // Red color for remaining
 		pdf.CellFormat(summaryW1, 6, "Còn lại:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, formatCurrency(remaining), "", 1, "R", false, 0, "")
+		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(remaining), "", 1, "R", false, 0, "")
 	}
 	pdf.Ln(15)
 
@@ -197,7 +200,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	// Signature section with space between
 	pdf.SetTextColor(100, 100, 100)
-	pdf.SetFont("NotoSans", "", 14)
+	pdf.SetFont("NotoSans", "B", 13)
 	pdf.CellFormat(95, 6, "Khách hàng", "", 0, "C", false, 0, "")
 	pdf.CellFormat(95, 6, "Người bán", "", 0, "C", false, 0, "")
 	pdf.Ln(6)
@@ -212,39 +215,4 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	}
 
 	return buf.Bytes(), nil
-}
-
-// formatCurrency formats a float64 as Vietnamese currency
-func formatCurrency(amount float64) string {
-	return fmt.Sprintf("%.0f VNĐ", amount)
-}
-
-// getStatusText returns Vietnamese text for invoice status
-func getStatusText(status string) string {
-	switch status {
-	case "confirmed":
-		return "Đã xác nhận"
-	case "draft":
-		return "Nháp"
-	case "cancelled":
-		return "Đã hủy"
-	default:
-		return "Không xác định"
-	}
-}
-
-// getPaymentStatusText returns Vietnamese text for payment status
-func getPaymentStatusText(status string) string {
-	switch status {
-	case "paid":
-		return "Đã thanh toán"
-	case "pending":
-		return "Chờ thanh toán"
-	case "partial":
-		return "Thanh toán một phần"
-	case "refunded":
-		return "Đã hoàn tiền"
-	default:
-		return "Không xác định"
-	}
 }
