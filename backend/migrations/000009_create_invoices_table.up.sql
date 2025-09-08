@@ -34,17 +34,17 @@ CREATE TABLE invoices (
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER,  -- user_id who created (no FK constraint)
-    
-    -- Indexes
-    INDEX idx_invoices_invoice_code (invoice_code),
-    INDEX idx_invoices_customer_id (customer_id),
-    INDEX idx_invoices_customer_phone (customer_phone),
-    INDEX idx_invoices_created_at (created_at),
-    INDEX idx_invoices_status (status),
-    INDEX idx_invoices_payment_status (payment_status),
-    INDEX idx_invoices_created_by (created_by)
+    created_by INTEGER  -- user_id who created (no FK constraint)
 );
+
+-- Create indexes
+CREATE INDEX idx_invoices_invoice_code ON invoices (invoice_code);
+CREATE INDEX idx_invoices_customer_id ON invoices (customer_id);
+CREATE INDEX idx_invoices_customer_phone ON invoices (customer_phone);
+CREATE INDEX idx_invoices_created_at ON invoices (created_at);
+CREATE INDEX idx_invoices_status ON invoices (status);
+CREATE INDEX idx_invoices_payment_status ON invoices (payment_status);
+CREATE INDEX idx_invoices_created_by ON invoices (created_by);
 
 -- Create trigger for updated_at
 CREATE TRIGGER update_invoices_updated_at 

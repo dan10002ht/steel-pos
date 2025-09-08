@@ -67,6 +67,59 @@ func (m *AuthMiddleware) Authenticate() gin.HandlerFunc {
 	}
 }
 
+// AuthenticateWithQueryParam middleware để support cả header và query param
+func (m *AuthMiddleware) AuthenticateWithQueryParam() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Lấy token từ header hoặc query param
+		authHeader := c.GetHeader("Authorization")
+		tokenParam := c.Query("token")
+
+		var token string
+
+		if authHeader != "" {
+			// Kiểm tra format "Bearer <token>"
+			tokenParts := strings.Split(authHeader, " ")
+			if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"error":   "Invalid authorization header format",
+					"message": "Use 'Bearer <token>' format",
+				})
+				c.Abort()
+				return
+			}
+			token = tokenParts[1]
+		} else if tokenParam != "" {
+			token = tokenParam
+		} else {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Authorization required",
+				"message": "Authorization header or token parameter required",
+			})
+			c.Abort()
+			return
+		}
+
+		// Validate token
+		claims, err := m.jwtService.ValidateToken(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "Invalid token",
+				"message": err.Error(),
+			})
+			c.Abort()
+			return
+		}
+
+		// Lưu thông tin user vào context
+		c.Set("user_id", claims.UserID)
+		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
+		c.Set("claims", claims)
+
+		c.Next()
+	}
+}
+
 // RequireRole middleware để kiểm tra role cụ thể
 func (m *AuthMiddleware) RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {

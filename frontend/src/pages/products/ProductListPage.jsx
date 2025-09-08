@@ -37,7 +37,7 @@ import Pagination from '../../components/atoms/Pagination';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useDeleteApi } from '../../hooks/useDeleteApi';
 import { useDebounce } from '../../hooks/useDebounce';
-import { formatPrice } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -314,7 +314,7 @@ const ProductListPage = () => {
                       </Td>
                       <Td>
                         <Text color='blue.600'>
-                          {formatPrice(variant.price)}
+                          {formatCurrency(variant.price)}
                         </Text>
                       </Td>
                       <Td>

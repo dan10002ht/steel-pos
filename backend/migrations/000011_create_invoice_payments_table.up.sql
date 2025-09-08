@@ -30,14 +30,14 @@ CREATE TABLE invoice_payments (
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER,  -- user_id who created
-    
-    -- Indexes
-    INDEX idx_invoice_payments_invoice_id (invoice_id),
-    INDEX idx_invoice_payments_payment_date (payment_date),
-    INDEX idx_invoice_payments_status (status),
-    INDEX idx_invoice_payments_created_by (created_by)
+    created_by INTEGER  -- user_id who created
 );
+
+-- Create indexes
+CREATE INDEX idx_invoice_payments_invoice_id ON invoice_payments (invoice_id);
+CREATE INDEX idx_invoice_payments_payment_date ON invoice_payments (payment_date);
+CREATE INDEX idx_invoice_payments_status ON invoice_payments (status);
+CREATE INDEX idx_invoice_payments_created_by ON invoice_payments (created_by);
 
 -- Create trigger for updated_at
 CREATE TRIGGER update_invoice_payments_updated_at 

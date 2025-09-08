@@ -340,17 +340,17 @@ export const getPriceRange = (product) => {
   return { min: minPrice, max: maxPrice };
 };
 
-export const formatPrice = (price) => {
+export const formatCurrency = (price) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(price);
 };
 
-export const formatPriceRange = (product) => {
+export const formatCurrencyRange = (product) => {
   const { min, max } = getPriceRange(product);
   if (min === max) {
-    return formatPrice(min);
+    return formatCurrency(min);
   }
-  return `${formatPrice(min)} - ${formatPrice(max)}`;
+  return `${formatCurrency(min)} - ${formatCurrency(max)}`;
 };

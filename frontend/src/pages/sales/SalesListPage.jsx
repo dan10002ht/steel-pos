@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import {
-  Box,
-  VStack,
   HStack,
+  VStack,
+  Box,
   Text,
   Button,
   Input,
@@ -16,192 +16,183 @@ import {
   Td,
   Badge,
   IconButton,
-  useToast,
   Card,
   CardBody,
   Select,
   FormControl,
   FormLabel,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Flex,
 } from "@chakra-ui/react";
-import { Search, Eye, Edit, Trash2, Plus } from "lucide-react";
+import { Search, Eye, Edit, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Page from "../../components/organisms/Page/Page";
 import SalesStats from "../../components/sales/SalesStats";
+import { useFetchApi } from "../../hooks/useFetchApi";
+import { useDebounce } from "../../hooks/useDebounce";
+import Pagination from "../../components/atoms/Pagination";
+import { formatCurrency } from "../../utils/formatters";
+import { 
+  getInvoiceStatusColor, 
+  getInvoiceStatusText, 
+  getPaymentStatusColor, 
+  getPaymentStatusWithRemaining 
+} from "../../utils/statusHelpers";
 
 const SalesListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
   const navigate = useNavigate();
-  const toast = useToast();
 
-  // Mock data - sẽ được thay thế bằng API calls
-  const mockInvoices = [
-    {
-      id: 1,
-      code: "#20240115001",
-      customerName: "Nguyễn Văn A",
-      phone: "0123456789",
-      address: "123 Đường ABC, Quận 1, TP.HCM",
-      date: "2024-01-15",
-      itemCount: 3,
-      totalAmount: 1500000,
-      paymentStatus: "paid",
-    },
-    {
-      id: 2,
-      code: "#20240115002",
-      customerName: "Trần Thị B",
-      phone: "0987654321",
-      address: "456 Đường XYZ, Quận 2, TP.HCM",
-      date: "2024-01-15",
-      itemCount: 2,
-      totalAmount: 800000,
-      paymentStatus: "pending",
-    },
-    {
-      id: 3,
-      code: "#20240114001",
-      customerName: "Lê Văn C",
-      phone: "0555666777",
-      address: "789 Đường DEF, Quận 3, TP.HCM",
-      date: "2024-01-14",
-      itemCount: 5,
-      totalAmount: 2500000,
-      paymentStatus: "paid",
-    },
-  ];
+  // Debounce search term
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "paid":
-        return "green";
-      case "pending":
-        return "yellow";
-      case "cancelled":
-        return "red";
-      default:
-        return "gray";
+  // Fetch invoices from API
+  const { data: invoicesData, error, isPending: isLoading } = useFetchApi(
+    [
+      'invoices',
+      currentPage,
+      pageSize,
+      debouncedSearchTerm,
+      statusFilter,
+      paymentStatusFilter,
+      dateFrom,
+      dateTo
+    ],
+    `/invoices?page=${currentPage}&limit=${pageSize}&search=${debouncedSearchTerm}&status=${statusFilter}&payment_status=${paymentStatusFilter}`,
+    {
+      enabled: true,
     }
-  };
+  );
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "paid":
-        return "Đã thanh toán";
-      case "pending":
-        return "Chờ thanh toán";
-      case "cancelled":
-        return "Đã hủy";
-      default:
-        return "Không xác định";
-    }
-  };
+
+
 
   const handleViewDetail = (id) => {
     navigate(`/sales/detail/${id}`);
   };
 
   const handleEdit = (id) => {
-    // TODO: Implement edit functionality
-    toast({
-      title: "Chức năng đang phát triển",
-      description: "Tính năng chỉnh sửa sẽ được cập nhật sau",
-      status: "info",
-      duration: 3000,
-      isClosable: true,
-    });
+    navigate(`/sales/edit/${id}`);
   };
 
-  const handleDelete = (id) => {
-    // TODO: Implement delete functionality
-    toast({
-      title: "Chức năng đang phát triển",
-      description: "Tính năng xóa sẽ được cập nhật sau",
-      status: "info",
-      duration: 3000,
-      isClosable: true,
-    });
-  };
 
-  const filteredInvoices = mockInvoices.filter((invoice) => {
-    // Search filter
-    const matchesSearch =
-      invoice.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.phone.includes(searchTerm);
 
-    // Status filter
-    const matchesStatus =
-      !statusFilter || invoice.paymentStatus === statusFilter;
+  // Extract data from API response
+  const invoices = invoicesData?.invoices || [];
+  const totalCount = invoicesData?.total || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
-    // Date filter
-    const matchesDate =
-      (!dateFrom || invoice.date >= dateFrom) &&
-      (!dateTo || invoice.date <= dateTo);
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Page
+        title="Danh sách bán hàng"
+        subtitle="Quản lý và theo dõi tất cả hoá đơn bán hàng"
+      >
+        <Flex justify="center" py={10}>
+          <Spinner size="xl" />
+        </Flex>
+      </Page>
+    );
+  }
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+  // Show error state
+  if (error) {
+    return (
+      <Page
+        title="Danh sách bán hàng"
+        subtitle="Quản lý và theo dõi tất cả hoá đơn bán hàng"
+      >
+        <Alert status="error">
+          <AlertIcon />
+          <AlertTitle>Lỗi tải dữ liệu!</AlertTitle>
+          <AlertDescription>
+            {error.message || "Không thể tải danh sách hoá đơn"}
+          </AlertDescription>
+        </Alert>
+      </Page>
+    );
+  }
 
   return (
-    <Box p={6}>
-      <VStack spacing={6} align="stretch">
-        {/* Page Header */}
-        <Box>
-          <Text fontSize="2xl" fontWeight="bold" mb={2}>
-            Danh sách bán hàng
-          </Text>
-          <Text color="gray.600">
-            Quản lý và theo dõi tất cả hoá đơn bán hàng
-          </Text>
-        </Box>
-
-        {/* Sales Stats */}
-        <Card mb={6}>
-          <CardBody>
-            <SalesStats invoices={mockInvoices} />
-          </CardBody>
-        </Card>
-
-        {/* Search and Actions */}
-        <Card>
-          <CardBody>
-            <HStack justify="space-between" mb={4}>
-              <InputGroup maxW="400px">
-                <InputLeftElement pointerEvents="none">
-                  <Search size={20} />
-                </InputLeftElement>
-                <Input
-                  placeholder="Tìm kiếm theo mã hoá đơn, tên khách hàng, số điện thoại..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </InputGroup>
-              <Button
-                leftIcon={<Plus size={16} />}
-                colorScheme="blue"
-                onClick={() => navigate("/sales/create")}
-              >
-                Tạo hoá đơn mới
-              </Button>
-            </HStack>
+    <Page
+      title="Danh sách bán hàng"
+      subtitle="Quản lý và theo dõi tất cả hoá đơn bán hàng"
+      primaryActions={[
+        {
+          label: "Tạo hoá đơn mới",
+          icon: <Plus size={16} />,
+          onClick: () => navigate("/sales/create"),
+          colorScheme: "blue"
+        }
+      ]}
+    >
+      {/* Sales Stats */}
+    
+          <SalesStats invoices={invoices} />
+      
+      {/* Search and Actions */}
+      <Card>
+        <CardBody>
+          <HStack justify="space-between" mb={4}>
+            <InputGroup maxW="400px">
+              <InputLeftElement pointerEvents="none">
+                <Search size={20} />
+              </InputLeftElement>
+              <Input
+                placeholder="Tìm kiếm theo mã hoá đơn, tên khách hàng, số điện thoại..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
+          </HStack>
 
             {/* Filters */}
-            <HStack spacing={4} mb={4}>
-              <FormControl maxW="200px">
-                <FormLabel fontSize="sm">Trạng thái</FormLabel>
+            <Flex
+              direction={{ base: "column", md: "row" }}
+              gap={4}
+              wrap="wrap"
+              mb={4}
+            >
+              <FormControl minW={{ base: "100%", sm: "200px" }} maxW={{ base: "100%", md: "200px" }}>
+                <FormLabel fontSize="sm">Trạng thái hoá đơn</FormLabel>
                 <Select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   placeholder="Tất cả"
                 >
-                  <option value="paid">Đã thanh toán</option>
-                  <option value="pending">Chờ thanh toán</option>
+                  <option value="draft">Nháp</option>
+                  <option value="confirmed">Đã xác nhận</option>
                   <option value="cancelled">Đã hủy</option>
                 </Select>
               </FormControl>
 
-              <FormControl maxW="200px">
+              <FormControl minW={{ base: "100%", sm: "200px" }} maxW={{ base: "100%", md: "200px" }}>
+                <FormLabel fontSize="sm">Trạng thái thanh toán</FormLabel>
+                <Select
+                  value={paymentStatusFilter}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                  placeholder="Tất cả"
+                >
+                  <option value="pending">Chờ thanh toán</option>
+                  <option value="partial">Còn lại</option>
+                  <option value="paid">Đã thanh toán</option>
+                  <option value="refunded">Đã hoàn tiền</option>
+                </Select>
+              </FormControl>
+
+              <FormControl minW={{ base: "100%", sm: "200px" }} maxW={{ base: "100%", md: "200px" }}>
                 <FormLabel fontSize="sm">Từ ngày</FormLabel>
                 <Input
                   type="date"
@@ -210,7 +201,7 @@ const SalesListPage = () => {
                 />
               </FormControl>
 
-              <FormControl maxW="200px">
+              <FormControl minW={{ base: "100%", sm: "200px" }} maxW={{ base: "100%", md: "200px" }}>
                 <FormLabel fontSize="sm">Đến ngày</FormLabel>
                 <Input
                   type="date"
@@ -218,7 +209,7 @@ const SalesListPage = () => {
                   onChange={(e) => setDateTo(e.target.value)}
                 />
               </FormControl>
-            </HStack>
+            </Flex>
 
             {/* Table */}
             <Box overflowX="auto">
@@ -229,71 +220,92 @@ const SalesListPage = () => {
                     <Th>Tên khách hàng</Th>
                     <Th>Số điện thoại</Th>
                     <Th>Địa chỉ</Th>
-                    <Th>Ngày mua hàng</Th>
-                    <Th>Số lượng SP</Th>
+                    <Th>Ngày tạo</Th>
                     <Th>Tổng tiền</Th>
                     <Th>Trạng thái</Th>
+                    <Th>Thanh toán</Th>
                     <Th>Hành động</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {filteredInvoices.map((invoice) => (
-                    <Tr key={invoice.id}>
-                      <Td fontWeight="medium">{invoice.code}</Td>
-                      <Td>{invoice.customerName}</Td>
-                      <Td>{invoice.phone}</Td>
-                      <Td maxW="200px" isTruncated>
-                        {invoice.address}
-                      </Td>
-                      <Td>{invoice.date}</Td>
-                      <Td>{invoice.itemCount}</Td>
-                      <Td fontWeight="medium">
-                        {invoice.totalAmount.toLocaleString("vi-VN")} VNĐ
-                      </Td>
-                      <Td>
-                        <Badge
-                          colorScheme={getStatusColor(invoice.paymentStatus)}
-                        >
-                          {getStatusText(invoice.paymentStatus)}
-                        </Badge>
-                      </Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <IconButton
-                            size="sm"
-                            icon={<Eye size={16} />}
-                            onClick={() => handleViewDetail(invoice.id)}
-                            colorScheme="blue"
-                            variant="ghost"
-                            title="Xem chi tiết"
-                          />
-                          <IconButton
-                            size="sm"
-                            icon={<Edit size={16} />}
-                            onClick={() => handleEdit(invoice.id)}
-                            colorScheme="orange"
-                            variant="ghost"
-                            title="Chỉnh sửa"
-                          />
-                          <IconButton
-                            size="sm"
-                            icon={<Trash2 size={16} />}
-                            onClick={() => handleDelete(invoice.id)}
-                            colorScheme="red"
-                            variant="ghost"
-                            title="Xóa"
-                          />
-                        </HStack>
+                  {invoices.length === 0 ? (
+                    <Tr>
+                      <Td colSpan={9} textAlign="center" py={8}>
+                        <Text color="gray.500">Không có hoá đơn nào</Text>
                       </Td>
                     </Tr>
-                  ))}
+                  ) : (
+                    invoices.map((invoice) => (
+                      <Tr key={invoice.id}>
+                        <Td fontWeight="medium">{invoice.invoice_code}</Td>
+                        <Td>{invoice.customer_name}</Td>
+                        <Td>{invoice.customer_phone}</Td>
+                        <Td maxW="200px" isTruncated>
+                          {invoice.customer_address || "Không có địa chỉ"}
+                        </Td>
+                        <Td>
+                          {new Date(invoice.created_at).toLocaleDateString("vi-VN")}
+                        </Td>
+                        <Td fontWeight="medium">
+                          {formatCurrency(invoice.total_amount)}
+                        </Td>
+                        <Td>
+                          <Badge
+                            colorScheme={getInvoiceStatusColor(invoice.status)}
+                          >
+                            {getInvoiceStatusText(invoice.status)}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <Badge
+                            colorScheme={getPaymentStatusColor(invoice.payment_status)}
+                          >
+                            {getPaymentStatusWithRemaining(invoice)}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          <HStack spacing={2}>
+                            <IconButton
+                              size="sm"
+                              icon={<Eye size={16} />}
+                              onClick={() => handleViewDetail(invoice.id)}
+                              colorScheme="blue"
+                              variant="ghost"
+                              title="Xem chi tiết"
+                            />
+                            <IconButton
+                              size="sm"
+                              icon={<Edit size={16} />}
+                              onClick={() => handleEdit(invoice.id)}
+                              colorScheme="orange"
+                              variant="ghost"
+                              title="Chỉnh sửa"
+                            />
+                          </HStack>
+                        </Td>
+                      </Tr>
+                    ))
+                  )}
                 </Tbody>
               </Table>
             </Box>
+
+            {/* Pagination */}
+            {totalPages > 0 && (
+              <Box mt={0}>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </Box>
+            )}
           </CardBody>
         </Card>
-      </VStack>
-    </Box>
+    </Page>
   );
 };
 

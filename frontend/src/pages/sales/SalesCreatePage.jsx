@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import {
-  Box,
-  VStack,
   useToast,
 } from "@chakra-ui/react";
-import PageHeader from "../../components/atoms/PageHeader";
+import Page from "../../components/organisms/Page/Page";
 import InvoiceTabsManager from "../../components/organisms/sales/InvoiceTabsManager";
-import { PAYMENT_METHODS, TOAST_DURATION } from "../../constants/options";
+import { TOAST_DURATION } from "../../constants/options";
 import { useCreateApi } from "../../hooks/useCreateApi";
 
 const SalesCreatePage = () => {
@@ -102,25 +100,25 @@ const SalesCreatePage = () => {
         notes: createdInvoice.notes || null,
       };
 
-      const response = await createInvoiceMutation.mutateAsync(payload);
-      
-      toast({
-        title: "Tạo hoá đơn thành công",
-        description: `Hoá đơn ${response.invoice_code} đã được tạo`,
-        status: "success",
-        duration: TOAST_DURATION.MEDIUM,
-        isClosable: true,
-      });
-
-      // Update the invoice with the created data
-      const newInvoices = [...invoices];
-      newInvoices[activeTab] = {
-        ...newInvoices[activeTab],
-        id: response.id,
-        code: response.invoice_code,
-        status: 'created',
-      };
-      setInvoices(newInvoices);
+      const {data, success} = await createInvoiceMutation.mutateAsync(payload);
+      if (success) {
+        toast({
+          title: "Tạo hoá đơn thành công",
+          description: `Hoá đơn ${data.invoice_code} đã được tạo`,
+          status: "success",
+          duration: TOAST_DURATION.MEDIUM,
+          isClosable: true,
+        });
+        
+        // Remove the created invoice from the list
+        const newInvoices = invoices.filter((_, index) => index !== activeTab);
+        setInvoices(newInvoices);
+        
+        // Switch to the first tab if current tab was removed
+        if (activeTab >= newInvoices.length) {
+          setActiveTab(0);
+        }
+      }
 
       // Create a new empty invoice for next use
       handleCreateNewInvoice();
@@ -139,24 +137,20 @@ const SalesCreatePage = () => {
   };
 
   return (
-    <Box p={6}>
-      <VStack spacing={6} align="stretch">
-        <PageHeader
-          title="Tạo hoá đơn mới"
-          subtitle="Quản lý và tạo hoá đơn bán hàng"
-        />
-        
-        <InvoiceTabsManager
-          invoices={invoices}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onCloseTab={handleCloseTab}
-          onCreateNew={handleCreateNewInvoice}
-          onUpdateInvoice={handleUpdateInvoice}
-          onInvoiceCreated={handleInvoiceCreated}
-        />
-      </VStack>
-    </Box>
+    <Page
+      title="Tạo hoá đơn mới"
+      subtitle="Quản lý và tạo hoá đơn bán hàng"
+    >
+      <InvoiceTabsManager
+        invoices={invoices}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onCloseTab={handleCloseTab}
+        onCreateNew={handleCreateNewInvoice}
+        onUpdateInvoice={handleUpdateInvoice}
+        onInvoiceCreated={handleInvoiceCreated}
+      />
+    </Page>
   );
 };
 

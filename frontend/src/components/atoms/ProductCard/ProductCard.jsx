@@ -10,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { Package } from "lucide-react";
 import {
-  formatPriceRange,
+  formatCurrencyRange,
   calculateTotalStock,
 } from "../../../features/products/data/mockProducts";
 
@@ -19,7 +19,7 @@ const ProductCard = ({ product, onClick, ...props }) => {
   const borderColor = useColorModeValue("gray.200", "gray.700");
 
   const totalStock = calculateTotalStock(product);
-  const priceRange = formatPriceRange(product);
+  const priceRange = formatCurrencyRange(product);
 
   const getStockStatus = (stock) => {
     if (stock === 0) return { color: "red", text: "Hết hàng" };

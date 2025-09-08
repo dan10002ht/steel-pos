@@ -39,13 +39,14 @@ func main() {
 	importOrderService := services.NewImportOrderService(importOrderRepo)
 	customerService := services.NewCustomerService(customerRepo)
 	invoiceService := services.NewInvoiceService(invoiceRepo, customerService)
+	pdfService := services.NewPDFService()
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	productHandler := handlers.NewProductHandler(productService)
 	importOrderHandler := handlers.NewImportOrderHandler(importOrderService)
 	customerHandler := handlers.NewCustomerHandler(customerService)
-	invoiceHandler := handlers.NewInvoiceHandler(invoiceService)
+	invoiceHandler := handlers.NewInvoiceHandler(invoiceService, pdfService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)

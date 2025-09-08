@@ -24,7 +24,6 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 
 		// Export and print
 		invoices.GET("/export", authMiddleware.RequireManager(), invoiceHandler.ExportInvoices)
-		invoices.GET("/:id/print", invoiceHandler.PrintInvoice)
 
 		// Summary/Statistics
 		invoices.GET("/summary", invoiceHandler.GetInvoiceSummary)

@@ -13,9 +13,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import InventoryRoute from './routes/InventoryRoute';
-
-
-
 import Sales from './pages/sales';
 import Customers from './pages/Customers';
 import Reports from './pages/Reports';

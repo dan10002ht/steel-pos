@@ -29,7 +29,7 @@ import { ArrowLeft, Edit, Package, Tag, Hash, DollarSign, Box as BoxIcon } from 
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchApi } from "../../hooks/useFetchApi";
 import Page from "../../components/organisms/Page";
-import { formatPrice, formatNumber, formatDateTime } from "../../utils/formatters";
+import { formatCurrency, formatNumber, formatDateTime } from "../../utils/formatters";
 
 const ProductDetailPage = () => {
   const navigate = useNavigate();
@@ -207,7 +207,7 @@ const ProductDetailPage = () => {
                     <Text fontSize="sm" fontWeight="medium">Giá trung bình</Text>
                   </HStack>
                   <Text fontSize="md" fontWeight="semibold" color="blue.600">
-                    {formatPrice(avgPrice)}
+                    {formatCurrency(avgPrice)}
                   </Text>
                 </VStack>
               </GridItem>
@@ -298,7 +298,7 @@ const ProductDetailPage = () => {
                         </Td>
                         <Td isNumeric>
                           <Text fontWeight="medium" color="blue.600">
-                            {formatPrice(variant.price)}
+                            {formatCurrency(variant.price)}
                           </Text>
                         </Td>
                         <Td>

@@ -7,36 +7,42 @@ import {
   Card,
   CardBody,
   Icon,
+  Grid,
+  Flex,
 } from "@chakra-ui/react";
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
   ShoppingCart,
   Users,
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
+import { formatCurrency } from "../../utils/formatters";
 
 const SalesStats = ({ invoices = [] }) => {
   const calculateStats = () => {
     const totalInvoices = invoices.length;
     const totalRevenue = invoices.reduce(
-      (sum, invoice) => sum + invoice.totalAmount,
+      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
       0
     );
     const paidInvoices = invoices.filter(
-      (invoice) => invoice.paymentStatus === "paid"
+      (invoice) => invoice.payment_status === "paid"
     ).length;
     const pendingInvoices = invoices.filter(
-      (invoice) => invoice.paymentStatus === "pending"
+      (invoice) => invoice.payment_status === "pending"
     ).length;
 
     // Calculate today's stats
     const today = new Date().toISOString().split("T")[0];
-    const todayInvoices = invoices.filter((invoice) => invoice.date === today);
+    const todayInvoices = invoices.filter((invoice) => {
+      if (!invoice.created_at) return false;
+      const invoiceDate = new Date(invoice.created_at).toISOString().split("T")[0];
+      return invoiceDate === today;
+    });
     const todayRevenue = todayInvoices.reduce(
-      (sum, invoice) => sum + invoice.totalAmount,
+      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
       0
     );
 
@@ -45,11 +51,13 @@ const SalesStats = ({ invoices = [] }) => {
       new Date().getFullYear() +
       "-" +
       String(new Date().getMonth() + 1).padStart(2, "0");
-    const monthInvoices = invoices.filter((invoice) =>
-      invoice.date.startsWith(currentMonth)
-    );
+    const monthInvoices = invoices.filter((invoice) => {
+      if (!invoice.created_at) return false;
+      const invoiceDate = new Date(invoice.created_at).toISOString().split("T")[0];
+      return invoiceDate.startsWith(currentMonth);
+    });
     const monthRevenue = monthInvoices.reduce(
-      (sum, invoice) => sum + invoice.totalAmount,
+      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
       0
     );
 
@@ -70,7 +78,7 @@ const SalesStats = ({ invoices = [] }) => {
   const statItems = [
     {
       label: "Tổng doanh thu",
-      value: `${stats.totalRevenue.toLocaleString("vi-VN")} VNĐ`,
+      value: formatCurrency(stats.totalRevenue),
       change: "+12%",
       changeType: "increase",
       icon: DollarSign,
@@ -86,7 +94,7 @@ const SalesStats = ({ invoices = [] }) => {
     },
     {
       label: "Doanh thu tháng",
-      value: `${stats.monthRevenue.toLocaleString("vi-VN")} VNĐ`,
+      value: formatCurrency(stats.monthRevenue),
       change: "+8%",
       changeType: "increase",
       icon: TrendingUp,
@@ -104,34 +112,24 @@ const SalesStats = ({ invoices = [] }) => {
 
   return (
     <VStack spacing={4} align="stretch">
-      <Text fontSize="lg" fontWeight="bold">
-        Thống kê bán hàng
-      </Text>
-
-      <Box>
-        <Text color="gray.600" fontSize="sm" mb={2}>
-          Tổng quan
-        </Text>
-        <Text fontSize="2xl" fontWeight="bold" mb={2}>
-          {stats.totalInvoices} hoá đơn
-        </Text>
-        <HStack spacing={1}>
-          <Icon as={ArrowUp} color="green.500" boxSize={4} />
-          <Text fontSize="sm" color="gray.600">
-            Tổng doanh thu: {stats.totalRevenue.toLocaleString("vi-VN")} VNĐ
-          </Text>
-        </HStack>
-      </Box>
-
-      <HStack spacing={4}>
+      <Grid
+        templateColumns={{
+          base: "1fr",
+          md: "repeat(2, 1fr)",
+          lg: "repeat(4, 1fr)"
+        }}
+        gap={4}
+      >
         {statItems.map((item, index) => (
-          <Card key={index} flex={1}>
+          <Card key={index}>
             <CardBody>
               <HStack justify="space-between" align="flex-start">
                 <VStack align="flex-start" spacing={1}>
                   <Text color="gray.600" fontSize="sm">
                     {item.label}
                   </Text>
+                  <HStack>
+
                   <Text fontSize="xl" fontWeight="bold">
                     {item.value}
                   </Text>
@@ -147,20 +145,22 @@ const SalesStats = ({ invoices = [] }) => {
                       {item.change}
                     </Text>
                   </HStack>
+                  </HStack>
+                  
                 </VStack>
-                <Box
+                <Flex
                   p={3}
                   borderRadius="lg"
                   bg={`${item.color}.100`}
                   color={`${item.color}.600`}
                 >
                   <Icon as={item.icon} boxSize={6} />
-                </Box>
+                </Flex>
               </HStack>
             </CardBody>
           </Card>
         ))}
-      </HStack>
+      </Grid>
     </VStack>
   );
 };

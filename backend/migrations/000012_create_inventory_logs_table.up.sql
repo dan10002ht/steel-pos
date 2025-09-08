@@ -25,11 +25,11 @@ CREATE TABLE inventory_logs (
     -- Additional info
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER,  -- user_id
-    
-    -- Indexes
-    INDEX idx_inventory_logs_product_variant (product_id, variant_id),
-    INDEX idx_inventory_logs_reference (reference_type, reference_id),
-    INDEX idx_inventory_logs_created_at (created_at),
-    INDEX idx_inventory_logs_movement_type (movement_type)
+    created_by INTEGER  -- user_id
 );
+
+-- Create indexes
+CREATE INDEX idx_inventory_logs_product_variant ON inventory_logs (product_id, variant_id);
+CREATE INDEX idx_inventory_logs_reference ON inventory_logs (reference_type, reference_id);
+CREATE INDEX idx_inventory_logs_created_at ON inventory_logs (created_at);
+CREATE INDEX idx_inventory_logs_movement_type ON inventory_logs (movement_type);

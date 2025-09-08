@@ -28,6 +28,10 @@ func SetupAllRoutes(
 		publicAuth.POST("/refresh", authHandler.RefreshToken)
 	}
 
+	// PDF endpoints (custom authentication with query param support)
+	api.GET("/invoices/:id/print", authMiddleware.AuthenticateWithQueryParam(), invoiceHandler.PrintInvoice)
+	api.GET("/invoices/:id/pdf", authMiddleware.AuthenticateWithQueryParam(), invoiceHandler.PrintInvoice)
+
 	// Apply token refresh middleware first, then authentication middleware
 	api.Use(tokenRefreshMiddleware.TokenRefresh())
 	api.Use(authMiddleware.Authenticate())

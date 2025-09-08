@@ -13,14 +13,15 @@ import (
 
 type InvoiceHandler struct {
 	invoiceService *services.InvoiceService
+	pdfService     *services.PDFService
 }
 
-func NewInvoiceHandler(invoiceService *services.InvoiceService) *InvoiceHandler {
+func NewInvoiceHandler(invoiceService *services.InvoiceService, pdfService *services.PDFService) *InvoiceHandler {
 	return &InvoiceHandler{
 		invoiceService: invoiceService,
+		pdfService:     pdfService,
 	}
 }
-
 
 // Invoice endpoints
 func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
@@ -285,16 +286,23 @@ func (h *InvoiceHandler) PrintInvoice(c *gin.Context) {
 		return
 	}
 
-	// This would implement invoice printing functionality
-	// For now, return the invoice data formatted for printing
-	response.Success(c, gin.H{
-		"invoice": invoice,
-		"print_data": gin.H{
-			"invoice_code": invoice.InvoiceCode,
-			"customer_name": invoice.CustomerName,
-			"customer_phone": invoice.CustomerPhone,
-			"total_amount": invoice.TotalAmount,
-			"created_at": invoice.CreatedAt.Format("2006-01-02 15:04:05"),
-		},
-	}, "Invoice ready for printing")
+	// Generate PDF
+	pdfBytes, err := h.pdfService.GenerateInvoicePDF(invoice)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	// Set headers for PDF response
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", "inline; filename=invoice-"+invoice.InvoiceCode+".pdf")
+	c.Header("Content-Length", strconv.Itoa(len(pdfBytes)))
+
+	// Add CORS headers for iframe access
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	// Write PDF bytes to response
+	c.Data(200, "application/pdf", pdfBytes)
 }

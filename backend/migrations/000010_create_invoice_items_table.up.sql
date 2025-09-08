@@ -26,14 +26,14 @@ CREATE TABLE invoice_items (
     
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Indexes
-    INDEX idx_invoice_items_invoice_id (invoice_id),
-    INDEX idx_invoice_items_product_id (product_id),
-    INDEX idx_invoice_items_variant_id (variant_id),
-    INDEX idx_invoice_items_product_name (product_name)
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes
+CREATE INDEX idx_invoice_items_invoice_id ON invoice_items (invoice_id);
+CREATE INDEX idx_invoice_items_product_id ON invoice_items (product_id);
+CREATE INDEX idx_invoice_items_variant_id ON invoice_items (variant_id);
+CREATE INDEX idx_invoice_items_product_name ON invoice_items (product_name);
 
 -- Create trigger for updated_at
 CREATE TRIGGER update_invoice_items_updated_at 

@@ -29,7 +29,7 @@ const MainLayout = ({ children }) => {
         <Header />
 
         {/* Page Content - Scrollable */}
-        <Box flex={1} overflowY="auto" p={6} minH={0}>
+        <Box flex={1} overflowY="auto" p={{base: "4", md: "6"}} minH={0}>
           {children}
         </Box>
       </Box>

@@ -17,19 +17,6 @@ export const formatCurrency = (amount, currency = "VND") => {
   }).format(amount);
 };
 
-/**
- * Format price to Vietnamese Dong (VND) without currency symbol
- * @param {number} amount - Amount to format
- * @returns {string} Formatted price string
- */
-export const formatPrice = (amount) => {
-  if (amount === null || amount === undefined) return "N/A";
-  
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
-};
 
 /**
  * Format number with thousand separators
