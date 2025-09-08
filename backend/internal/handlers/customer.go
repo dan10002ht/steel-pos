@@ -61,7 +61,17 @@ func (h *CustomerHandler) GetAllCustomers(c *gin.Context) {
 		limit = 10
 	}
 
-	result, total, err := h.customerService.SearchCustomers(search, limit)
+	var result []*models.Customer
+	var total int
+	var err error
+
+	// If search query is provided, use search; otherwise get all customers
+	if search != "" {
+		result, total, err = h.customerService.SearchCustomers(search, limit)
+	} else {
+		result, total, err = h.customerService.GetAllCustomers(page, limit)
+	}
+
 	if err != nil {
 		response.ServiceError(c, err)
 		return

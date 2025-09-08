@@ -18,6 +18,16 @@ func NewCustomerService(customerRepo *repository.CustomerRepository) *CustomerSe
 	}
 }
 
+// GetAllCustomers gets all customers with pagination
+func (s *CustomerService) GetAllCustomers(page, limit int) ([]*models.Customer, int, error) {
+	customers, total, err := s.customerRepo.GetAllCustomers(page, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get all customers: %w", err)
+	}
+
+	return customers, total, nil
+}
+
 // SearchCustomers searches customers by name or phone
 func (s *CustomerService) SearchCustomers(query string, limit int) ([]*models.Customer, int, error) {
 	// Clean and prepare search query

@@ -390,3 +390,4 @@ const CustomerDetailPage = () => {
 };
 
 export default CustomerDetailPage;
+

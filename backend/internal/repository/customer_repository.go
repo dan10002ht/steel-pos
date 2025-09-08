@@ -18,6 +18,66 @@ func NewCustomerRepository(db *sql.DB) *CustomerRepository {
 	}
 }
 
+// GetAllCustomers gets all customers with pagination
+func (r *CustomerRepository) GetAllCustomers(page, limit int) ([]*models.Customer, int, error) {
+	offset := (page - 1) * limit
+
+	// Count total customers
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM customers 
+		WHERE is_active = true
+	`
+	
+	var total int
+	err := r.db.QueryRow(countQuery).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count customers: %w", err)
+	}
+
+	// Get customers with pagination
+	query := `
+		SELECT 
+			id, name, phone, address, is_active,
+			created_by, created_at, updated_at
+		FROM customers 
+		WHERE is_active = true
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2
+	`
+
+	rows, err := r.db.Query(query, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get customers: %w", err)
+	}
+	defer rows.Close()
+
+	var customers []*models.Customer
+	for rows.Next() {
+		customer := &models.Customer{}
+		err := rows.Scan(
+			&customer.ID,
+			&customer.Name,
+			&customer.Phone,
+			&customer.Address,
+			&customer.IsActive,
+			&customer.CreatedBy,
+			&customer.CreatedAt,
+			&customer.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan customer: %w", err)
+		}
+		customers = append(customers, customer)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating customers: %w", err)
+	}
+
+	return customers, total, nil
+}
+
 // SearchCustomers searches customers by name or phone with pagination
 func (r *CustomerRepository) SearchCustomers(query string, limit int) ([]*models.Customer, int, error) {
 	// Clean query for SQL
