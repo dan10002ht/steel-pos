@@ -14,7 +14,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import InventoryRoute from './routes/InventoryRoute';
 import Sales from './pages/sales';
-import Customers from './pages/Customers';
+import CustomersRoute from './routes/CustomersRoute';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import ProductsRoute from './routes/ProductsRoute';
@@ -36,7 +36,7 @@ function App() {
                 <Route path='sales/*' element={<Sales />} />
                 <Route path='inventory/*' element={<InventoryRoute />} />
                 <Route path='products/*' element={<ProductsRoute />} />
-                <Route path='customers' element={<Customers />} />
+                <Route path='customers/*' element={<CustomersRoute />} />
                 <Route path='reports' element={<Reports />} />
                 <Route path='analytics' element={<Analytics />} />
 
