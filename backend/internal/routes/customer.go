@@ -22,6 +22,10 @@ func SetupCustomerRoutes(api *gin.RouterGroup, customerHandler *handlers.Custome
 		// Search and filter
 		customers.GET("/search", customerHandler.SearchCustomers)
 
+		// Customer analytics and invoices
+		customers.GET("/:id/analytics", customerHandler.GetCustomerAnalytics)
+		customers.GET("/:id/invoices", customerHandler.GetCustomerInvoices)
+
 	}
 }
 

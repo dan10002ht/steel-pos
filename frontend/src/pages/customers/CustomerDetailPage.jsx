@@ -3,36 +3,20 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
   VStack,
-  HStack,
   Text,
-  Card,
-  CardBody,
-  CardHeader,
-  Badge,
-  Button,
-  Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Divider,
-  SimpleGrid,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
-import {
-  Edit,
-  Phone,
-  MapPin,
-  Calendar,
-  User,
-  ShoppingCart,
-  DollarSign,
-} from "lucide-react";
-import { useFetchApi } from "../../hooks/useFetchApi";
-import Page from "../../components/organisms/Page";
+import { Edit } from "lucide-react";
+import { useFetchApi } from "@/hooks/useFetchApi";
+import Page from "@/components/organisms/Page";
+import CustomerStatsGrid from "@/components/organisms/CustomerStatsGrid";
+import CustomerInfoSection from "@/components/molecules/CustomerInfoSection";
+import RecentInvoicesSection from "@/components/organisms/RecentInvoicesSection";
 
 const CustomerDetailPage = () => {
   const { id } = useParams();
@@ -51,27 +35,37 @@ const CustomerDetailPage = () => {
     }
   );
 
-  // Fetch customer invoices (if available)
-  const {
-    data: invoices,
-    isLoading: isLoadingInvoices,
-  } = useFetchApi(
-    ["customer", id, "invoices"],
-    `/customers/${id}/invoices`,
-    {
-      enabled: !!id,
-    }
-  );
-
   if (isLoadingCustomer) {
     return (
       <Page
         title="Chi tiết khách hàng"
         subtitle="Đang tải thông tin khách hàng..."
       >
-        <VStack spacing={4} align="center" justify="center" minH="400px">
-          <Spinner size="lg" color="blue.500" />
-          <Text color="gray.500">Đang tải dữ liệu...</Text>
+        <VStack spacing={6} align="stretch">
+          {/* Skeleton for stats */}
+          <VStack spacing={4} align="stretch">
+            <Skeleton height="20px" width="200px" />
+            <VStack spacing={4} align="stretch">
+              <Skeleton height="120px" borderRadius="md" />
+              <Skeleton height="120px" borderRadius="md" />
+            </VStack>
+          </VStack>
+
+          {/* Skeleton for customer info */}
+          <Box>
+            <Skeleton height="20px" width="180px" mb={4} />
+            <SkeletonText noOfLines={6} spacing="4" skeletonHeight="20px" />
+          </Box>
+
+          {/* Skeleton for invoices */}
+          <Box>
+            <Skeleton height="20px" width="150px" mb={4} />
+            <VStack spacing={3} align="stretch">
+              <Skeleton height="80px" borderRadius="md" />
+              <Skeleton height="80px" borderRadius="md" />
+              <Skeleton height="80px" borderRadius="md" />
+            </VStack>
+          </Box>
         </VStack>
       </Page>
     );
@@ -115,23 +109,6 @@ const CustomerDetailPage = () => {
     );
   }
 
-  const formatPhoneNumber = (phone) => {
-    return phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3');
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  // Calculate customer stats
-  const totalInvoices = invoices?.length || 0;
-  const totalSpent = invoices?.reduce((sum, invoice) => sum + (invoice.total_amount || 0), 0) || 0;
 
   return (
     <Page
@@ -152,238 +129,16 @@ const CustomerDetailPage = () => {
       ]}
     >
       <VStack spacing={6} align="stretch">
-        {/* Customer Stats */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Trạng thái</StatLabel>
-                <StatNumber>
-                  <Badge
-                    colorScheme={customer.is_active ? "green" : "red"}
-                    variant="subtle"
-                    fontSize="sm"
-                  >
-                    {customer.is_active ? "Hoạt động" : "Không hoạt động"}
-                  </Badge>
-                </StatNumber>
-                <StatHelpText>
-                  <User size={14} />
-                  Khách hàng
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
+        <CustomerStatsGrid customerId={id} />
 
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Tổng hóa đơn</StatLabel>
-                <StatNumber>{totalInvoices}</StatNumber>
-                <StatHelpText>
-                  <ShoppingCart size={14} />
-                  Hóa đơn đã mua
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
+        <CustomerInfoSection customer={customer} />
 
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Tổng chi tiêu</StatLabel>
-                <StatNumber>
-                  {new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND',
-                  }).format(totalSpent)}
-                </StatNumber>
-                <StatHelpText>
-                  <DollarSign size={14} />
-                  Tổng tiền đã chi
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-
-        {/* Customer Information */}
-        <Card>
-          <CardHeader>
-            <Text fontSize="lg" fontWeight="bold">
-              Thông tin khách hàng
-            </Text>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack spacing={4} align="start">
-                <Box flex="1">
-                  <Text fontSize="sm" color="gray.600" mb={1}>
-                    Tên khách hàng
-                  </Text>
-                  <Text fontSize="lg" fontWeight="semibold">
-                    {customer.name}
-                  </Text>
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="sm" color="gray.600" mb={1}>
-                    ID khách hàng
-                  </Text>
-                  <Text fontSize="lg" fontFamily="mono">
-                    #{customer.id}
-                  </Text>
-                </Box>
-              </HStack>
-
-              <Divider />
-
-              <HStack spacing={4} align="start">
-                <Box flex="1">
-                  <HStack spacing={2} mb={1}>
-                    <Phone size={16} color="gray.500" />
-                    <Text fontSize="sm" color="gray.600">
-                      Số điện thoại
-                    </Text>
-                  </HStack>
-                  <Text fontSize="md" fontFamily="mono">
-                    {formatPhoneNumber(customer.phone)}
-                  </Text>
-                </Box>
-                <Box flex="1">
-                  <HStack spacing={2} mb={1}>
-                    <Calendar size={16} color="gray.500" />
-                    <Text fontSize="sm" color="gray.600">
-                      Ngày tạo
-                    </Text>
-                  </HStack>
-                  <Text fontSize="md">
-                    {formatDate(customer.created_at)}
-                  </Text>
-                </Box>
-              </HStack>
-
-              {customer.address && (
-                <>
-                  <Divider />
-                  <Box>
-                    <HStack spacing={2} mb={1}>
-                      <MapPin size={16} color="gray.500" />
-                      <Text fontSize="sm" color="gray.600">
-                        Địa chỉ
-                      </Text>
-                    </HStack>
-                    <Text fontSize="md">
-                      {customer.address}
-                    </Text>
-                  </Box>
-                </>
-              )}
-
-              <Divider />
-
-              <HStack spacing={4} align="start">
-                <Box flex="1">
-                  <Text fontSize="sm" color="gray.600" mb={1}>
-                    Cập nhật lần cuối
-                  </Text>
-                  <Text fontSize="md">
-                    {formatDate(customer.updated_at)}
-                  </Text>
-                </Box>
-                <Box flex="1">
-                  <Text fontSize="sm" color="gray.600" mb={1}>
-                    Người tạo
-                  </Text>
-                  <Text fontSize="md">
-                    {customer.created_by ? `User #${customer.created_by}` : 'Hệ thống'}
-                  </Text>
-                </Box>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Recent Invoices */}
-        <Card>
-          <CardHeader>
-            <HStack justify="space-between">
-              <Text fontSize="lg" fontWeight="bold">
-                Hóa đơn gần đây
-              </Text>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate('/sales')}
-              >
-                Xem tất cả
-              </Button>
-            </HStack>
-          </CardHeader>
-          <CardBody>
-            {isLoadingInvoices ? (
-              <VStack spacing={4} align="center" justify="center" minH="100px">
-                <Spinner size="md" color="blue.500" />
-                <Text color="gray.500">Đang tải hóa đơn...</Text>
-              </VStack>
-            ) : totalInvoices === 0 ? (
-              <VStack spacing={4} align="center" justify="center" minH="100px">
-                <Text color="gray.500" textAlign="center">
-                  Khách hàng chưa có hóa đơn nào
-                </Text>
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() => navigate('/sales/create')}
-                >
-                  Tạo hóa đơn mới
-                </Button>
-              </VStack>
-            ) : (
-              <VStack spacing={3} align="stretch">
-                {invoices.slice(0, 5).map((invoice) => (
-                  <HStack
-                    key={invoice.id}
-                    p={3}
-                    border="1px"
-                    borderColor="gray.200"
-                    borderRadius="md"
-                    _hover={{ bg: "gray.50" }}
-                    cursor="pointer"
-                    onClick={() => navigate(`/sales/${invoice.id}`)}
-                  >
-                    <Box flex="1">
-                      <Text fontWeight="semibold">
-                        {invoice.invoice_code}
-                      </Text>
-                      <Text fontSize="sm" color="gray.600">
-                        {formatDate(invoice.created_at)}
-                      </Text>
-                    </Box>
-                    <Box textAlign="right">
-                      <Text fontWeight="semibold" color="blue.600">
-                        {new Intl.NumberFormat('vi-VN', {
-                          style: 'currency',
-                          currency: 'VND',
-                        }).format(invoice.total_amount)}
-                      </Text>
-                      <Badge
-                        colorScheme={
-                          invoice.payment_status === 'paid' ? 'green' :
-                          invoice.payment_status === 'partial' ? 'yellow' : 'red'
-                        }
-                        variant="subtle"
-                        fontSize="xs"
-                      >
-                        {invoice.payment_status === 'paid' ? 'Đã thanh toán' :
-                         invoice.payment_status === 'partial' ? 'Thanh toán một phần' : 'Chưa thanh toán'}
-                      </Badge>
-                    </Box>
-                  </HStack>
-                ))}
-              </VStack>
-            )}
-          </CardBody>
-        </Card>
+        <RecentInvoicesSection
+          customerId={id}
+          onViewAll={() => navigate('/sales')}
+          onCreateInvoice={() => navigate('/sales/create')}
+          onInvoiceClick={(invoiceId) => navigate(`/sales/${invoiceId}`)}
+        />
       </VStack>
     </Page>
   );

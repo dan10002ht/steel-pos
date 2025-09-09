@@ -212,4 +212,69 @@ func (h *CustomerHandler) SearchCustomers(c *gin.Context) {
 	}, "Customers found")
 }
 
+// GetCustomerAnalytics gets customer analytics data
+func (h *CustomerHandler) GetCustomerAnalytics(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid customer ID")
+		return
+	}
+
+	// Check if customer exists
+	_, err = h.customerService.GetCustomerByID(id)
+	if err != nil {
+		response.NotFound(c, "Customer not found")
+		return
+	}
+
+	analytics, err := h.customerService.GetCustomerAnalytics(id)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, analytics, "Customer analytics retrieved successfully")
+}
+
+// GetCustomerInvoices gets customer invoices with pagination
+func (h *CustomerHandler) GetCustomerInvoices(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid customer ID")
+		return
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	// Check if customer exists
+	_, err = h.customerService.GetCustomerByID(id)
+	if err != nil {
+		response.NotFound(c, "Customer not found")
+		return
+	}
+
+	invoices, total, err := h.customerService.GetCustomerInvoices(id, page, limit)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"invoices": invoices,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
+	}, "Customer invoices retrieved successfully")
+}
+
 

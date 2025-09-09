@@ -18,67 +18,46 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { formatCurrency } from "../../utils/formatters";
+import { useFetchApi } from "@/hooks/useFetchApi";
+import { formatCurrency } from "@/utils/formatters";
+import SkeletonCard from "@/components/atoms/SkeletonCard";
 
-const SalesStats = ({ invoices = [] }) => {
-  const calculateStats = () => {
-    const totalInvoices = invoices.length;
-    const totalRevenue = invoices.reduce(
-      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
-      0
+const SalesStats = () => {
+  const { data: summary, isLoading, error } = useFetchApi(
+    ["invoices", "summary"],
+    "/invoices/summary",
+    {
+      staleTime: 5 * 60 * 1000,
+      cacheTime: 10 * 60 * 1000,
+    }
+  );
+
+  if (isLoading) {
+    return (
+      <VStack spacing={4} align="stretch">
+        <Grid
+          templateColumns={{
+            base: "1fr",
+            md: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)"
+          }}
+          gap={4}
+        >
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </Grid>
+      </VStack>
     );
-    const paidInvoices = invoices.filter(
-      (invoice) => invoice.payment_status === "paid"
-    ).length;
-    const pendingInvoices = invoices.filter(
-      (invoice) => invoice.payment_status === "pending"
-    ).length;
+  }
 
-    // Calculate today's stats
-    const today = new Date().toISOString().split("T")[0];
-    const todayInvoices = invoices.filter((invoice) => {
-      if (!invoice.created_at) return false;
-      const invoiceDate = new Date(invoice.created_at).toISOString().split("T")[0];
-      return invoiceDate === today;
-    });
-    const todayRevenue = todayInvoices.reduce(
-      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
-      0
-    );
-
-    // Calculate this month's stats
-    const currentMonth =
-      new Date().getFullYear() +
-      "-" +
-      String(new Date().getMonth() + 1).padStart(2, "0");
-    const monthInvoices = invoices.filter((invoice) => {
-      if (!invoice.created_at) return false;
-      const invoiceDate = new Date(invoice.created_at).toISOString().split("T")[0];
-      return invoiceDate.startsWith(currentMonth);
-    });
-    const monthRevenue = monthInvoices.reduce(
-      (sum, invoice) => sum + (parseFloat(invoice.total_amount) || 0),
-      0
-    );
-
-    return {
-      totalInvoices,
-      totalRevenue,
-      paidInvoices,
-      pendingInvoices,
-      todayRevenue,
-      monthRevenue,
-      todayInvoices: todayInvoices.length,
-      monthInvoices: monthInvoices.length,
-    };
-  };
-
-  const stats = calculateStats();
+  if (!summary) return null;
 
   const statItems = [
     {
       label: "Tổng doanh thu",
-      value: formatCurrency(stats.totalRevenue),
+      value: formatCurrency(summary.TotalAmount || summary.total_amount || 0),
       change: "+12%",
       changeType: "increase",
       icon: DollarSign,
@@ -86,15 +65,15 @@ const SalesStats = ({ invoices = [] }) => {
     },
     {
       label: "Hoá đơn hôm nay",
-      value: stats.todayInvoices.toString(),
-      change: `+${stats.todayInvoices}`,
-      changeType: stats.todayInvoices > 0 ? "increase" : "decrease",
+      value: String(summary.TodayInvoices || summary.today_invoices || 0),
+      change: `+${summary.TodayInvoices || summary.today_invoices || 0}`,
+      changeType: (summary.TodayInvoices || summary.today_invoices || 0) > 0 ? "increase" : "decrease",
       icon: ShoppingCart,
       color: "blue",
     },
     {
       label: "Doanh thu tháng",
-      value: formatCurrency(stats.monthRevenue),
+      value: formatCurrency(summary.TodayAmount || summary.today_amount || 0),
       change: "+8%",
       changeType: "increase",
       icon: TrendingUp,
@@ -102,9 +81,9 @@ const SalesStats = ({ invoices = [] }) => {
     },
     {
       label: "Chờ thanh toán",
-      value: stats.pendingInvoices.toString(),
-      change: `-${stats.pendingInvoices}`,
-      changeType: "decrease",
+      value: String((summary.PendingAmount || summary.pending_amount || 0) > 0 ? 1 : 0),
+      change: "",
+      changeType: "increase",
       icon: Users,
       color: "orange",
     },

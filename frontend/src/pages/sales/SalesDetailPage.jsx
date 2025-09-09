@@ -28,7 +28,7 @@ import {
   getPaymentStatusText 
 } from "../../utils/statusHelpers";
 import Page from "../../components/organisms/Page/Page";
-import InvoicePdf from "../../components/sales/InvoicePdf";
+import InvoicePdf from "../../components/molecules/sales/InvoicePdf/InvoicePdf";
 
 const SalesDetailPage = () => {
   const { id } = useParams();
@@ -281,7 +281,7 @@ const SalesDetailPage = () => {
           <GridItem colSpan={{ base: 12, lg: 6 }}>
             <Card h="100%">
               <CardBody h="100%">
-                <InvoicePdf 
+                <InvoicePdf
                   invoiceId={id}
                   invoiceCode={invoice.invoice_code}
                 />

@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import { Box, VStack, Card, CardBody, Text, useToast } from "@chakra-ui/react";
-import CustomerForm from "./CustomerForm";
-import InvoiceItemList from "./InvoiceItemList";
-import InvoiceSummary from "./InvoiceSummary";
+import React, { useState } from 'react';
+import { Box, VStack, Card, CardBody, Text, useToast } from '@chakra-ui/react';
+import CustomerForm from '@/components/molecules/sales/CustomerForm';
+import InvoiceItemList from '@/components/molecules/sales/InvoiceItemList';
+import InvoiceSummary from '@/components/molecules/sales/InvoiceSummary';
 
 const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
 
   const handleUpdateItem = (itemId, field, value) => {
-    const updatedItems = invoice.items.map((item) => {
+    const updatedItems = invoice.items.map(item => {
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: value };
-        if (field === "quantity" || field === "unitPrice") {
+        if (field === 'quantity' || field === 'unitPrice') {
           updatedItem.totalPrice = updatedItem.quantity * updatedItem.unitPrice;
         }
         return updatedItem;
@@ -28,8 +28,8 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
     onUpdate(updatedInvoice);
   };
 
-  const handleRemoveItem = (itemId) => {
-    const updatedItems = invoice.items.filter((item) => item.id !== itemId);
+  const handleRemoveItem = itemId => {
+    const updatedItems = invoice.items.filter(item => item.id !== itemId);
     const updatedInvoice = {
       ...invoice,
       items: updatedItems,
@@ -38,9 +38,9 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
     onUpdate(updatedInvoice);
 
     toast({
-      title: "Đã xóa sản phẩm",
-      description: "Sản phẩm đã được xóa khỏi hoá đơn",
-      status: "success",
+      title: 'Đã xóa sản phẩm',
+      description: 'Sản phẩm đã được xóa khỏi hoá đơn',
+      status: 'success',
       duration: 2000,
       isClosable: true,
     });
@@ -66,9 +66,9 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
   const handleCreateInvoice = async () => {
     if (invoice.items.length === 0) {
       toast({
-        title: "Hoá đơn trống",
-        description: "Vui lòng thêm ít nhất một sản phẩm",
-        status: "error",
+        title: 'Hoá đơn trống',
+        description: 'Vui lòng thêm ít nhất một sản phẩm',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -78,9 +78,9 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
     // Validate required customer fields
     if (!invoice.customer_name || !invoice.customer_phone) {
       toast({
-        title: "Thiếu thông tin khách hàng",
-        description: "Vui lòng nhập đầy đủ tên và số điện thoại khách hàng",
-        status: "error",
+        title: 'Thiếu thông tin khách hàng',
+        description: 'Vui lòng nhập đầy đủ tên và số điện thoại khách hàng',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -88,7 +88,7 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
     }
 
     setIsCreating(true);
-    
+
     try {
       // Call parent callback to handle invoice creation
       if (onInvoiceCreated) {
@@ -102,21 +102,21 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
   };
 
   return (
-    <VStack spacing={4} align="stretch" h="full">
+    <VStack spacing={4} align='stretch' h='full'>
       {/* Customer Information */}
       <Card>
         <CardBody>
-          <Text fontSize="lg" fontWeight="bold" mb={4}>
+          <Text fontSize='lg' fontWeight='bold' mb={4}>
             Thông tin khách hàng
           </Text>
-          <CustomerForm 
+          <CustomerForm
             customer={{
               id: invoice.customer_id,
               name: invoice.customer_name,
               phone: invoice.customer_phone,
-              address: invoice.customer_address
+              address: invoice.customer_address,
             }}
-            onUpdate={handleCustomerUpdate} 
+            onUpdate={handleCustomerUpdate}
           />
         </CardBody>
       </Card>
@@ -124,7 +124,7 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
       {/* Invoice Items */}
       <Card flex={1}>
         <CardBody>
-          <Text fontSize="lg" fontWeight="bold" mb={4}>
+          <Text fontSize='lg' fontWeight='bold' mb={4}>
             Danh sách sản phẩm
           </Text>
 

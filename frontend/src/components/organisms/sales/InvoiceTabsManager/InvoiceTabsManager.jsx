@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs, TabPanels, TabPanel } from '@chakra-ui/react';
 import InvoiceTabList from '../../../molecules/sales/InvoiceTabList';
-import InvoiceTabManager from '../../../sales/InvoiceTabManager';
+import InvoiceTabManager from '../InvoiceTabManager';
 
 const InvoiceTabsManager = ({ 
   invoices, 

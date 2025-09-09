@@ -314,3 +314,110 @@ func (r *CustomerRepository) Delete(id int, deletedBy int) error {
 
 	return nil
 }
+
+// GetCustomerInvoicesCount gets the total number of invoices for a customer
+func (r *CustomerRepository) GetCustomerInvoicesCount(customerID int) (int, error) {
+	query := `
+		SELECT COUNT(*) 
+		FROM invoices 
+		WHERE customer_id = $1 AND status != 'cancelled'
+	`
+	
+	var count int
+	err := r.db.QueryRow(query, customerID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get customer invoices count: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetCustomerTotalSpent gets the total amount spent by a customer
+func (r *CustomerRepository) GetCustomerTotalSpent(customerID int) (float64, error) {
+	query := `
+		SELECT COALESCE(SUM(total_amount), 0) 
+		FROM invoices 
+		WHERE customer_id = $1 AND status != 'cancelled'
+	`
+	
+	var totalSpent float64
+	err := r.db.QueryRow(query, customerID).Scan(&totalSpent)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get customer total spent: %w", err)
+	}
+
+	return totalSpent, nil
+}
+
+// GetCustomerInvoices gets customer invoices with pagination
+func (r *CustomerRepository) GetCustomerInvoices(customerID int, page, limit int) ([]*models.Invoice, int, error) {
+	offset := (page - 1) * limit
+
+	// Count total invoices for this customer
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM invoices 
+		WHERE customer_id = $1 AND status != 'cancelled'
+	`
+	
+	var total int
+	err := r.db.QueryRow(countQuery, customerID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count customer invoices: %w", err)
+	}
+
+	// Get invoices with pagination
+	query := `
+		SELECT 
+			id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
+			subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
+			total_amount, paid_amount, payment_status, status, notes,
+			created_at, updated_at, created_by
+		FROM invoices 
+		WHERE customer_id = $1 AND status != 'cancelled'
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	rows, err := r.db.Query(query, customerID, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get customer invoices: %w", err)
+	}
+	defer rows.Close()
+
+	var invoices []*models.Invoice
+	for rows.Next() {
+		invoice := &models.Invoice{}
+		err := rows.Scan(
+			&invoice.ID,
+			&invoice.InvoiceCode,
+			&invoice.CustomerID,
+			&invoice.CustomerPhone,
+			&invoice.CustomerName,
+			&invoice.CustomerAddress,
+			&invoice.Subtotal,
+			&invoice.DiscountAmount,
+			&invoice.DiscountPercentage,
+			&invoice.TaxAmount,
+			&invoice.TaxPercentage,
+			&invoice.TotalAmount,
+			&invoice.PaidAmount,
+			&invoice.PaymentStatus,
+			&invoice.Status,
+			&invoice.Notes,
+			&invoice.CreatedAt,
+			&invoice.UpdatedAt,
+			&invoice.CreatedBy,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan invoice: %w", err)
+		}
+		invoices = append(invoices, invoice)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating invoices: %w", err)
+	}
+
+	return invoices, total, nil
+}

@@ -149,3 +149,35 @@ func (s *CustomerService) DeleteCustomer(id int, deletedBy int) error {
 
 	return nil
 }
+
+// GetCustomerAnalytics gets customer analytics data
+func (s *CustomerService) GetCustomerAnalytics(customerID int) (map[string]interface{}, error) {
+	// Get total invoices count
+	totalInvoices, err := s.customerRepo.GetCustomerInvoicesCount(customerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get customer invoices count: %w", err)
+	}
+
+	// Get total spent amount
+	totalSpent, err := s.customerRepo.GetCustomerTotalSpent(customerID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get customer total spent: %w", err)
+	}
+
+	analytics := map[string]interface{}{
+		"total_invoices": totalInvoices,
+		"total_spent":    totalSpent,
+	}
+
+	return analytics, nil
+}
+
+// GetCustomerInvoices gets customer invoices with pagination
+func (s *CustomerService) GetCustomerInvoices(customerID int, page, limit int) ([]*models.Invoice, int, error) {
+	invoices, total, err := s.customerRepo.GetCustomerInvoices(customerID, page, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get customer invoices: %w", err)
+	}
+
+	return invoices, total, nil
+}

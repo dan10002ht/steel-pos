@@ -5,8 +5,8 @@ import {
   GridItem,
   VStack,
 } from "@chakra-ui/react";
-import ProductVariantsSearch from "../molecules/sales/ProductVariantsSearch";
-import InvoiceForm from "./InvoiceForm";
+import ProductVariantsSearch from "@/components/molecules/sales/ProductVariantsSearch";
+import InvoiceForm from "@/components/organisms/sales/InvoiceForm";
 
 const InvoiceTabManager = ({ invoice, onUpdate, onInvoiceCreated }) => {
   return (
