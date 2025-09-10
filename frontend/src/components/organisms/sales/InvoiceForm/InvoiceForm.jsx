@@ -8,12 +8,21 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
 
+  // Early return if invoice is not loaded yet
+  if (!invoice) {
+    return (
+      <Box textAlign="center" py={8}>
+        <Text color="gray.500">Đang tải dữ liệu hóa đơn...</Text>
+      </Box>
+    );
+  }
+
   const handleUpdateItem = (itemId, field, value) => {
     const updatedItems = invoice.items.map(item => {
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'quantity' || field === 'unitPrice') {
-          updatedItem.totalPrice = updatedItem.quantity * updatedItem.unitPrice;
+          updatedItem.totalPrice = (updatedItem.quantity || 0) * (updatedItem.unitPrice || 0);
         }
         return updatedItem;
       }

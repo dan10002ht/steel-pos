@@ -27,6 +27,9 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 
 		// Summary/Statistics
 		invoices.GET("/summary", invoiceHandler.GetInvoiceSummary)
+		
+		// Audit logs for invoice
+		invoices.GET("/:id/audit-logs", invoiceHandler.GetInvoiceAuditLogs)
 	}
 
 	// Invoice Payment routes

@@ -21,6 +21,7 @@ CREATE TABLE product_categories (
     description TEXT,
     is_active BOOLEAN DEFAULT true,
     created_by INTEGER, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -34,6 +35,7 @@ CREATE TABLE products (
     notes TEXT,
     is_active BOOLEAN DEFAULT true,
     created_by INTEGER, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,6 +52,7 @@ CREATE TABLE product_variants (
     unit VARCHAR(20) NOT NULL,
     is_active BOOLEAN DEFAULT true,
     created_by INTEGER, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(product_id, name)
@@ -68,6 +71,7 @@ CREATE TABLE import_orders (
     approved_by INTEGER, -- No foreign key constraint to avoid cascade delete
     approved_at TIMESTAMP WITH TIME ZONE,
     created_by INTEGER NOT NULL, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -85,6 +89,7 @@ CREATE TABLE import_order_items (
     total_price DECIMAL(15,2) NOT NULL CHECK (total_price >= 0),
     unit VARCHAR(20) NOT NULL,
     created_by INTEGER, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -100,6 +105,7 @@ CREATE TABLE inventory_history (
     reference_type VARCHAR(50), -- 'import_order', 'sale', etc.
     notes TEXT,
     created_by INTEGER NOT NULL, -- No foreign key constraint to avoid cascade delete
+    created_by_username VARCHAR(100), -- Username of user who created this record
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

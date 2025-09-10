@@ -32,8 +32,9 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 	}
 
 	userID, _ := middleware.GetCurrentUserID(c)
+	username, _ := middleware.GetCurrentUsername(c)
 
-	invoice, err := h.invoiceService.CreateInvoice(&req, userID)
+	invoice, err := h.invoiceService.CreateInvoice(&req, userID, username)
 	if err != nil {
 		response.ServiceError(c, err)
 		return
@@ -123,8 +124,9 @@ func (h *InvoiceHandler) UpdateInvoice(c *gin.Context) {
 	}
 
 	userID, _ := middleware.GetCurrentUserID(c)
+	username, _ := middleware.GetCurrentUsername(c)
 
-	invoice, err := h.invoiceService.UpdateInvoice(id, &req, userID)
+	invoice, err := h.invoiceService.UpdateInvoice(id, &req, userID, username)
 	if err != nil {
 		response.ServiceError(c, err)
 		return
@@ -305,4 +307,23 @@ func (h *InvoiceHandler) PrintInvoice(c *gin.Context) {
 
 	// Write PDF bytes to response
 	c.Data(200, "application/pdf", pdfBytes)
+}
+
+// GetInvoiceAuditLogs gets audit logs for a specific invoice
+func (h *InvoiceHandler) GetInvoiceAuditLogs(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid invoice ID")
+		return
+	}
+
+	// Get audit logs for this invoice
+	auditLogs, err := h.invoiceService.GetInvoiceAuditLogs(id)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, auditLogs, "Audit logs retrieved successfully")
 }

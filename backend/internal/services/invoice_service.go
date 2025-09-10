@@ -8,20 +8,22 @@ import (
 )
 
 type InvoiceService struct {
-	invoiceRepo   *repository.InvoiceRepository
+	invoiceRepo     *repository.InvoiceRepository
 	customerService *CustomerService
+	auditLogService AuditLogService
 }
 
-func NewInvoiceService(invoiceRepo *repository.InvoiceRepository, customerService *CustomerService) *InvoiceService {
+func NewInvoiceService(invoiceRepo *repository.InvoiceRepository, customerService *CustomerService, auditLogService AuditLogService) *InvoiceService {
 	return &InvoiceService{
 		invoiceRepo:     invoiceRepo,
 		customerService: customerService,
+		auditLogService: auditLogService,
 	}
 }
 
 
 // Invoice methods
-func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, createdBy int) (*models.Invoice, error) {
+func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, createdBy int, createdByUsername string) (*models.Invoice, error) {
 	// Validate request
 	if len(req.Items) == 0 {
 		return nil, errors.New("invoice must have at least one item")
@@ -112,6 +114,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		Status:             "confirmed",
 		Notes:              req.Notes,
 		CreatedBy:          &createdBy,
+		CreatedByUsername:  &createdByUsername,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
@@ -182,7 +185,32 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 	}
 
 	// Load full invoice with relations
-	return s.invoiceRepo.GetInvoiceByID(invoice.ID)
+	createdInvoice, err := s.invoiceRepo.GetInvoiceByID(invoice.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log audit trail for invoice creation
+	if s.auditLogService != nil {
+		userID := &createdBy
+		userName := &createdByUsername
+		err = s.auditLogService.LogInvoiceChange(
+			invoice.ID,
+			"created",
+			nil, // no old data for creation
+			createdInvoice,
+			userID,
+			userName,
+			nil, // ipAddress will be filled by handler
+			nil, // userAgent will be filled by handler
+		)
+		if err != nil {
+			// Log error but don't fail the creation
+			// You might want to use a proper logger here
+		}
+	}
+
+	return createdInvoice, nil
 }
 
 func (s *InvoiceService) GetInvoiceByID(id int) (*models.Invoice, error) {
@@ -214,16 +242,19 @@ func (s *InvoiceService) GetAllInvoices(page, limit int, search string, status s
 	}, nil
 }
 
-func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest, updatedBy int) (*models.Invoice, error) {
+func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest, updatedBy int, updatedByUsername string) (*models.Invoice, error) {
 	// Get existing invoice
-	invoice, err := s.invoiceRepo.GetInvoiceByID(id)
+	oldInvoice, err := s.invoiceRepo.GetInvoiceByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	if invoice == nil {
+	if oldInvoice == nil {
 		return nil, errors.New("invoice not found")
 	}
+
+	// Create a copy for updating
+	invoice := *oldInvoice
 
 	// Update customer info if provided
 	if req.CustomerPhone != nil {
@@ -320,12 +351,38 @@ func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest,
 
 	invoice.UpdatedAt = time.Now()
 
-	err = s.invoiceRepo.UpdateInvoice(invoice)
+	err = s.invoiceRepo.UpdateInvoice(&invoice)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.invoiceRepo.GetInvoiceByID(id)
+	// Get updated invoice
+	updatedInvoice, err := s.invoiceRepo.GetInvoiceByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log audit trail for invoice update
+	if s.auditLogService != nil {
+		userID := &updatedBy
+		userName := &updatedByUsername
+		err = s.auditLogService.LogInvoiceChange(
+			id,
+			"updated",
+			oldInvoice,
+			updatedInvoice,
+			userID,
+			userName,
+			nil, // ipAddress will be filled by handler
+			nil, // userAgent will be filled by handler
+		)
+		if err != nil {
+			// Log error but don't fail the update
+			// You might want to use a proper logger here
+		}
+	}
+
+	return updatedInvoice, nil
 }
 
 func (s *InvoiceService) DeleteInvoice(id int) error {
@@ -522,4 +579,13 @@ func (s *InvoiceService) createInventoryLogForSale(variantID int, quantity float
 
 func (s *InvoiceService) GetInvoiceSummary() (*models.InvoiceSummary, error) {
 	return s.invoiceRepo.GetInvoiceSummary()
+}
+
+// GetInvoiceAuditLogs gets audit logs for a specific invoice
+func (s *InvoiceService) GetInvoiceAuditLogs(invoiceID int) ([]models.AuditLog, error) {
+	if s.auditLogService == nil {
+		return []models.AuditLog{}, nil
+	}
+	
+	return s.auditLogService.GetAuditLogsByEntity("invoice", invoiceID)
 }

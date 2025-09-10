@@ -25,7 +25,8 @@ CREATE TABLE inventory_logs (
     -- Additional info
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by INTEGER  -- user_id
+    created_by INTEGER,  -- user_id
+    created_by_username VARCHAR(100)  -- Username of user who created this record
 );
 
 -- Create indexes

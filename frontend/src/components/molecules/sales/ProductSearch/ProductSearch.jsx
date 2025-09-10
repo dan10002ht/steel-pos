@@ -88,8 +88,8 @@ const ProductSearch = ({ invoice, onUpdate }) => {
       productName: product.name,
       variantName: product.variantName,
       quantity: 1,
-      unitPrice: product.unitPrice,
-      totalPrice: product.unitPrice,
+      unitPrice: product.unitPrice || 0,
+      totalPrice: (product.unitPrice || 0) * 1,
       stock: product.stock,
     };
 

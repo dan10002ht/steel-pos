@@ -13,6 +13,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { Trash2 } from "lucide-react";
+import { formatCurrency } from "@/utils";
 
 const InvoiceItemList = ({ items, onUpdateItem, onRemoveItem }) => {
   const toast = useToast();
@@ -110,7 +111,7 @@ const InvoiceItemList = ({ items, onUpdateItem, onRemoveItem }) => {
                   Thành tiền
                 </Text>
                 <Text fontWeight="bold" fontSize="lg">
-                  {item.totalPrice.toLocaleString("vi-VN")} VNĐ
+                  {formatCurrency(item.totalPrice || 0)}
                 </Text>
               </Box>
             </HStack>

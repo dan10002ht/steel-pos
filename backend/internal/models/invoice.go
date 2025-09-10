@@ -23,6 +23,7 @@ type Invoice struct {
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 	CreatedBy          *int      `json:"created_by" db:"created_by"`
+	CreatedByUsername  *string   `json:"created_by_username" db:"created_by_username"`
 
 	// Relations
 	Items         []*InvoiceItem   `json:"items,omitempty"`
