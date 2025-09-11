@@ -13,7 +13,7 @@ import {
 import { User, Search, X } from 'lucide-react';
 import { useCustomerSearch } from '@/hooks/sales/useCustomerSearch';
 
-const CustomerForm = ({ customer, onUpdate }) => {
+const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
   const [errors, setErrors] = useState({});
 
   // Customer search hook
@@ -54,20 +54,11 @@ const CustomerForm = ({ customer, onUpdate }) => {
   };
 
   const handleSelectCustomer = selectedCustomer => {
-    // Update invoice fields with selected customer data
-    onUpdate('customer_id', selectedCustomer.id);
-    onUpdate('customer_name', selectedCustomer.name);
-    onUpdate('customer_phone', selectedCustomer.phone);
-    onUpdate('customer_address', selectedCustomer.address || '');
-
-    selectCustomer(selectedCustomer);
+    onSelectCustomer({customer_id: selectedCustomer.id, customer_name: selectedCustomer.name, customer_phone: selectedCustomer.phone, customer_address: selectedCustomer.address});
   };
 
   const handleClearForm = () => {
-    onUpdate('customer_id', null);
-    onUpdate('customer_name', '');
-    onUpdate('customer_phone', '');
-    onUpdate('customer_address', '');
+    onSelectCustomer({customer_id: null, customer_name: '', customer_phone: '', customer_address: ''});
     clearSearch();
   };
 

@@ -57,8 +57,7 @@ const SalesCreatePage = () => {
       return;
     }
 
-    const newInvoices = invoices.filter((_, i) => i !== index);
-    setInvoices(newInvoices);
+    setInvoices(prev => [...prev].filter((_, i) => i !== index));
 
     if (activeTab >= index && activeTab > 0) {
       setActiveTab(activeTab - 1);
@@ -111,6 +110,7 @@ const SalesCreatePage = () => {
         });
         
         // Remove the created invoice from the list
+        console.log("activeTab", activeTab);
         const newInvoices = invoices.filter((_, index) => index !== activeTab);
         setInvoices(newInvoices);
         

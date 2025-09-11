@@ -36,6 +36,9 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
 
     onUpdate(updatedInvoice);
   };
+  const handleSelectCustomer = (selectedCustomer) => {
+    onUpdate({...invoice, ...selectedCustomer});
+  }
 
   const handleRemoveItem = itemId => {
     const updatedItems = invoice.items.filter(item => item.id !== itemId);
@@ -126,6 +129,7 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
               address: invoice.customer_address,
             }}
             onUpdate={handleCustomerUpdate}
+            onSelectCustomer={handleSelectCustomer}
           />
         </CardBody>
       </Card>

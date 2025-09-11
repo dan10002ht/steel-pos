@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"steel-pos-backend/internal/models"
-	"time"
 )
 
 type InvoiceRepository struct {
@@ -640,22 +639,17 @@ func (r *InvoiceRepository) loadInvoiceRelations(invoice *models.Invoice) error 
 	return nil
 }
 
-// Generate next invoice code
+// Generate next invoice code using database sequence for atomic operation
 func (r *InvoiceRepository) GenerateInvoiceCode() (string, error) {
-	query := `
-		SELECT COALESCE(MAX(CAST(SUBSTRING(invoice_code FROM 'INV-([0-9]+)-([0-9]+)') AS INTEGER)), 0) + 1
-		FROM invoices
-		WHERE invoice_code LIKE 'INV-' || TO_CHAR(CURRENT_DATE, 'YYYY') || '-%'
-	`
-
-	var nextNumber int
-	err := r.db.QueryRow(query).Scan(&nextNumber)
+	query := `SELECT get_next_invoice_code()`
+	
+	var invoiceCode string
+	err := r.db.QueryRow(query).Scan(&invoiceCode)
 	if err != nil {
 		return "", err
 	}
 
-	year := time.Now().Format("2006")
-	return fmt.Sprintf("INV-%s-%03d", year, nextNumber), nil
+	return invoiceCode, nil
 }
 
 // Get invoice summary statistics
