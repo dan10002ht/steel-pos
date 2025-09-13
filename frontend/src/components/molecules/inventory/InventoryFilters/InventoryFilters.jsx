@@ -43,24 +43,6 @@ const InventoryFilters = ({
           onChange={onStatusChange}
         />
       </FormControl>
-
-      <FormControl minW="150px">
-        <FormLabel fontSize="sm">Nhà cung cấp</FormLabel>
-        <FilterSelect
-          options={supplierOptions}
-          value={supplierFilter}
-          onChange={onSupplierChange}
-        />
-      </FormControl>
-
-      <FormControl minW="100px">
-        <FormLabel fontSize="sm">Hiển thị</FormLabel>
-        <FilterSelect
-          options={PAGE_SIZE_OPTIONS}
-          value={pageSize}
-          onChange={onPageSizeChange}
-        />
-      </FormControl>
     </HStack>
   );
 };

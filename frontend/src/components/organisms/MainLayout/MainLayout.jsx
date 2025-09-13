@@ -24,12 +24,21 @@ const MainLayout = ({ children }) => {
         flexDirection="column" 
         h="100vh"
         ml={{ base: 0, lg: 0 }}
+        minWidth={0}
+        overflow="hidden"
       >
         {/* Top Header - Fixed */}
         <Header />
 
         {/* Page Content - Scrollable */}
-        <Box flex={1} overflowY="auto" p={{base: "4", md: "6"}} minH={0}>
+        <Box 
+          flex={1} 
+          overflowY="auto" 
+          p={{base: "4", md: "6"}} 
+          minH={0}
+          minWidth={0}
+          maxWidth="100%"
+        >
           {children}
         </Box>
       </Box>

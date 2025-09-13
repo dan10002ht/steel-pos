@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tr, Td, Badge, HStack, IconButton, Text } from '@chakra-ui/react';
-import { Eye, Edit } from 'lucide-react';
+import { Eye, Edit, X } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import {
   getInvoiceStatusColor,
@@ -9,7 +9,7 @@ import {
   getPaymentStatusWithRemaining,
 } from '@/utils/statusHelpers';
 
-const SalesTableRow = ({ invoice, onViewDetail, onEdit }) => {
+const SalesTableRow = ({ invoice, onViewDetail, onEdit, onCancel, isAdmin = false }) => {
   return (
     <Tr>
       <Td fontWeight='medium'>{invoice.invoice_code}</Td>
@@ -48,6 +48,16 @@ const SalesTableRow = ({ invoice, onViewDetail, onEdit }) => {
             variant='ghost'
             title='Chỉnh sửa'
           />
+          {isAdmin && invoice.status === 'confirmed' && (
+            <IconButton
+              size='sm'
+              icon={<X size={16} />}
+              onClick={() => onCancel(invoice)}
+              colorScheme='red'
+              variant='ghost'
+              title='Hủy hóa đơn'
+            />
+          )}
         </HStack>
       </Td>
     </Tr>

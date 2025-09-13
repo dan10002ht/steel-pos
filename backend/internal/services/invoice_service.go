@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"strings"
 	"steel-pos-backend/internal/models"
 	"steel-pos-backend/internal/repository"
 	"time"
@@ -221,15 +222,15 @@ func (s *InvoiceService) GetInvoiceByCode(code string) (*models.Invoice, error) 
 	return s.invoiceRepo.GetInvoiceByCode(code)
 }
 
-func (s *InvoiceService) GetAllInvoices(page, limit int, search string, status string, paymentStatus string) (*models.InvoiceListResponse, error) {
+func (s *InvoiceService) GetAllInvoices(page, limit int, search string, status string, paymentStatus string, dateFrom string, dateTo string) (*models.InvoiceListResponse, error) {
 	offset := (page - 1) * limit
 
-	invoices, err := s.invoiceRepo.GetAllInvoices(limit, offset, search, status, paymentStatus)
+	invoices, err := s.invoiceRepo.GetAllInvoices(limit, offset, search, status, paymentStatus, dateFrom, dateTo)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := s.invoiceRepo.CountInvoices(search, status, paymentStatus)
+	total, err := s.invoiceRepo.CountInvoices(search, status, paymentStatus, dateFrom, dateTo)
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +241,55 @@ func (s *InvoiceService) GetAllInvoices(page, limit int, search string, status s
 		Page:     page,
 		Limit:    limit,
 	}, nil
+}
+
+// SearchInvoicesHybrid searches invoices using hybrid approach (ILIKE + full-text search)
+func (s *InvoiceService) SearchInvoicesHybrid(query string, limit int, page int, paymentStatus string, dateFrom string, dateTo string) (*models.InvoiceListResponse, error) {
+	// Validate query
+	if len(strings.TrimSpace(query)) < 1 {
+		return nil, errors.New("search query is required")
+	}
+
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	invoices, err := s.invoiceRepo.SearchInvoicesHybrid(query, limit, offset, paymentStatus, dateFrom, dateTo)
+	if err != nil {
+		return nil, err
+	}
+
+	total, err := s.invoiceRepo.CountSearchResults(query, paymentStatus, dateFrom, dateTo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.InvoiceListResponse{
+		Invoices: invoices,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
+	}, nil
+}
+
+// CancelInvoice cancels an invoice and restores inventory
+func (s *InvoiceService) CancelInvoice(invoiceID int, reason string, cancelledBy int) error {
+	// Get invoice with items
+	invoice, err := s.invoiceRepo.GetInvoiceByID(invoiceID)
+	if err != nil {
+		return err
+	}
+
+	// Check if invoice can be cancelled
+	if invoice.Status == "cancelled" {
+		return errors.New("invoice is already cancelled")
+	}
+
+	if invoice.Status != "confirmed" {
+		return errors.New("only confirmed invoices can be cancelled")
+	}
+
+	// Cancel invoice and restore inventory
+	return s.invoiceRepo.CancelInvoice(invoiceID, reason, cancelledBy)
 }
 
 func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest, updatedBy int, updatedByUsername string) (*models.Invoice, error) {

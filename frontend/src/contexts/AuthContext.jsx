@@ -1,5 +1,6 @@
 import React, { createContext } from "react";
 import { useAuth  } from "../hooks/useAuth";
+import { USER_ROLES } from "../constants/options";
 
 export const AuthContext = createContext();
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiUtils } from "../shared/services/api";
 import { useCreateApi } from "./useCreateApi";
 import { useFetchApi } from "./useFetchApi";
+import { USER_ROLES } from "../constants/options";
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -69,7 +70,8 @@ export const useAuth = () => {
 
       // Verify token với server và lấy thông tin user hiện tại
       const response = await whoAmIQuery.refetch();
-      const userData = response.data.data;
+      const userData = response.data;
+      console.log(userData);
 
       setUser(userData);
       setIsAuthenticated(true);
@@ -84,7 +86,8 @@ export const useAuth = () => {
       setIsLoading(false);
     }
   };
-
+  
+  const isAdmin = user?.role === USER_ROLES.ADMIN;
   // Check auth status on mount
   useEffect(() => {
     checkAuthStatus();
@@ -93,6 +96,7 @@ export const useAuth = () => {
   return {
     // State
     user,
+    isAdmin,
     isAuthenticated,
     isLoading,
 

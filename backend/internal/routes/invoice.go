@@ -22,6 +22,9 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 		// Search and filter
 		invoices.GET("/search", invoiceHandler.SearchInvoices)
 
+		// Cancel invoice (admin only)
+		invoices.PUT("/:id/cancel", authMiddleware.RequireAdmin(), invoiceHandler.CancelInvoice)
+
 		// Export and print
 		invoices.GET("/export", authMiddleware.RequireManager(), invoiceHandler.ExportInvoices)
 

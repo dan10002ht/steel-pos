@@ -174,20 +174,6 @@ const ProductListPage = () => {
           colorScheme: 'blue',
         },
       ]}
-      secondaryActions={[
-        {
-          label: 'Import Excel',
-          icon: <Upload size={16} />,
-          onClick: () => console.log('Import Excel'),
-          variant: 'outline',
-        },
-        {
-          label: 'Xuất Excel',
-          icon: <Download size={16} />,
-          onClick: () => console.log('Export Excel'),
-          variant: 'outline',
-        },
-      ]}
     >
       {/* Filters and Search */}
       <Card shadow='sm'>
@@ -198,13 +184,6 @@ const ProductListPage = () => {
                 placeholder='Tìm kiếm sản phẩm...'
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-              />
-              <FilterDropdown
-                label='Danh mục'
-                options={categoryOptions}
-                value={filterCategory}
-                onChange={setFilterCategory}
-                placeholder='Tất cả'
               />
             </HStack>
           </HStack>

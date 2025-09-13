@@ -8,14 +8,19 @@ import {
   Text,
   Box,
   VStack,
+  Spinner,
+  Center,
 } from '@chakra-ui/react';
 import Pagination from '@/components/atoms/Pagination';
 import SalesTableRow from '@/components/atoms/sales/SalesTableRow';
 
 const SalesTable = ({
+  isLoading,
   invoices,
   onViewDetail,
   onEdit,
+  onCancel,
+  isAdmin = false,
   showPagination = true,
   size = 'md',
   // Pagination props
@@ -28,7 +33,7 @@ const SalesTable = ({
 }) => {
   return (
     <VStack spacing={4} align='stretch'>
-      <Box overflowX='auto'>
+      <Box position='relative' overflowX='auto'>
         <Table variant='simple' size={size}>
           <Thead>
             <Tr>
@@ -57,11 +62,33 @@ const SalesTable = ({
                   invoice={invoice}
                   onViewDetail={onViewDetail}
                   onEdit={onEdit}
+                  onCancel={onCancel}
+                  isAdmin={isAdmin}
                 />
               ))
             )}
           </Tbody>
         </Table>
+        
+        {isLoading && (
+          <Box
+            position='absolute'
+            top={0}
+            left={0}
+            right={0}
+            bottom={0}
+            bg='rgba(255, 255, 255, 0.8)'
+            zIndex={10}
+            display='flex'
+            alignItems='center'
+            justifyContent='center'
+          >
+            <VStack spacing={3}>
+              <Spinner size='lg' color='blue.500' thickness='4px' />
+              <Text color='gray.600' fontSize='sm'>Đang tải dữ liệu...</Text>
+            </VStack>
+          </Box>
+        )}
       </Box>
 
       {showPagination && totalPages > 0 && (

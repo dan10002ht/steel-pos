@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"time"
 
 	"steel-pos-backend/internal/middleware"
 	"steel-pos-backend/internal/models"
@@ -92,6 +93,8 @@ func (h *InvoiceHandler) GetAllInvoices(c *gin.Context) {
 	search := c.Query("search")
 	status := c.Query("status")
 	paymentStatus := c.Query("payment_status")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
 
 	if page < 1 {
 		page = 1
@@ -100,7 +103,7 @@ func (h *InvoiceHandler) GetAllInvoices(c *gin.Context) {
 		limit = 10
 	}
 
-	result, err := h.invoiceService.GetAllInvoices(page, limit, search, status, paymentStatus)
+	result, err := h.invoiceService.GetAllInvoices(page, limit, search, status, paymentStatus, dateFrom, dateTo)
 	if err != nil {
 		response.ServiceError(c, err)
 		return
@@ -236,6 +239,9 @@ func (h *InvoiceHandler) SearchInvoices(c *gin.Context) {
 	query := c.Query("q")
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	paymentStatus := c.Query("payment_status")
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
 
 	if query == "" {
 		response.BadRequest(c, "Search query is required")
@@ -249,13 +255,64 @@ func (h *InvoiceHandler) SearchInvoices(c *gin.Context) {
 		limit = 10
 	}
 
-	result, err := h.invoiceService.GetAllInvoices(page, limit, query, "", "")
+	start := time.Now()
+	result, err := h.invoiceService.SearchInvoicesHybrid(query, limit, page, paymentStatus, dateFrom, dateTo)
+	searchTime := time.Since(start).Milliseconds()
+
 	if err != nil {
 		response.ServiceError(c, err)
 		return
 	}
 
-	response.Success(c, result, "Invoices found")
+	response.Success(c, gin.H{
+		"invoices": result.Invoices,
+		"total":    result.Total,
+		"page":     result.Page,
+		"limit":    result.Limit,
+		"query":    query,
+		"took_ms":  searchTime,
+	}, "Invoices found")
+}
+
+// CancelInvoice cancels an invoice and restores inventory
+func (h *InvoiceHandler) CancelInvoice(c *gin.Context) {
+	// Check if user is admin
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	// Get user role from context (assuming it's set in auth middleware)
+	userRole, exists := c.Get("role")
+	if !exists || userRole != "admin" {
+		response.BadRequest(c, "Only admin can cancel invoices")
+		return
+	}
+
+	var req models.CancelInvoiceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request data")
+		return
+	}
+
+	invoiceID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid invoice ID")
+		return
+	}
+
+	// Cancel invoice
+	err = h.invoiceService.CancelInvoice(invoiceID, req.Reason, userID.(int))
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "Invoice cancelled successfully",
+		"invoice_id": invoiceID,
+	}, "Invoice cancelled")
 }
 
 // Export endpoints

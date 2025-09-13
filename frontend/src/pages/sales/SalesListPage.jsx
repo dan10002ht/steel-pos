@@ -1,39 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   HStack,
-  Box,
-  Input,
-  InputGroup,
-  InputLeftElement,
   Card,
   CardBody,
-  Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Flex,
 } from '@chakra-ui/react';
-import { Search, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Page from '@/components/organisms/Page/Page';
 import SalesStats from '@/components/molecules/sales/SalesStats';
 import SalesTable from '@/components/molecules/sales/SalesTable';
 import SalesFilters from '@/components/molecules/sales/SalesFilters';
+import SalesSearch from '@/components/molecules/sales/SalesSearch/SalesSearch';
+import CancelInvoiceModal from '@/components/molecules/sales/CancelInvoiceModal/CancelInvoiceModal';
 import { useFetchApi } from '@/hooks/useFetchApi';
 import { useDebounce } from '@/hooks/useDebounce';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useContext } from 'react';
 
 const SalesListPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const navigate = useNavigate();
-
+  const { isAdmin } = useContext(AuthContext);
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -41,49 +40,65 @@ const SalesListPage = () => {
   const {
     data: invoicesData,
     error,
-    isPending: isLoading,
+    isLoading,
+    refetch,
   } = useFetchApi(
     [
       'invoices',
       currentPage,
       pageSize,
       debouncedSearchTerm,
-      statusFilter,
       paymentStatusFilter,
       dateFrom,
       dateTo,
     ],
-    `/invoices?page=${currentPage}&limit=${pageSize}&search=${debouncedSearchTerm}&status=${statusFilter}&payment_status=${paymentStatusFilter}`,
+    debouncedSearchTerm
+      ? `/invoices/search?q=${debouncedSearchTerm.trim()}&page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}`
+      : `/invoices?page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}`,
     {
       enabled: true,
     }
   );
 
-  const handleViewDetail = id => {
+  const handleViewDetail = useCallback(id => {
     navigate(`/sales/detail/${id}`);
-  };
+  }, []);
 
-  const handleEdit = id => {
-    navigate(`/sales/edit/${id}`);
-  };
-  // Extract data from API response
-  const invoices = invoicesData?.invoices || [];
-  const totalCount = invoicesData?.total || 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const handleEdit = useCallback(id => {
+    navigate(`/sales/detail/${id}`);
+  }, []);
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Page
-        title='Danh sách bán hàng'
-        subtitle='Quản lý và theo dõi tất cả hoá đơn bán hàng'
-      >
-        <Flex justify='center' py={10}>
-          <Spinner size='xl' />
-        </Flex>
-      </Page>
-    );
-  }
+  const handleCreateNew = useCallback(() => {
+    navigate('/sales/create');
+  }, []);
+
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleCancelInvoice = useCallback((invoice) => {
+    setSelectedInvoice(invoice);
+    setCancelModalOpen(true);
+  }, []);
+
+  const handleCancelSuccess = useCallback(() => {
+    // Refresh data after successful cancellation
+    refetch();
+  }, [refetch]);
+  // Extract data from API response - memoized to prevent unnecessary re-renders
+  const invoices = useMemo(() => invoicesData?.invoices || [], [invoicesData?.invoices]);
+  const totalCount = useMemo(() => invoicesData?.total || 0, [invoicesData?.total]);
+  const totalPages = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
+
+  // Memoize primary actions to prevent re-renders
+  const primaryActions = useMemo(() => [
+    {
+      label: 'Tạo hoá đơn mới',
+      icon: <Plus size={16} />,
+      onClick: handleCreateNew,
+      colorScheme: 'blue',
+    },
+  ], []);
 
   // Show error state
   if (error) {
@@ -107,14 +122,7 @@ const SalesListPage = () => {
     <Page
       title='Danh sách bán hàng'
       subtitle='Quản lý và theo dõi tất cả hoá đơn bán hàng'
-      primaryActions={[
-        {
-          label: 'Tạo hoá đơn mới',
-          icon: <Plus size={16} />,
-          onClick: () => navigate('/sales/create'),
-          colorScheme: 'blue',
-        },
-      ]}
+      primaryActions={primaryActions}
     >
       {/* Sales Stats */}
       <SalesStats />
@@ -123,22 +131,14 @@ const SalesListPage = () => {
       <Card>
         <CardBody>
           <HStack justify='space-between' mb={4}>
-            <InputGroup maxW='400px'>
-              <InputLeftElement pointerEvents='none'>
-                <Search size={20} />
-              </InputLeftElement>
-              <Input
-                placeholder='Tìm kiếm theo mã hoá đơn, tên khách hàng, số điện thoại...'
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </InputGroup>
+            <SalesSearch
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+            />
           </HStack>
 
           {/* Filters */}
           <SalesFilters
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
             paymentStatusFilter={paymentStatusFilter}
             setPaymentStatusFilter={setPaymentStatusFilter}
             dateFrom={dateFrom}
@@ -149,9 +149,12 @@ const SalesListPage = () => {
 
           {/* Table */}
           <SalesTable
+            isLoading={isLoading}
             invoices={invoices}
             onViewDetail={handleViewDetail}
             onEdit={handleEdit}
+            onCancel={handleCancelInvoice}
+            isAdmin={isAdmin}
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalCount}
@@ -161,6 +164,14 @@ const SalesListPage = () => {
           />
         </CardBody>
       </Card>
+
+      {/* Cancel Invoice Modal */}
+      <CancelInvoiceModal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        invoice={selectedInvoice}
+        onSuccess={handleCancelSuccess}
+      />
     </Page>
   );
 };

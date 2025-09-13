@@ -24,6 +24,9 @@ type Invoice struct {
 	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 	CreatedBy          *int      `json:"created_by" db:"created_by"`
 	CreatedByUsername  *string   `json:"created_by_username" db:"created_by_username"`
+	CancelledAt        *time.Time `json:"cancelled_at,omitempty" db:"cancelled_at"`
+	CancelledBy        *int      `json:"cancelled_by,omitempty" db:"cancelled_by"`
+	CancellationReason *string   `json:"cancellation_reason,omitempty" db:"cancellation_reason"`
 
 	// Relations
 	Items         []*InvoiceItem   `json:"items,omitempty"`
@@ -49,6 +52,7 @@ type InvoiceItem struct {
 	// Relations
 	Invoice *Invoice `json:"invoice,omitempty"`
 }
+
 
 // InvoicePayment represents a payment for an invoice
 type InvoicePayment struct {
@@ -174,6 +178,11 @@ type InvoiceListResponse struct {
 	Total    int        `json:"total"`
 	Page     int        `json:"page"`
 	Limit    int        `json:"limit"`
+}
+
+// CancelInvoiceRequest represents a request to cancel an invoice
+type CancelInvoiceRequest struct {
+	Reason string `json:"reason" binding:"required"`
 }
 
 // CustomerListResponse represents a paginated list of customers

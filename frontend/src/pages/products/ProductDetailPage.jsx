@@ -137,21 +137,12 @@ const ProductDetailPage = () => {
           <CardHeader>
             <HStack justify="space-between" align="center">
               <HStack spacing={3}>
-                <Box
-                  p={2}
-                  borderRadius="md"
-                  bg="blue.50"
-                  color="blue.600"
-                >
-                  <Package size={24} />
-                </Box>
+               
                 <VStack align="flex-start" spacing={0}>
                   <Text fontSize="xl" fontWeight="bold">
-                    {product.name}
+                    Tên sản phẩm: {product.name}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    ID: {product.id}
-                  </Text>
+                
                 </VStack>
               </HStack>
               <Badge 
@@ -169,19 +160,6 @@ const ProductDetailPage = () => {
               <GridItem>
                 <VStack align="flex-start" spacing={2}>
                   <HStack spacing={2} color="gray.600">
-                    <Tag size={16} />
-                    <Text fontSize="sm" fontWeight="medium">Danh mục</Text>
-                  </HStack>
-                  <Text fontSize="md">
-                    {product.category?.name || "Chưa phân loại"}
-                  </Text>
-                </VStack>
-              </GridItem>
-              
-              <GridItem>
-                <VStack align="flex-start" spacing={2}>
-                  <HStack spacing={2} color="gray.600">
-                    <BoxIcon size={16} />
                     <Text fontSize="sm" fontWeight="medium">Đơn vị</Text>
                   </HStack>
                   <Text fontSize="md">{product.unit}</Text>
@@ -191,7 +169,6 @@ const ProductDetailPage = () => {
               <GridItem>
                 <VStack align="flex-start" spacing={2}>
                   <HStack spacing={2} color="gray.600">
-                    <Hash size={16} />
                     <Text fontSize="sm" fontWeight="medium">Tổng tồn kho</Text>
                   </HStack>
                   <Text fontSize="md" fontWeight="semibold">
@@ -203,7 +180,6 @@ const ProductDetailPage = () => {
               <GridItem>
                 <VStack align="flex-start" spacing={2}>
                   <HStack spacing={2} color="gray.600">
-                    <DollarSign size={16} />
                     <Text fontSize="sm" fontWeight="medium">Giá trung bình</Text>
                   </HStack>
                   <Text fontSize="md" fontWeight="semibold" color="blue.600">

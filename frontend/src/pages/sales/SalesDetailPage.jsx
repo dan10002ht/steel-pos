@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   VStack,
@@ -17,8 +17,13 @@ import {
   Td,
   Grid,
   GridItem,
+  Button,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from "@chakra-ui/react";
-import { Printer, Mail, Edit } from "lucide-react";
+import { Printer, Mail, Edit, X } from "lucide-react";
 import { useFetchApi } from "../../hooks/useFetchApi";
 import { formatCurrency } from "../../utils/formatters";
 import { 
@@ -28,11 +33,13 @@ import {
   getPaymentStatusText 
 } from "../../utils/statusHelpers";
 import Page from "../../components/organisms/Page/Page";
+import CancelInvoiceModal from "../../components/molecules/sales/CancelInvoiceModal/CancelInvoiceModal";
 import InvoicePdf from "../../components/molecules/sales/InvoicePdf/InvoicePdf";
 
 const SalesDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
   // Fetch invoice data from API
   const { data: invoiceData, error, isPending: isLoading } = useFetchApi(
@@ -48,6 +55,15 @@ const SalesDetailPage = () => {
     // TODO: Implement print functionality
     window.print();
   };
+
+  const handleCancelInvoice = useCallback(() => {
+    setCancelModalOpen(true);
+  }, []);
+
+  const handleCancelSuccess = useCallback(() => {
+    // Refresh data after successful cancellation
+    window.location.reload();
+  }, []);
 
 
   // Show not found state
@@ -73,8 +89,14 @@ const SalesDetailPage = () => {
         {
           label: "Chỉnh sửa",
           icon: <Edit size={16} />,
-          onClick: () => navigate(`/sales/edit/${id}`),
+          onClick: () => navigate(`/sales/detail/${id}`),
         },
+        ...(invoice.status === 'confirmed' ? [{
+          label: "Hủy hóa đơn",
+          icon: <X size={16} />,
+          onClick: handleCancelInvoice,
+          colorScheme: "red",
+        }] : []),
       ]}
       secondaryActions={[
         {
@@ -289,6 +311,32 @@ const SalesDetailPage = () => {
             </Card>
           </GridItem>
         </Grid>
+
+        {/* Cancellation Info */}
+        {invoice.status === 'cancelled' && (
+          <Alert status="error" mt={6}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Hóa đơn đã bị hủy</AlertTitle>
+              <AlertDescription>
+                {invoice.cancellation_reason && (
+                  <Text>Lý do: {invoice.cancellation_reason}</Text>
+                )}
+                <Text fontSize="sm">
+                  Hủy lúc: {invoice.cancelled_at && new Date(invoice.cancelled_at).toLocaleString('vi-VN')}
+                </Text>
+              </AlertDescription>
+            </Box>
+          </Alert>
+        )}
+
+        {/* Cancel Invoice Modal */}
+        <CancelInvoiceModal
+          isOpen={cancelModalOpen}
+          onClose={() => setCancelModalOpen(false)}
+          invoice={invoice}
+          onSuccess={handleCancelSuccess}
+        />
     </Page>
   );
 };

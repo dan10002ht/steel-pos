@@ -10,12 +10,11 @@ import {
   AlertDescription,
 } from "@chakra-ui/react";
 import Page from "../../components/organisms/Page/Page";
-import InvoiceEditManager from "../../components/organisms/sales/InvoiceEditManager/InvoiceEditManager";
+import InvoiceViewManager from "../../components/organisms/sales/InvoiceViewManager/InvoiceViewManager";
 import { TOAST_DURATION } from "../../constants/options";
 import { useFetchApi } from "../../hooks/useFetchApi";
-import { useEditApi } from "../../hooks/useEditApi";
 
-const SalesEditPage = () => {
+const SalesViewPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();

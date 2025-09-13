@@ -9,6 +9,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Text,
 } from "@chakra-ui/react";
 import ProductVariantsSearch from "@/components/molecules/sales/ProductVariantsSearch";
 import InvoiceForm from "@/components/organisms/sales/InvoiceForm";
