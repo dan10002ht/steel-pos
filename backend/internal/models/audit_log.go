@@ -8,19 +8,33 @@ import (
 
 // AuditLog represents an audit log entry
 type AuditLog struct {
-	ID             int       `json:"id" db:"id"`
-	EntityType     string    `json:"entity_type" db:"entity_type"`
-	EntityID       int       `json:"entity_id" db:"entity_id"`
-	Action         string    `json:"action" db:"action"`
-	UserID         *int      `json:"user_id" db:"user_id"`
-	UserName       *string   `json:"user_name" db:"user_name"`
-	OldData        JSONB     `json:"old_data" db:"old_data"`
-	NewData        JSONB     `json:"new_data" db:"new_data"`
-	ChangesSummary *string   `json:"changes_summary" db:"changes_summary"`
-	IPAddress      *string   `json:"ip_address" db:"ip_address"`
-	UserAgent      *string   `json:"user_agent" db:"user_agent"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	ID                   int       `json:"id" db:"id"`
+	EntityType           string    `json:"entity_type" db:"entity_type"`
+	EntityID             int       `json:"entity_id" db:"entity_id"`
+	Action               string    `json:"action" db:"action"`
+	UserID               *int      `json:"user_id" db:"user_id"`
+	UserName             *string   `json:"user_name" db:"user_name"`
+	CreatedBy            *int      `json:"created_by" db:"created_by"`
+	CreatedByName        *string   `json:"created_by_name" db:"created_by_name"`
+	OldData              JSONB     `json:"old_data" db:"old_data"`
+	NewData              JSONB     `json:"new_data" db:"new_data"`
+	ChangesSummary       *string   `json:"changes_summary" db:"changes_summary"`
+	IPAddress            *string   `json:"ip_address" db:"ip_address"`
+	UserAgent            *string   `json:"user_agent" db:"user_agent"`
+	LogCategory          *string   `json:"log_category" db:"log_category"`
+	LogType              *string   `json:"log_type" db:"log_type"`
+	InventoryData        JSONB     `json:"inventory_data" db:"inventory_data"`
+	BusinessData         JSONB     `json:"business_data" db:"business_data"`
+	SystemData           JSONB     `json:"system_data" db:"system_data"`
+	QuantityChange       *float64  `json:"quantity_change" db:"quantity_change"`
+	PreviousValue        *float64  `json:"previous_value" db:"previous_value"`
+	NewValue             *float64  `json:"new_value" db:"new_value"`
+	ReferenceEntityType  *string   `json:"reference_entity_type" db:"reference_entity_type"`
+	ReferenceEntityID    *int      `json:"reference_entity_id" db:"reference_entity_id"`
+	Notes                *string   `json:"notes" db:"notes"`
+	Severity             *string   `json:"severity" db:"severity"`
+	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // JSONB is a custom type for PostgreSQL JSONB columns

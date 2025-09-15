@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "../shared/services/api";
 
-// Hook để tạo data (POST requests)
-export const useCreateApi = (url, options = {}) => {
+// Hook để cập nhật data (PUT requests)
+export const useUpdateApi = (url, options = {}) => {
   const queryClient = useQueryClient();
   const {
     invalidateQueries = [],
@@ -12,11 +12,9 @@ export const useCreateApi = (url, options = {}) => {
   } = options;
 
   return useMutation({
-    mutationFn: async (data) => {
-      // Support both string URL and object with url and data
-      const requestUrl = typeof data === 'object' && data.url ? data.url : url;
-      const requestData = typeof data === 'object' && data.url ? data.data : data;
-      const response = await fetchApi({ method: "POST", url: requestUrl, data: requestData });
+    mutationFn: async ({ id, data }) => {
+      const fullUrl = id ? `${url}/${id}` : url;
+      const response = await fetchApi({ method: "PUT", url: fullUrl, data });
       return response.data;
     },
     onSuccess: (data, variables, context) => {

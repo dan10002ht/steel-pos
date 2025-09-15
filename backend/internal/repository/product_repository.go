@@ -276,9 +276,9 @@ func (r *ProductRepository) SearchProductsHybrid(query string, limit int, offset
 }
 
 // SearchProductsWithVariants searches products and includes variant information in search
-func (r *ProductRepository) SearchProductsWithVariants(query string, limit int) ([]*models.Product, error) {
+func (r *ProductRepository) SearchProductsWithVariants(query string, limit, offset int) ([]*models.Product, error) {
 	if query == "" {
-		return r.GetAll(limit, 0, "")
+		return r.GetAll(limit, offset, "")
 	}
 
 	// Normalize query for full-text search
@@ -309,7 +309,7 @@ func (r *ProductRepository) SearchProductsWithVariants(query string, limit int) 
 			OR to_tsvector('simple', COALESCE(pv.sku, '')) @@ to_tsquery('simple', $4)
 		)
 		ORDER BY relevance_score DESC, p.name
-		LIMIT $5
+		LIMIT $5 OFFSET $6
 	`
 
 	// Prepare search parameters
@@ -317,7 +317,7 @@ func (r *ProductRepository) SearchProductsWithVariants(query string, limit int) 
 	startsWithQuery := query + "%"
 	containsQuery := "%" + query + "%"
 
-	rows, err := r.db.Query(sqlQuery, exactQuery, startsWithQuery, containsQuery, searchQuery, limit)
+	rows, err := r.db.Query(sqlQuery, exactQuery, startsWithQuery, containsQuery, searchQuery, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -570,4 +570,103 @@ func (r *ProductRepository) UpdateStock(variantID int, quantity int) error {
 	}
 
 	return nil
+}
+
+// GetProductInventoryLogs gets inventory logs for a product from unified audit_logs
+func (r *ProductRepository) GetProductInventoryLogs(productID int, variantID *int, page, limit int) ([]*models.AuditLog, int, error) {
+	offset := (page - 1) * limit
+	var query string
+	var countQuery string
+	var args []interface{}
+
+	if variantID != nil {
+		// Get logs for specific variant
+		query = `
+			SELECT 
+				id, entity_type, entity_id, action, log_category, log_type,
+				inventory_data, quantity_change, previous_value, new_value,
+				reference_entity_type, reference_entity_id, notes,
+				created_by, created_by_name, created_at
+			FROM audit_logs 
+			WHERE log_category = 'inventory' 
+			AND entity_type = 'product_variant' 
+			AND entity_id = $1
+			ORDER BY created_at DESC
+			LIMIT $2 OFFSET $3
+		`
+		countQuery = `
+			SELECT COUNT(*) FROM audit_logs 
+			WHERE log_category = 'inventory' 
+			AND entity_type = 'product_variant' 
+			AND entity_id = $1
+		`
+		args = []interface{}{*variantID, limit, offset}
+	} else {
+		// Get logs for all variants of the product
+		query = `
+			SELECT 
+				al.id, al.entity_type, al.entity_id, al.action, al.log_category, al.log_type,
+				al.inventory_data, al.quantity_change, al.previous_value, al.new_value,
+				al.reference_entity_type, al.reference_entity_id, al.notes,
+				al.created_by, al.created_by_name, al.created_at
+			FROM audit_logs al
+			JOIN product_variants pv ON al.entity_id = pv.id
+			WHERE al.log_category = 'inventory' 
+			AND al.entity_type = 'product_variant'
+			AND pv.product_id = $1
+			ORDER BY al.created_at DESC
+			LIMIT $2 OFFSET $3
+		`
+		countQuery = `
+			SELECT COUNT(*) FROM audit_logs al
+			JOIN product_variants pv ON al.entity_id = pv.id
+			WHERE al.log_category = 'inventory' 
+			AND al.entity_type = 'product_variant'
+			AND pv.product_id = $1
+		`
+		args = []interface{}{productID, limit, offset}
+	}
+
+	// Get total count
+	var total int
+	err := r.db.QueryRow(countQuery, args[0]).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var logs []*models.AuditLog
+	for rows.Next() {
+		log := &models.AuditLog{}
+		err := rows.Scan(
+			&log.ID,
+			&log.EntityType,
+			&log.EntityID,
+			&log.Action,
+			&log.LogCategory,
+			&log.LogType,
+			&log.InventoryData,
+			&log.QuantityChange,
+			&log.PreviousValue,
+			&log.NewValue,
+			&log.ReferenceEntityType,
+			&log.ReferenceEntityID,
+			&log.Notes,
+			&log.CreatedBy,
+			&log.CreatedByName,
+			&log.CreatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		logs = append(logs, log)
+	}
+
+	return logs, total, nil
 }

@@ -77,9 +77,7 @@ const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
 
   return (
     <VStack spacing={4} align="stretch" h="100%">
-      <Text fontSize="lg" fontWeight="bold">
-        Xem trước PDF
-      </Text>
+   
       
       <Box
         border="1px solid"
@@ -109,29 +107,7 @@ const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
         </Box>
       </Box>
 
-      {/* PDF Instructions */}
-      <Box
-        bg="blue.50"
-        border="1px solid"
-        borderColor="blue.200"
-        borderRadius="md"
-        p={3}
-      >
-        <VStack spacing={1} align="flex-start">
-          <Text fontWeight="medium" color="blue.700" fontSize="sm">
-            💡 Hướng dẫn:
-          </Text>
-          <Text fontSize="xs" color="blue.600">
-            • PDF hiển thị trực tiếp trong trang
-          </Text>
-          <Text fontSize="xs" color="blue.600">
-            • Sử dụng nút "In hoá đơn" để in
-          </Text>
-          <Text fontSize="xs" color="blue.600">
-            • Cuộn để xem toàn bộ nội dung
-          </Text>
-        </VStack>
-      </Box>
+    
     </VStack>
   );
 };

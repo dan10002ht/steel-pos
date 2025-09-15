@@ -10,10 +10,11 @@ import (
 )
 
 type Config struct {
-	Database DatabaseConfig
-	Server   ServerConfig
-	JWT      JWTConfig
-	Redis    RedisConfig
+	Database  DatabaseConfig
+	Server    ServerConfig
+	JWT       JWTConfig
+	Redis     RedisConfig
+	Cloudinary CloudinaryConfig
 }
 
 type DatabaseConfig struct {
@@ -43,6 +44,12 @@ type RedisConfig struct {
 	DB       int
 }
 
+type CloudinaryConfig struct {
+	CloudName string
+	ApiKey    string
+	ApiSecret string
+}
+
 func Load() *Config {
 	return &Config{
 		Database: DatabaseConfig{
@@ -67,6 +74,11 @@ func Load() *Config {
 			Port:     getEnv("REDIS_PORT", "6379"),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
+		},
+		Cloudinary: CloudinaryConfig{
+			CloudName: getEnv("CLOUDINARY_CLOUD_NAME", ""),
+			ApiKey:    getEnv("CLOUDINARY_API_KEY", ""),
+			ApiSecret: getEnv("CLOUDINARY_API_SECRET", ""),
 		},
 	}
 }

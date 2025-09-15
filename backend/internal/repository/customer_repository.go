@@ -83,40 +83,41 @@ func (r *CustomerRepository) SearchCustomers(query string, limit int) ([]*models
 	// Clean query for SQL
 	cleanQuery := strings.TrimSpace(query)
 	searchPattern := "%" + cleanQuery + "%"
+	normalizedPattern := "%" + cleanQuery + "%"
 
-	// Count total results
+	// Count total results using normalized search
 	countQuery := `
 		SELECT COUNT(*) 
 		FROM customers 
-		WHERE (name ILIKE $1 OR phone ILIKE $1)
+		WHERE (normalize_vietnamese(name) ILIKE normalize_vietnamese($1) OR phone ILIKE $2)
 		AND is_active = true
 	`
 	
 	var total int
-	err := r.db.QueryRow(countQuery, searchPattern).Scan(&total)
+	err := r.db.QueryRow(countQuery, normalizedPattern, searchPattern).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count customers: %w", err)
 	}
 
-	// Search customers with pagination
+	// Search customers with pagination using normalized search
 	searchQuery := `
 		SELECT 
 			id, name, phone, address, is_active,
 			created_by, created_at, updated_at
 		FROM customers 
-		WHERE (name ILIKE $1 OR phone ILIKE $1)
+		WHERE (normalize_vietnamese(name) ILIKE normalize_vietnamese($1) OR phone ILIKE $2)
 		AND is_active = true
 		ORDER BY 
 			CASE 
-				WHEN phone ILIKE $1 THEN 1
-				WHEN name ILIKE $1 THEN 2
+				WHEN phone ILIKE $2 THEN 1
+				WHEN normalize_vietnamese(name) ILIKE normalize_vietnamese($1) THEN 2
 				ELSE 3
 			END,
 			name ASC
-		LIMIT $2
+		LIMIT $3
 	`
 
-	rows, err := r.db.Query(searchQuery, searchPattern, limit)
+	rows, err := r.db.Query(searchQuery, normalizedPattern, searchPattern, limit)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to search customers: %w", err)
 	}
@@ -353,11 +354,11 @@ func (r *CustomerRepository) GetCustomerTotalSpent(customerID int) (float64, err
 func (r *CustomerRepository) GetCustomerInvoices(customerID int, page, limit int) ([]*models.Invoice, int, error) {
 	offset := (page - 1) * limit
 
-	// Count total invoices for this customer
+	// Count total invoices for this customer (including cancelled)
 	countQuery := `
 		SELECT COUNT(*) 
 		FROM invoices 
-		WHERE customer_id = $1 AND status != 'cancelled'
+		WHERE customer_id = $1
 	`
 	
 	var total int
@@ -366,7 +367,7 @@ func (r *CustomerRepository) GetCustomerInvoices(customerID int, page, limit int
 		return nil, 0, fmt.Errorf("failed to count customer invoices: %w", err)
 	}
 
-	// Get invoices with pagination
+	// Get invoices with pagination (including cancelled)
 	query := `
 		SELECT 
 			id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
@@ -374,7 +375,7 @@ func (r *CustomerRepository) GetCustomerInvoices(customerID int, page, limit int
 			total_amount, paid_amount, payment_status, status, notes,
 			created_at, updated_at, created_by
 		FROM invoices 
-		WHERE customer_id = $1 AND status != 'cancelled'
+		WHERE customer_id = $1
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`

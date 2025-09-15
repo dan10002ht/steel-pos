@@ -62,6 +62,7 @@ type InvoicePayment struct {
 	PaymentMethod        string     `json:"payment_method" db:"payment_method"`
 	PaymentDate          time.Time  `json:"payment_date" db:"payment_date"`
 	TransactionReference *string    `json:"transaction_reference" db:"transaction_reference"`
+	PaymentImages        *string    `json:"payment_images" db:"payment_images"`
 	Notes                *string    `json:"notes" db:"notes"`
 	CorrectionReason     *string    `json:"correction_reason" db:"correction_reason"`
 	CorrectedBy          *int       `json:"corrected_by" db:"corrected_by"`
@@ -71,26 +72,13 @@ type InvoicePayment struct {
 	CreatedAt            time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at" db:"updated_at"`
 	CreatedBy            *int       `json:"created_by" db:"created_by"`
+	CreatedByUsername    *string    `json:"created_by_username" db:"created_by_username"`
 
 	// Relations
 	Invoice *Invoice `json:"invoice,omitempty"`
 }
 
-// InventoryLog represents an inventory movement log
-type InventoryLog struct {
-	ID             int       `json:"id" db:"id"`
-	ProductID      *int      `json:"product_id" db:"product_id"`
-	VariantID      *int      `json:"variant_id" db:"variant_id"`
-	MovementType   string    `json:"movement_type" db:"movement_type"`
-	QuantityChange float64   `json:"quantity_change" db:"quantity_change"`
-	PreviousStock  float64   `json:"previous_stock" db:"previous_stock"`
-	NewStock       float64   `json:"new_stock" db:"new_stock"`
-	ReferenceType  string    `json:"reference_type" db:"reference_type"`
-	ReferenceID    int       `json:"reference_id" db:"reference_id"`
-	Notes          *string   `json:"notes" db:"notes"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	CreatedBy      *int      `json:"created_by" db:"created_by"`
-}
+// Note: InventoryLog struct removed - now using unified AuditLog for all logging
 
 // Request/Response structs
 
@@ -158,6 +146,7 @@ type CreateInvoicePaymentRequest struct {
 	PaymentMethod        string   `json:"payment_method" binding:"required"`
 	PaymentDate          *time.Time `json:"payment_date"`
 	TransactionReference *string  `json:"transaction_reference"`
+	PaymentImages        *string  `json:"payment_images"`
 	Notes                *string  `json:"notes"`
 }
 

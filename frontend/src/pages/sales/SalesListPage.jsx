@@ -16,8 +16,10 @@ import SalesTable from '@/components/molecules/sales/SalesTable';
 import SalesFilters from '@/components/molecules/sales/SalesFilters';
 import SalesSearch from '@/components/molecules/sales/SalesSearch/SalesSearch';
 import CancelInvoiceModal from '@/components/molecules/sales/CancelInvoiceModal/CancelInvoiceModal';
+import PaymentModal from '@/components/molecules/sales/PaymentModal/PaymentModal';
 import { useFetchApi } from '@/hooks/useFetchApi';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useCreateInvoicePayment } from '@/hooks/sales/useInvoicePayments';
 import { AuthContext } from '@/contexts/AuthContext';
 import { useContext } from 'react';
 
@@ -29,10 +31,15 @@ const SalesListPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const navigate = useNavigate();
   const { isAdmin } = useContext(AuthContext);
+  
+  // Payment hook
+  const { createPayment, isLoading: isPaymentLoading, error: paymentError } = useCreateInvoicePayment();
+  
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -85,6 +92,30 @@ const SalesListPage = () => {
     // Refresh data after successful cancellation
     refetch();
   }, [refetch]);
+
+  const handlePayment = useCallback((invoice) => {
+    setSelectedInvoice(invoice);
+    setPaymentModalOpen(true);
+  }, []);
+
+  const handlePaymentSubmit = useCallback(async (paymentData) => {
+    try {
+      await createPayment({
+        url: `/invoice-payments/${selectedInvoice.id}`,
+        data: paymentData,
+      });
+      setPaymentModalOpen(false);
+      setSelectedInvoice(null);
+      refetch(); // Refresh data after successful payment
+    } catch (error) {
+      console.error('Payment error:', error);
+    }
+  }, [createPayment, selectedInvoice, refetch]);
+
+  const handlePaymentClose = useCallback(() => {
+    setPaymentModalOpen(false);
+    setSelectedInvoice(null);
+  }, []);
   // Extract data from API response - memoized to prevent unnecessary re-renders
   const invoices = useMemo(() => invoicesData?.invoices || [], [invoicesData?.invoices]);
   const totalCount = useMemo(() => invoicesData?.total || 0, [invoicesData?.total]);
@@ -125,7 +156,7 @@ const SalesListPage = () => {
       primaryActions={primaryActions}
     >
       {/* Sales Stats */}
-      <SalesStats />
+      {isAdmin && <SalesStats />}
 
       {/* Search and Actions */}
       <Card>
@@ -154,7 +185,7 @@ const SalesListPage = () => {
             onViewDetail={handleViewDetail}
             onEdit={handleEdit}
             onCancel={handleCancelInvoice}
-            isAdmin={isAdmin}
+            onPayment={handlePayment}
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalCount}
@@ -171,6 +202,16 @@ const SalesListPage = () => {
         onClose={() => setCancelModalOpen(false)}
         invoice={selectedInvoice}
         onSuccess={handleCancelSuccess}
+      />
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={handlePaymentClose}
+        invoice={selectedInvoice}
+        onSubmit={handlePaymentSubmit}
+        isLoading={isPaymentLoading}
+        error={paymentError}
       />
     </Page>
   );

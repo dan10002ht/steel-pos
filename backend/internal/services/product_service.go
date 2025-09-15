@@ -326,6 +326,11 @@ func (s *ProductService) UpdateStock(variantID int, quantity int) error {
 	return s.productRepo.UpdateStock(variantID, quantity)
 }
 
+// GetProductInventoryLogs gets inventory logs for a product
+func (s *ProductService) GetProductInventoryLogs(productID int, variantID *int, page, limit int) ([]*models.AuditLog, int, error) {
+	return s.productRepo.GetProductInventoryLogs(productID, variantID, page, limit)
+}
+
 // SearchProductsHybrid searches products using hybrid approach (ILIKE + full-text search)
 func (s *ProductService) SearchProductsHybrid(query string, limit int, page int) (*models.ProductListResponse, error) {
 	// Validate query
@@ -355,13 +360,16 @@ func (s *ProductService) SearchProductsHybrid(query string, limit int, page int)
 }
 
 // SearchProductsWithVariants searches products including variant information
-func (s *ProductService) SearchProductsWithVariants(query string, limit int) (*models.ProductListResponse, error) {
+func (s *ProductService) SearchProductsWithVariants(query string, page, limit int) (*models.ProductListResponse, error) {
 	// Validate query
 	if len(strings.TrimSpace(query)) < 1 {
 		return nil, errors.New("search query is required")
 	}
 
-	products, err := s.productRepo.SearchProductsWithVariants(query, limit)
+	// Calculate offset
+	offset := (page - 1) * limit
+
+	products, err := s.productRepo.SearchProductsWithVariants(query, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +382,7 @@ func (s *ProductService) SearchProductsWithVariants(query string, limit int) (*m
 	return &models.ProductListResponse{
 		Products: products,
 		Total:    total,
-		Page:     1,
+		Page:     page,
 		Limit:    limit,
 	}, nil
 }
@@ -386,7 +394,7 @@ func (s *ProductService) SearchProductsForImportOrder(query string, limit int) (
 		return nil, errors.New("search query is required")
 	}
 
-	products, err := s.productRepo.SearchProductsWithVariants(query, limit)
+	products, err := s.productRepo.SearchProductsWithVariants(query, limit, 0)
 	if err != nil {
 		return nil, err
 	}

@@ -46,6 +46,16 @@ func main() {
 	auditLogService := services.NewAuditLogService(auditLogRepo)
 	invoiceService := services.NewInvoiceService(invoiceRepo, customerService, auditLogService)
 	pdfService := services.NewPDFService()
+	
+	// Initialize image service for Cloudinary
+	imageService, err := services.NewImageService(
+		cfg.Cloudinary.CloudName,
+		cfg.Cloudinary.ApiKey,
+		cfg.Cloudinary.ApiSecret,
+	)
+	if err != nil {
+		log.Fatalf("Failed to initialize image service: %v", err)
+	}
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -54,6 +64,7 @@ func main() {
 	customerHandler := handlers.NewCustomerHandler(customerService)
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogService)
 	invoiceHandler := handlers.NewInvoiceHandler(invoiceService, pdfService)
+	imageHandler := handlers.NewImageHandler(imageService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtService)
@@ -85,7 +96,7 @@ func main() {
 	})
 
 	// Setup routes
-	routes.SetupAllRoutes(router, authHandler, productHandler, importOrderHandler, invoiceHandler, customerHandler, auditLogHandler, authMiddleware, tokenRefreshMiddleware)
+	routes.SetupAllRoutes(router, authHandler, productHandler, importOrderHandler, invoiceHandler, customerHandler, auditLogHandler, imageHandler, authMiddleware, tokenRefreshMiddleware)
 
 	// Start server
 	log.Printf("Server starting on port %s", cfg.Server.Port)

@@ -1,7 +1,9 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"steel-pos-backend/internal/models"
 	"steel-pos-backend/internal/repository"
@@ -135,6 +137,39 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		return nil, err
 	}
 
+	// Log business event for invoice creation
+	newDataMap := map[string]interface{}{
+		"invoice_id": invoice.ID,
+		"customer_name": req.CustomerName,
+		"customer_phone": req.CustomerPhone,
+		"total_amount": invoice.TotalAmount,
+		"items_count": len(req.Items),
+	}
+	newDataJSON, _ := json.Marshal(newDataMap)
+	
+	_, err = s.invoiceRepo.GetDB().Exec(`
+		SELECT log_business_event(
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+		)
+	`, 
+		"invoice",           // entity_type
+		invoice.ID,          // entity_id
+		"created",           // action
+		"invoice_created",   // log_type
+		nil,                 // old_data
+		string(newDataJSON), // new_data as JSON string
+		nil,                 // business_data
+		fmt.Sprintf("Tạo hóa đơn với %d sản phẩm, tổng tiền: %.2f", len(req.Items), invoice.TotalAmount), // changes_summary
+		"",                  // notes
+		createdBy,           // created_by
+		createdByUsername,   // created_by_name
+		nil,                 // ip_address
+	)
+	if err != nil {
+		// Log error but don't fail the invoice creation
+		fmt.Printf("Failed to log business event: %v\n", err)
+	}
+
 	// Create invoice items
 	for _, itemReq := range req.Items {
 		item := &models.InvoiceItem{
@@ -159,7 +194,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 
 		// Create inventory log for sale
 		if itemReq.VariantID != nil {
-			err = s.createInventoryLogForSale(*itemReq.VariantID, itemReq.Quantity, invoice.ID, createdBy)
+			err = s.createInventoryLogForSale(*itemReq.VariantID, itemReq.Quantity, invoice.ID, createdBy, createdByUsername)
 			if err != nil {
 				return nil, err
 			}
@@ -451,16 +486,24 @@ func (s *InvoiceService) CreateInvoicePayment(invoiceID int, req *models.CreateI
 		return nil, errors.New("invoice not found")
 	}
 
+	// Get created by username
+	var createdByUsername string
+	err = s.invoiceRepo.GetDB().QueryRow("SELECT username FROM users WHERE id = $1", createdBy).Scan(&createdByUsername)
+	if err != nil {
+		createdByUsername = "unknown"
+	}
+
 	// Create payment
 	payment := &models.InvoicePayment{
-		InvoiceID:     invoiceID,
-		Amount:        req.Amount,
-		PaymentMethod: req.PaymentMethod,
-		PaymentDate:   time.Now(),
-		Status:        "confirmed",
-		CreatedBy:     &createdBy,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		InvoiceID:         invoiceID,
+		Amount:            req.Amount,
+		PaymentMethod:     req.PaymentMethod,
+		PaymentDate:       time.Now(),
+		Status:            "confirmed",
+		CreatedBy:         &createdBy,
+		CreatedByUsername: &createdByUsername,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 
 	if req.PaymentDate != nil {
@@ -468,6 +511,10 @@ func (s *InvoiceService) CreateInvoicePayment(invoiceID int, req *models.CreateI
 	}
 	if req.TransactionReference != nil {
 		payment.TransactionReference = req.TransactionReference
+	}
+	if req.PaymentImages != nil {
+		// PaymentImages is a JSON string containing array of image objects
+		payment.PaymentImages = req.PaymentImages
 	}
 	if req.Notes != nil {
 		payment.Notes = req.Notes
@@ -496,6 +543,10 @@ func (s *InvoiceService) CreateInvoicePayment(invoiceID int, req *models.CreateI
 	}
 
 	return payment, nil
+}
+
+func (s *InvoiceService) GetInvoicePayments(invoiceID int) ([]*models.InvoicePayment, error) {
+	return s.invoiceRepo.GetInvoicePaymentsByInvoiceID(invoiceID)
 }
 
 func (s *InvoiceService) UpdateInvoicePayment(paymentID int, req *models.UpdateInvoicePaymentRequest, updatedBy int) (*models.InvoicePayment, error) {
@@ -603,28 +654,74 @@ func (s *InvoiceService) DeleteInvoicePayment(paymentID int) error {
 }
 
 // Helper methods
-func (s *InvoiceService) createInventoryLogForSale(variantID int, quantity float64, invoiceID int, createdBy int) error {
-	// This is a simplified implementation
-	// In a real system, you would need to:
-	// 1. Get current stock from product_variants table
-	// 2. Update stock (decrease by quantity)
-	// 3. Create inventory log
-
-	log := &models.InventoryLog{
-		ProductID:      nil, // Will be filled from variant
-		VariantID:      &variantID,
-		MovementType:   "sale",
-		QuantityChange: -quantity, // Negative for sale
-		PreviousStock:  0,         // Would need to fetch from DB
-		NewStock:       0,         // Would need to calculate
-		ReferenceType:  "invoice",
-		ReferenceID:    invoiceID,
-		Notes:          nil,
-		CreatedBy:      &createdBy,
-		CreatedAt:      time.Now(),
+func (s *InvoiceService) createInventoryLogForSale(variantID int, quantity float64, invoiceID int, createdBy int, createdByUsername string) error {
+	// Get current stock from product_variants table
+	var currentStock float64
+	var productID int
+	getStockQuery := `
+		SELECT pv.stock, pv.product_id 
+		FROM product_variants pv 
+		WHERE pv.id = $1
+	`
+	err := s.invoiceRepo.GetDB().QueryRow(getStockQuery, variantID).Scan(&currentStock, &productID)
+	if err != nil {
+		return fmt.Errorf("failed to get current stock: %w", err)
 	}
 
-	return s.invoiceRepo.CreateInventoryLog(log)
+	// Check if enough stock
+	if currentStock < quantity {
+		return fmt.Errorf("insufficient stock: available %f, required %f", currentStock, quantity)
+	}
+
+	// Calculate new stock
+	newStock := currentStock - quantity
+
+	// Update stock in product_variants table
+	updateStockQuery := `
+		UPDATE product_variants 
+		SET stock = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+	_, err = s.invoiceRepo.GetDB().Exec(updateStockQuery, newStock, variantID)
+	if err != nil {
+		return fmt.Errorf("failed to update stock: %w", err)
+	}
+
+	// Create inventory log using unified logging system
+	notes := fmt.Sprintf("Bán hàng từ hóa đơn %d", invoiceID)
+	inventoryData := map[string]interface{}{
+		"product_id":      productID,
+		"variant_id":      variantID,
+		"movement_type":   "sale",
+		"quantity_change": -quantity,
+		"previous_stock":  currentStock,
+		"new_stock":       newStock,
+		"reference_type":  "invoice",
+		"reference_id":    invoiceID,
+	}
+	inventoryDataJSON, _ := json.Marshal(inventoryData)
+	
+	// Use the helper function to log inventory change
+	_, err = s.invoiceRepo.GetDB().Exec(`
+		SELECT log_inventory_change(
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+		)
+	`, 
+		"product_variant", // entity_type
+		variantID,         // entity_id
+		"sale",            // log_type
+		-quantity,         // quantity_change
+		currentStock,      // previous_value
+		newStock,          // new_value
+		"invoice",         // reference_entity_type
+		invoiceID,         // reference_entity_id
+		notes,             // notes
+		createdBy,         // created_by
+		createdByUsername, // created_by_name
+		string(inventoryDataJSON), // inventory_data as JSON string
+	)
+	
+	return err
 }
 
 func (s *InvoiceService) GetInvoiceSummary() (*models.InvoiceSummary, error) {

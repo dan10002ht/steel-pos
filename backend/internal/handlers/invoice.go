@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -34,6 +35,9 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 
 	userID, _ := middleware.GetCurrentUserID(c)
 	username, _ := middleware.GetCurrentUsername(c)
+	
+	// Debug logging
+	fmt.Printf("DEBUG: Creating invoice with userID=%d, username='%s'\n", userID, username)
 
 	invoice, err := h.invoiceService.CreateInvoice(&req, userID, username)
 	if err != nil {
@@ -41,7 +45,7 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, invoice, "Invoice created successfully")
+	response.Created(c, invoice, "Tạo hóa đơn thành công")
 }
 
 func (h *InvoiceHandler) GetInvoiceByID(c *gin.Context) {
@@ -179,6 +183,26 @@ func (h *InvoiceHandler) CreateInvoicePayment(c *gin.Context) {
 	}
 
 	response.Created(c, payment, "Payment created successfully")
+}
+
+func (h *InvoiceHandler) GetInvoicePayments(c *gin.Context) {
+	invoiceIDStr := c.Param("id")
+	invoiceID, err := strconv.Atoi(invoiceIDStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid invoice ID")
+		return
+	}
+
+	payments, err := h.invoiceService.GetInvoicePayments(invoiceID)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"payments": payments,
+		"total": len(payments),
+	}, "Invoice payments retrieved successfully")
 }
 
 func (h *InvoiceHandler) UpdateInvoicePayment(c *gin.Context) {

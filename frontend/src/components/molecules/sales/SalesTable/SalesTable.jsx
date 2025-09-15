@@ -13,6 +13,8 @@ import {
 } from '@chakra-ui/react';
 import Pagination from '@/components/atoms/Pagination';
 import SalesTableRow from '@/components/atoms/sales/SalesTableRow';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useContext } from 'react';
 
 const SalesTable = ({
   isLoading,
@@ -20,9 +22,9 @@ const SalesTable = ({
   onViewDetail,
   onEdit,
   onCancel,
-  isAdmin = false,
+  onPayment,
   showPagination = true,
-  size = 'md',
+  size = 'sm',
   // Pagination props
   currentPage = 1,
   totalPages = 0,
@@ -31,6 +33,7 @@ const SalesTable = ({
   onPageChange,
   onPageSizeChange,
 }) => {
+  const {isAdmin} = useContext(AuthContext);
   return (
     <VStack spacing={4} align='stretch'>
       <Box position='relative' overflowX='auto'>
@@ -63,6 +66,7 @@ const SalesTable = ({
                   onViewDetail={onViewDetail}
                   onEdit={onEdit}
                   onCancel={onCancel}
+                  onPayment={onPayment}
                   isAdmin={isAdmin}
                 />
               ))

@@ -131,7 +131,7 @@ export const useImportOrderForm = ({
 
     const orderData = {
       supplier_name: formData.supplier,
-      import_date: formData.importDate,
+      import_date: new Date(formData.importDate),
       notes: formData.notes,
       import_images: formData.documents,
       items: processedItems,

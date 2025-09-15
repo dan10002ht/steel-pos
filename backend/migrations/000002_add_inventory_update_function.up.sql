@@ -11,57 +11,78 @@ DECLARE
     v_item RECORD;
     v_previous_stock INTEGER;
     v_new_stock INTEGER;
+    v_approved_by_name VARCHAR(100);
 BEGIN
+    -- Get approved_by username
+    SELECT username INTO v_approved_by_name
+    FROM users 
+    WHERE id = p_approved_by;
+    
     -- Loop through all items in the import order
     FOR v_item IN 
         SELECT 
             ioi.product_variant_id,
             ioi.quantity,
-            ioi.product_name,
-            ioi.variant_name
+            pv.stock as current_stock,
+            pv.product_id,
+            p.name as product_name,
+            pv.name as variant_name
         FROM import_order_items ioi
+        JOIN product_variants pv ON ioi.product_variant_id = pv.id
+        JOIN products p ON pv.product_id = p.id
         WHERE ioi.import_order_id = p_import_order_id
     LOOP
         -- Get current stock
-        SELECT stock INTO v_previous_stock
-        FROM product_variants
-        WHERE id = v_item.product_variant_id;
-        
-        -- Calculate new stock
-        v_new_stock := COALESCE(v_previous_stock, 0) + v_item.quantity;
+        v_previous_stock := v_item.current_stock;
+        v_new_stock := v_previous_stock + v_item.quantity;
         
         -- Update product variant stock
         UPDATE product_variants 
-        SET 
-            stock = v_new_stock,
+        SET stock = v_new_stock,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = v_item.product_variant_id;
         
-        -- Insert inventory history record
-        INSERT INTO inventory_history (
-            product_variant_id,
-            type,
-            quantity,
-            previous_stock,
-            new_stock,
-            reference_id,
-            reference_type,
+        -- Log inventory change using unified audit_logs system
+        INSERT INTO audit_logs (
+            entity_type,
+            entity_id,
+            action,
+            log_type,
+            log_category,
+            quantity_change,
+            previous_value,
+            new_value,
+            reference_entity_type,
+            reference_entity_id,
             notes,
-            created_by
+            created_by,
+            created_by_name,
+            created_at
         ) VALUES (
+            'product_variant',
             v_item.product_variant_id,
-            'import',
+            'import_approval',
+            'inventory_change',
+            'inventory',
             v_item.quantity,
-            COALESCE(v_previous_stock, 0),
+            v_previous_stock,
             v_new_stock,
-            p_import_order_id,
             'import_order',
-            'Import order approval - ' || v_item.product_name || ' ' || v_item.variant_name,
-            p_approved_by
+            p_import_order_id,
+            'Phê duyệt đơn nhập - ' || v_item.product_name || ' ' || v_item.variant_name,
+            p_approved_by,
+            v_approved_by_name,
+            CURRENT_TIMESTAMP
         );
-        
     END LOOP;
     
+    -- Update import order status
+    UPDATE import_orders 
+    SET status = 'approved',
+        approved_by = p_approved_by,
+        approved_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = p_import_order_id;
 END;
 $$ LANGUAGE plpgsql;
 

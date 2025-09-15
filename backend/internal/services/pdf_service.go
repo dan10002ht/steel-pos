@@ -36,20 +36,20 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.SetFont("NotoSans", "B", 22)
 
 	pdf.SetTextColor(0, 0, 0)
-	pdf.CellFormat(0, 12, "ĐẠI LÝ SẮT THÉP KIÊN PHƯỚC", "", 0, "C", false, 0, "")
+	pdf.CellFormat(0, 12, "NHÀ MÁY TÔN THÉP KIÊN PHƯỚC", "", 0, "C", false, 0, "")
 	pdf.Ln(10)
 
-	// pdf.SetFont("NotoSans", "", 14)
-	// pdf.SetTextColor(100, 100, 100)
-	// pdf.CellFormat(0, 6, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "", 0, "C", false, 0, "")
+	pdf.SetFont("NotoSans", "", 14)
+	pdf.SetTextColor(100, 100, 100)
+	pdf.CellFormat(0, 6, "CHUYÊN CUNG CẤP TÔN, SẮT, THÉP VÀ CÁC MẶT HÀNG CƠ KHÍ.", "", 0, "C", false, 0, "")
 
+	pdf.Ln(10)
 	pdf.SetFont("NotoSans", "", 12)
-	pdf.CellFormat(0, 6, "Địa chỉ: Trường Sơn Đức Thọ Hà Tĩnh", "", 0, "C", false, 0, "")
+	pdf.CellFormat(0, 6, "Địa chỉ: Xã Đức Minh - Tỉnh Hà Tĩnh", "", 0, "C", false, 0, "")
 	pdf.Ln(6)
 	pdf.CellFormat(0, 6, "Điện thoại: 0972851015 - 0974498918", "", 0, "C", false, 0, "")
 	pdf.Ln(8)
 
-	// Invoice title with better styling
 	pdf.SetFont("NotoSans", "B", 22)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.CellFormat(0, 12, "HOÁ ĐƠN BÁN HÀNG", "", 0, "C", false, 0, "")

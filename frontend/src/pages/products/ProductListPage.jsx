@@ -32,7 +32,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page';
 import SearchInput from '../../components/atoms/SearchInput';
-import FilterDropdown from '../../components/atoms/FilterDropdown';
 import Pagination from '../../components/atoms/Pagination';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useDeleteApi } from '../../hooks/useDeleteApi';
@@ -42,20 +41,11 @@ import { formatCurrency } from '../../utils/formatters';
 const ProductListPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  // Filter options
-  const categoryOptions = [
-    { value: 'all', label: 'Tất cả' },
-    { value: 'Thép hộp', label: 'Thép hộp' },
-    { value: 'Thép tấm', label: 'Thép tấm' },
-    { value: 'Thép ống', label: 'Thép ống' },
-  ];
 
   // Fetch products from API with debounced search and pagination
   const { data, isLoading, error, refetch } = useFetchApi(
@@ -64,13 +54,12 @@ const ProductListPage = () => {
       'search',
       {
         search: debouncedSearchTerm,
-        category: filterCategory,
         page: currentPage,
         limit: pageSize,
       },
     ],
     debouncedSearchTerm
-      ? `/products/search?q=${debouncedSearchTerm}&page=${currentPage}&limit=${pageSize}`
+      ? `/products/search/variants?q=${debouncedSearchTerm}&page=${currentPage}&limit=${pageSize}`
       : `/products?page=${currentPage}&limit=${pageSize}`,
     {
       enabled: true,
@@ -103,20 +92,14 @@ const ProductListPage = () => {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Reset to first page when search or filter changes
+  // Reset to first page when search changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, filterCategory]);
-
-  // Filter products by category (search is handled by API)
-  const filteredProducts = productsList.filter(product => {
-    const matchesCategory =
-      filterCategory === 'all' || product.category?.name === filterCategory;
-    return matchesCategory;
-  });
+  }, [debouncedSearchTerm]);
 
   // Create paginated data with variants as separate rows
-  const paginatedData = filteredProducts.flatMap(product => {
+  // Note: Category filtering is now handled by backend API
+  const paginatedData = productsList.flatMap(product => {
     if (!product.variants || product.variants.length === 0) {
       // If no variants, create a placeholder row
       return [
@@ -183,7 +166,7 @@ const ProductListPage = () => {
               <SearchInput
                 placeholder='Tìm kiếm sản phẩm...'
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={value => setSearchTerm(value)}
               />
             </HStack>
           </HStack>
@@ -234,11 +217,11 @@ const ProductListPage = () => {
                   Chưa có sản phẩm nào
                 </Text>
                 <Text fontSize='md' color='gray.500' maxW='400px'>
-                  {searchTerm || filterCategory !== 'all'
-                    ? 'Không tìm thấy sản phẩm phù hợp với bộ lọc hiện tại'
+                  {searchTerm
+                    ? 'Không tìm thấy sản phẩm phù hợp với từ khóa tìm kiếm'
                     : 'Bắt đầu bằng cách thêm sản phẩm đầu tiên vào hệ thống'}
                 </Text>
-                {!searchTerm && filterCategory === 'all' && (
+                {!searchTerm && (
                   <Button
                     leftIcon={<Plus size={16} />}
                     colorScheme='blue'

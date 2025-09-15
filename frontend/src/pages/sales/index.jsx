@@ -12,7 +12,7 @@ const SalesRouter = () => {
       <Route path="list" element={<SalesListPage />} />
       <Route path="detail/:id" element={<SalesDetailPage />} />
       <Route path="invoice/:id/print" element={<InvoicePrintPage />} />
-      <Route path="*" element={<Navigate to="create" replace />} />
+      <Route path="*" element={<Navigate to="list" replace />} />
     </Routes>
   );
 };

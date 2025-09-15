@@ -297,6 +297,7 @@ func (h *ProductHandler) SearchProductsForImportOrder(c *gin.Context) {
 // SearchProductsWithVariants searches products including variant information
 func (h *ProductHandler) SearchProductsWithVariants(c *gin.Context) {
 	query := c.Query("q")
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
 	if query == "" {
@@ -304,8 +305,16 @@ func (h *ProductHandler) SearchProductsWithVariants(c *gin.Context) {
 		return
 	}
 
+	// Validate pagination parameters
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
 	start := time.Now()
-	result, err := h.productService.SearchProductsWithVariants(query, limit)
+	result, err := h.productService.SearchProductsWithVariants(query, page, limit)
 	searchTime := time.Since(start).Milliseconds()
 
 	if err != nil {
@@ -316,7 +325,59 @@ func (h *ProductHandler) SearchProductsWithVariants(c *gin.Context) {
 	response.Success(c, gin.H{
 		"products": result.Products,
 		"total":    result.Total,
+		"page":     result.Page,
+		"limit":    result.Limit,
+		"total_pages": (result.Total + result.Limit - 1) / result.Limit,
 		"query":    query,
 		"took_ms":  searchTime,
 	}, "Products with variants found")
+}
+
+// GetProductInventoryLogs gets inventory logs for a product
+func (h *ProductHandler) GetProductInventoryLogs(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid product ID")
+		return
+	}
+
+	variantIDStr := c.Query("variant_id")
+	var variantID *int
+	if variantIDStr != "" {
+		variantIDInt, err := strconv.Atoi(variantIDStr)
+		if err != nil {
+			response.BadRequest(c, "Invalid variant ID")
+			return
+		}
+		variantID = &variantIDInt
+	}
+
+	// Get pagination parameters
+	page := c.DefaultQuery("page", "1")
+	limit := c.DefaultQuery("limit", "10")
+	
+	pageInt, err := strconv.Atoi(page)
+	if err != nil || pageInt < 1 {
+		pageInt = 1
+	}
+	
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil || limitInt < 1 || limitInt > 100 {
+		limitInt = 10
+	}
+
+	logs, total, err := h.productService.GetProductInventoryLogs(id, variantID, pageInt, limitInt)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"logs": logs,
+		"total": total,
+		"page": pageInt,
+		"limit": limitInt,
+		"total_pages": (total + limitInt - 1) / limitInt,
+	}, "Lấy lịch sử tồn kho thành công")
 }

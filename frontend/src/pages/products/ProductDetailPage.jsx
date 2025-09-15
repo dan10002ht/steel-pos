@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   VStack,
@@ -28,12 +28,19 @@ import {
 import { ArrowLeft, Edit, Package, Tag, Hash, DollarSign, Box as BoxIcon } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchApi } from "../../hooks/useFetchApi";
+import { useInventoryLogs } from "../../hooks/products/useInventoryLogs";
 import Page from "../../components/organisms/Page";
+import InventoryLogTable from "../../components/molecules/products/InventoryLogTable/InventoryLogTable";
+import Pagination from "../../components/atoms/Pagination";
 import { formatCurrency, formatNumber, formatDateTime } from "../../utils/formatters";
 
 const ProductDetailPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch product detail
   const {
@@ -47,6 +54,32 @@ const ProductDetailPage = () => {
       enabled: !!id,
     }
   );
+
+  // Fetch inventory logs with pagination
+  const {
+    data: inventoryLogsData,
+    isLoading: isLogsLoading,
+    error: logsError,
+  } = useInventoryLogs(id, null, {
+    enabled: !!id,
+    page: currentPage,
+    limit: pageSize,
+  });
+
+  // Extract logs and pagination info
+  const inventoryLogs = inventoryLogsData?.logs || [];
+  const totalCount = inventoryLogsData?.total || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   if (isLoading) {
     return (
@@ -293,6 +326,38 @@ const ProductDetailPage = () => {
                   </Tbody>
                 </Table>
               </TableContainer>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Inventory Logs */}
+        <Card shadow="sm">
+          <CardHeader>
+            <HStack justify="space-between" align="center">
+              <Text fontSize="lg" fontWeight="bold">
+                Lịch sử tồn kho
+              </Text>
+              <Badge colorScheme="blue" fontSize="sm">
+                {totalCount} hoạt động
+              </Badge>
+            </HStack>
+          </CardHeader>
+          <CardBody>
+            <InventoryLogTable 
+              logs={inventoryLogs}
+              isLoading={isLogsLoading}
+              error={logsError}
+            />
+            {!isLogsLoading && !logsError && totalCount > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalCount}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                pageSizeOptions={[5, 10, 20, 50]}
+              />
             )}
           </CardBody>
         </Card>

@@ -22,6 +22,9 @@ func SetupProductRoutes(api *gin.RouterGroup, productHandler *handlers.ProductHa
 		products.GET("/search", productHandler.SearchProducts)
 		products.GET("/search/variants", productHandler.SearchProductsWithVariants)
 		products.GET("/search/import-order", productHandler.SearchProductsForImportOrder)
+
+		// Inventory logs
+		products.GET("/:id/inventory-logs", productHandler.GetProductInventoryLogs)
 	}
 
 	// Product variants routes - use a separate group to avoid conflicts

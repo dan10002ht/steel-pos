@@ -6,41 +6,21 @@ import Page from "../../components/organisms/Page/Page";
 import InvoiceTabsManager from "../../components/organisms/sales/InvoiceTabsManager";
 import { TOAST_DURATION } from "../../constants/options";
 import { useCreateApi } from "../../hooks/useCreateApi";
+import { generateDefaultInvoice } from "../../utils/invoiceHelpers";
 
 const SalesCreatePage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [invoices, setInvoices] = useState([
-    {
-      id: 1,
-      code: "Hoá đơn 1",
-      items: [],
-      customer_id: null,
-      customer_name: "",
-      customer_phone: "",
-      customer_address: "",
-      notes: "",
-      discount: 0,
-      paymentMethod: "",
-      paidAmount: 0,
-    },
+    generateDefaultInvoice("1"),
   ]);
   const toast = useToast();
-  const createInvoiceMutation = useCreateApi('/invoices');
+  const createInvoiceMutation = useCreateApi('/invoices', {
+    invalidateQueries: [['invoices']],
+  });
+  
 
   const handleCreateNewInvoice = () => {
-    const newInvoice = {
-      id: Date.now(),
-      code: `Hoá đơn ${invoices.length + 1}`,
-      items: [],
-      customer_id: null,
-      customer_name: "",
-      customer_phone: "",
-      customer_address: "",
-      notes: "",
-      discount: 0,
-      paymentMethod: "",
-      paidAmount: 0,
-    };
+    const newInvoice = generateDefaultInvoice((invoices.length + 1).toString());
     setInvoices([...invoices, newInvoice]);
     setActiveTab(invoices.length);
   };
@@ -110,18 +90,14 @@ const SalesCreatePage = () => {
         });
         
         // Remove the created invoice from the list
-        console.log("activeTab", activeTab);
-        const newInvoices = invoices.filter((_, index) => index !== activeTab);
-        setInvoices(newInvoices);
+        setInvoices((prev) => [...prev].filter((_, index) => index !== activeTab));
         
         // Switch to the first tab if current tab was removed
-        if (activeTab >= newInvoices.length) {
+        if (activeTab > invoices.length - 1) {
           setActiveTab(0);
         }
       }
 
-      // Create a new empty invoice for next use
-      handleCreateNewInvoice();
 
     } catch (error) {
       console.error('Error creating invoice:', error);

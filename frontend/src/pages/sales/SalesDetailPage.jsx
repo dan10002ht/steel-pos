@@ -301,14 +301,10 @@ const SalesDetailPage = () => {
 
           {/* PDF Viewer */}
           <GridItem colSpan={{ base: 12, lg: 6 }}>
-            <Card h="100%">
-              <CardBody h="100%">
-                <InvoicePdf
-                  invoiceId={id}
-                  invoiceCode={invoice.invoice_code}
-                />
-              </CardBody>
-            </Card>
+            <InvoicePdf
+              invoiceId={id}
+              invoiceCode={invoice.invoice_code}
+            />
           </GridItem>
         </Grid>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   Box,
   Card,
@@ -54,6 +54,7 @@ import {
   Calendar,
   Package,
   Search,
+  Eye,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page';
@@ -67,8 +68,10 @@ import { formatCurrency, formatDate } from '../../utils/formatters';
 import StatusBadge from '../../components/atoms/StatusBadge';
 import InventoryFilters from '../../components/molecules/inventory/InventoryFilters';
 import { TOAST_DURATION } from '../../constants/options';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const InventoryList = () => {
+  const { isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -286,22 +289,6 @@ const InventoryList = () => {
           leftIcon: <Plus size={16} />,
         },
       ]}
-      secondaryActions={[
-        {
-          label: 'Xuất báo cáo',
-          onClick: () => {
-            toast({
-              title: 'Thông báo',
-              description: 'Chức năng xuất báo cáo sẽ được implement sau',
-              status: 'info',
-              duration: TOAST_DURATION.MEDIUM,
-              isClosable: true,
-            });
-          },
-          variant: 'outline',
-          leftIcon: <Download size={16} />,
-        },
-      ]}
     >
       <Box w='100%' maxW='100%' mx='auto'>
         {/* Filters Section */}
@@ -441,43 +428,24 @@ const InventoryList = () => {
                               onClick={() => handleEdit(order.id)}
                             />
                           )}
-                          <IconButton
+                          {isAdmin && <IconButton
                             icon={<Trash2 size={18} />}
                             size='sm'
                             colorScheme='red'
                             aria-label='Xóa'
+                            variant="ghost"
                             onClick={() => handleDelete(order.id)}
                             isLoading={deleteMutation.isPending}
+                          />}
+                          <IconButton
+                            icon={<Eye size={18} />}
+                            size='sm'
+                            colorScheme='blue'
+                            aria-label='Xem chi tiết'
+                            variant="ghost"
+                            onClick={() => handleViewDetail(order.id)}
                           />
-                          <Menu>
-                            <MenuButton
-                              as={IconButton}
-                              icon={<MoreVertical size={18} />}
-                              size='sm'
-                              variant='ghost'
-                              aria-label='More actions'
-                            />
-                            <MenuList>
-                              <MenuItem
-                                icon={<Download size={16} />}
-                                onClick={() => handleExportExcel(order)}
-                              >
-                                Xuất Excel
-                              </MenuItem>
-                              <MenuItem
-                                icon={<Printer size={16} />}
-                                onClick={() => handlePrint(order)}
-                              >
-                                In phiếu
-                              </MenuItem>
-                              <MenuDivider />
-                              <MenuItem
-                                onClick={() => handleViewDetail(order.id)}
-                              >
-                                Xem chi tiết
-                              </MenuItem>
-                            </MenuList>
-                          </Menu>
+                     
                         </HStack>
                       </Td>
                     </Tr>

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,6 +17,11 @@ func NewInvoiceRepository(db *sql.DB) *InvoiceRepository {
 	return &InvoiceRepository{db: db}
 }
 
+// GetDB returns the database connection
+func (r *InvoiceRepository) GetDB() *sql.DB {
+	return r.db
+}
+
 
 // Invoice methods
 func (r *InvoiceRepository) CreateInvoice(invoice *models.Invoice) error {
@@ -24,9 +30,9 @@ func (r *InvoiceRepository) CreateInvoice(invoice *models.Invoice) error {
 			invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
 			total_amount, paid_amount, payment_status, status, notes,
-			created_by, created_at, updated_at
+			created_by, created_by_username, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -48,6 +54,7 @@ func (r *InvoiceRepository) CreateInvoice(invoice *models.Invoice) error {
 		invoice.Status,
 		invoice.Notes,
 		invoice.CreatedBy,
+		invoice.CreatedByUsername,
 		invoice.CreatedAt,
 		invoice.UpdatedAt,
 	).Scan(&invoice.ID, &invoice.CreatedAt, &invoice.UpdatedAt)
@@ -60,7 +67,7 @@ func (r *InvoiceRepository) GetInvoiceByID(id int) (*models.Invoice, error) {
 		SELECT id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			   subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
 			   total_amount, paid_amount, payment_status, status, notes,
-			   created_at, updated_at, created_by, cancelled_at, cancelled_by, cancellation_reason
+			   created_at, updated_at, created_by, created_by_username, cancelled_at, cancelled_by, cancellation_reason
 		FROM invoices
 		WHERE id = $1
 	`
@@ -86,6 +93,7 @@ func (r *InvoiceRepository) GetInvoiceByID(id int) (*models.Invoice, error) {
 		&invoice.CreatedAt,
 		&invoice.UpdatedAt,
 		&invoice.CreatedBy,
+		&invoice.CreatedByUsername,
 		&invoice.CancelledAt,
 		&invoice.CancelledBy,
 		&invoice.CancellationReason,
@@ -159,7 +167,7 @@ func (r *InvoiceRepository) GetAllInvoices(limit, offset int, search string, sta
 		SELECT id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			   subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
 			   total_amount, paid_amount, payment_status, status, notes,
-			   created_at, updated_at, created_by
+			   created_at, updated_at, created_by, created_by_username
 		FROM invoices
 		WHERE 1=1
 	`
@@ -229,6 +237,7 @@ func (r *InvoiceRepository) GetAllInvoices(limit, offset int, search string, sta
 			&invoice.CreatedAt,
 			&invoice.UpdatedAt,
 			&invoice.CreatedBy,
+			&invoice.CreatedByUsername,
 		)
 		if err != nil {
 			return nil, err
@@ -439,11 +448,20 @@ func (r *InvoiceRepository) CountSearchResults(query string, paymentStatus strin
 
 // CancelInvoice cancels an invoice and restores inventory
 func (r *InvoiceRepository) CancelInvoice(invoiceID int, reason string, cancelledBy int) error {
+	// Get cancelled by username
+	var cancelledByUsername string
+	err := r.db.QueryRow("SELECT username FROM users WHERE id = $1", cancelledBy).Scan(&cancelledByUsername)
+	if err != nil {
+		cancelledByUsername = "unknown"
+	}
+
 	// Get invoice items to restore inventory
 	itemsQuery := `
-		SELECT variant_id, quantity 
-		FROM invoice_items 
-		WHERE invoice_id = $1 AND variant_id IS NOT NULL
+		SELECT ii.variant_id, ii.quantity, pv.product_id, p.name as product_name, pv.name as variant_name, pv.stock as current_stock
+		FROM invoice_items ii
+		JOIN product_variants pv ON ii.variant_id = pv.id
+		JOIN products p ON pv.product_id = p.id
+		WHERE ii.invoice_id = $1 AND ii.variant_id IS NOT NULL
 	`
 	
 	rows, err := r.db.Query(itemsQuery, invoiceID)
@@ -456,18 +474,61 @@ func (r *InvoiceRepository) CancelInvoice(invoiceID int, reason string, cancelle
 	for rows.Next() {
 		var variantID int
 		var quantity float64
-		if err := rows.Scan(&variantID, &quantity); err != nil {
+		var productID int
+		var productName string
+		var variantName string
+		var currentStock float64
+		
+		if err := rows.Scan(&variantID, &quantity, &productID, &productName, &variantName, &currentStock); err != nil {
 			return err
 		}
+
+		// Calculate new stock after restoration
+		newStock := currentStock + quantity
 
 		// Restore quantity to product_variants
 		restoreQuery := `
 			UPDATE product_variants 
-			SET stock = stock + $1::INTEGER, updated_at = NOW()
+			SET stock = stock + $1, updated_at = NOW()
 			WHERE id = $2
 		`
 		
 		_, err = r.db.Exec(restoreQuery, quantity, variantID)
+		if err != nil {
+			return err
+		}
+
+		// Log inventory restoration using unified audit_logs system
+		inventoryData := map[string]interface{}{
+			"product_id":      productID,
+			"variant_id":      variantID,
+			"movement_type":   "cancellation",
+			"quantity_change": quantity,
+			"previous_stock":  currentStock,
+			"new_stock":       newStock,
+			"reference_type":  "invoice",
+			"reference_id":    invoiceID,
+		}
+		inventoryDataJSON, _ := json.Marshal(inventoryData)
+
+		_, err = r.db.Exec(`
+			SELECT log_inventory_change(
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+			)
+		`,
+			"product_variant", // entity_type
+			variantID,         // entity_id
+			"cancellation",    // log_type
+			quantity,          // quantity_change
+			currentStock,      // previous_value
+			newStock,          // new_value
+			"invoice",         // reference_entity_type
+			invoiceID,         // reference_entity_id
+			"Hủy hóa đơn - " + productName + " " + variantName, // notes
+			cancelledBy,       // created_by
+			cancelledByUsername, // created_by_name
+			string(inventoryDataJSON), // inventory_data as JSON string
+		)
 		if err != nil {
 			return err
 		}
@@ -485,6 +546,29 @@ func (r *InvoiceRepository) CancelInvoice(invoiceID int, reason string, cancelle
 	`
 	
 	_, err = r.db.Exec(updateQuery, cancelledBy, reason, invoiceID)
+	if err != nil {
+		return err
+	}
+
+	// Log invoice cancellation
+	_, err = r.db.Exec(`
+		SELECT log_business_event(
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+		)
+	`,
+		"invoice",           // entity_type
+		invoiceID,           // entity_id
+		"cancelled",         // action
+		"invoice_cancelled", // log_type
+		nil,                 // old_data
+		fmt.Sprintf(`{"status": "cancelled", "reason": "%s"}`, reason), // new_data
+		nil,                 // business_data
+		fmt.Sprintf("Hóa đơn đã được hủy. Lý do: %s", reason), // changes_summary
+		"",                  // notes
+		cancelledBy,         // created_by
+		cancelledByUsername, // created_by_name
+		nil,                 // ip_address
+	)
 	if err != nil {
 		return err
 	}
@@ -700,9 +784,9 @@ func (r *InvoiceRepository) CreateInvoicePayment(payment *models.InvoicePayment)
 	query := `
 		INSERT INTO invoice_payments (
 			invoice_id, amount, payment_method, payment_date, transaction_reference,
-			notes, status, created_by, created_at, updated_at
+			payment_images, notes, status, created_by, created_by_username, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -713,9 +797,11 @@ func (r *InvoiceRepository) CreateInvoicePayment(payment *models.InvoicePayment)
 		payment.PaymentMethod,
 		payment.PaymentDate,
 		payment.TransactionReference,
+		payment.PaymentImages,
 		payment.Notes,
 		payment.Status,
 		payment.CreatedBy,
+		payment.CreatedByUsername,
 		payment.CreatedAt,
 		payment.UpdatedAt,
 	).Scan(&payment.ID, &payment.CreatedAt, &payment.UpdatedAt)
@@ -726,8 +812,8 @@ func (r *InvoiceRepository) CreateInvoicePayment(payment *models.InvoicePayment)
 func (r *InvoiceRepository) GetInvoicePaymentsByInvoiceID(invoiceID int) ([]*models.InvoicePayment, error) {
 	query := `
 		SELECT id, invoice_id, amount, payment_method, payment_date, transaction_reference,
-			   notes, correction_reason, corrected_by, corrected_at, original_amount,
-			   status, created_at, updated_at, created_by
+			   payment_images, notes, correction_reason, corrected_by, corrected_at, original_amount,
+			   status, created_at, updated_at, created_by, created_by_username
 		FROM invoice_payments
 		WHERE invoice_id = $1
 		ORDER BY created_at ASC
@@ -749,6 +835,7 @@ func (r *InvoiceRepository) GetInvoicePaymentsByInvoiceID(invoiceID int) ([]*mod
 			&payment.PaymentMethod,
 			&payment.PaymentDate,
 			&payment.TransactionReference,
+			&payment.PaymentImages,
 			&payment.Notes,
 			&payment.CorrectionReason,
 			&payment.CorrectedBy,
@@ -758,6 +845,7 @@ func (r *InvoiceRepository) GetInvoicePaymentsByInvoiceID(invoiceID int) ([]*mod
 			&payment.CreatedAt,
 			&payment.UpdatedAt,
 			&payment.CreatedBy,
+			&payment.CreatedByUsername,
 		)
 		if err != nil {
 			return nil, err
@@ -830,35 +918,7 @@ func (r *InvoiceRepository) DeleteInvoicePayment(id int) error {
 	return nil
 }
 
-// InventoryLog methods
-func (r *InvoiceRepository) CreateInventoryLog(log *models.InventoryLog) error {
-	query := `
-		INSERT INTO inventory_logs (
-			product_id, variant_id, movement_type, quantity_change,
-			previous_stock, new_stock, reference_type, reference_id,
-			notes, created_by, created_at
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, created_at
-	`
-
-	err := r.db.QueryRow(
-		query,
-		log.ProductID,
-		log.VariantID,
-		log.MovementType,
-		log.QuantityChange,
-		log.PreviousStock,
-		log.NewStock,
-		log.ReferenceType,
-		log.ReferenceID,
-		log.Notes,
-		log.CreatedBy,
-		log.CreatedAt,
-	).Scan(&log.ID, &log.CreatedAt)
-
-	return err
-}
+// Note: CreateInventoryLog method removed - now using unified logging system
 
 // Helper methods
 func (r *InvoiceRepository) loadInvoiceRelations(invoice *models.Invoice) error {

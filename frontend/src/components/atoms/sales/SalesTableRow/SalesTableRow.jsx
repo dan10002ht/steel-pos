@@ -1,6 +1,6 @@
 import React from 'react';
-import { Tr, Td, Badge, HStack, IconButton, Text } from '@chakra-ui/react';
-import { Eye, Edit, X } from 'lucide-react';
+import { Tr, Td, Badge, HStack, IconButton, Text, Tooltip } from '@chakra-ui/react';
+import { Eye, Edit, X, CreditCard } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import {
   getInvoiceStatusColor,
@@ -9,13 +9,13 @@ import {
   getPaymentStatusWithRemaining,
 } from '@/utils/statusHelpers';
 
-const SalesTableRow = ({ invoice, onViewDetail, onEdit, onCancel, isAdmin = false }) => {
+const SalesTableRow = ({ invoice, onViewDetail, onEdit, onCancel, onPayment, isAdmin = false }) => {
   return (
     <Tr>
       <Td fontWeight='medium'>{invoice.invoice_code}</Td>
       <Td>{invoice.customer_name}</Td>
       <Td>{invoice.customer_phone}</Td>
-      <Td maxW='200px' isTruncated>
+      <Td maxW='200px'>
         {invoice.customer_address || 'Không có địa chỉ'}
       </Td>
       <Td>{new Date(invoice.created_at).toLocaleDateString('vi-VN')}</Td>
@@ -31,33 +31,30 @@ const SalesTableRow = ({ invoice, onViewDetail, onEdit, onCancel, isAdmin = fals
         </Badge>
       </Td>
       <Td>
-        <HStack spacing={2}>
-          <IconButton
-            size='sm'
-            icon={<Eye size={16} />}
-            onClick={() => onViewDetail(invoice.id)}
-            colorScheme='blue'
-            variant='ghost'
-            title='Xem chi tiết'
-          />
-          <IconButton
-            size='sm'
-            icon={<Edit size={16} />}
-            onClick={() => onEdit(invoice.id)}
-            colorScheme='orange'
-            variant='ghost'
-            title='Chỉnh sửa'
-          />
-          {isAdmin && invoice.status === 'confirmed' && (
+        <HStack spacing={2} justify='flex-end'>
+        {invoice.payment_status !== 'paid' && invoice.status !== 'cancelled' && (
+            <Tooltip label="Thanh toán" placement="top" hasArrow>
+              <IconButton
+                size='sm'
+                icon={<CreditCard size={16} />}
+                onClick={() => onPayment(invoice)}
+                colorScheme='green'
+                variant='ghost'
+              />
+            </Tooltip>
+          )}
+          <Tooltip label="Xem chi tiết hóa đơn" placement="top" hasArrow>
             <IconButton
               size='sm'
-              icon={<X size={16} />}
-              onClick={() => onCancel(invoice)}
-              colorScheme='red'
+              icon={<Eye size={16} />}
+              onClick={() => onViewDetail(invoice.id)}
+              colorScheme='blue'
               variant='ghost'
-              title='Hủy hóa đơn'
             />
-          )}
+          </Tooltip>
+   
+          
+      
         </HStack>
       </Td>
     </Tr>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardHeader,
@@ -14,7 +14,6 @@ import {
   Th,
   Td,
   Skeleton,
-  SkeletonText,
 } from '@chakra-ui/react';
 import SalesTable from '@/components/molecules/sales/SalesTable';
 import { useFetchApi } from '@/hooks/useFetchApi';
@@ -25,22 +24,35 @@ const RecentInvoicesSection = ({
   onCreateInvoice,
   onInvoiceClick,
 }) => {
-  // Fetch customer invoices
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  // Fetch customer invoices with pagination
   const {
     data: invoicesResult,
     isLoading,
     error,
   } = useFetchApi(
-    ['customer', customerId, 'invoices'],
-    `/customers/${customerId}/invoices`,
+    ['customer', customerId, 'invoices', currentPage, pageSize],
+    `/customers/${customerId}/invoices?page=${currentPage}&limit=${pageSize}`,
     {
       enabled: !!customerId,
     }
   );
 
   const invoices = invoicesResult?.invoices || [];
-
   const totalInvoices = invoicesResult?.total || 0;
+  const totalPages = Math.ceil(totalInvoices / pageSize);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (event) => {
+    const newPageSize = parseInt(event.target.value);
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   return (
     <Card>
@@ -105,11 +117,17 @@ const RecentInvoicesSection = ({
           </VStack>
         ) : (
           <SalesTable
-            invoices={invoices.slice(0, 5)}
+            invoices={invoices}
             onViewDetail={onInvoiceClick}
             onEdit={onInvoiceClick}
-            showPagination={false}
+            showPagination={true}
             size='sm'
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalInvoices}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
           />
         )}
       </CardBody>

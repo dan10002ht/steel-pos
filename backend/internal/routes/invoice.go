@@ -33,6 +33,9 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 		
 		// Audit logs for invoice
 		invoices.GET("/:id/audit-logs", invoiceHandler.GetInvoiceAuditLogs)
+		
+		// Invoice payments
+		invoices.GET("/:id/payments", invoiceHandler.GetInvoicePayments)
 	}
 
 	// Invoice Payment routes

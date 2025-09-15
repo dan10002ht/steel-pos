@@ -16,6 +16,7 @@ func SetupAllRoutes(
 	invoiceHandler *handlers.InvoiceHandler,
 	customerHandler *handlers.CustomerHandler,
 	auditLogHandler *handlers.AuditLogHandler,
+	imageHandler *handlers.ImageHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	tokenRefreshMiddleware *middleware.TokenRefreshMiddleware,
 ) {
@@ -44,4 +45,5 @@ func SetupAllRoutes(
 	SetupInvoiceRoutes(api, invoiceHandler, authMiddleware)
 	SetupCustomerRoutes(api, customerHandler, authMiddleware)
 	SetupAuditLogRoutes(api, auditLogHandler, authMiddleware)
+	SetupImageRoutes(router, imageHandler, authMiddleware)
 }
