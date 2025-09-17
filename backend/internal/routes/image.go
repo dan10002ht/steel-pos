@@ -7,9 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupImageRoutes(router *gin.Engine, imageHandler *handlers.ImageHandler, authMiddleware *middleware.AuthMiddleware) {
-	imageRoutes := router.Group("/api/images")
-	imageRoutes.Use(authMiddleware.Authenticate()) // Protect image routes
+func SetupImageRoutes(api *gin.RouterGroup, imageHandler *handlers.ImageHandler, authMiddleware *middleware.AuthMiddleware) {
+	imageRoutes := api.Group("/images")
+	// Note: Authentication is already applied at the API group level
 	{
 		// Image upload routes
 		imageRoutes.POST("/upload", imageHandler.UploadImages)

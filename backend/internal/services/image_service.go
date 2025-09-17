@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
 type ImageService struct {
@@ -42,11 +43,11 @@ func (s *ImageService) UploadImage(ctx context.Context, file multipart.File, fil
 	publicID := fmt.Sprintf("steel-pos/%d/%s", time.Now().Unix(), strings.TrimSuffix(filename, filepath.Ext(filename)))
 
 	// Upload the image
-	result, err := s.cld.Upload.Upload(ctx, file, map[string]interface{}{
-		"public_id":     publicID,
-		"folder":        "steel-pos/payments",
-		"resource_type": "image",
-		"transformation": "f_auto,q_auto",
+	result, err := s.cld.Upload.Upload(ctx, file, uploader.UploadParams{
+		PublicID:     publicID,
+		Folder:       "steel-pos/payments",
+		ResourceType: "image",
+		Transformation: "f_auto,q_auto",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload image to Cloudinary: %w", err)
@@ -85,9 +86,9 @@ func (s *ImageService) UploadImages(ctx context.Context, files []*multipart.File
 
 // DeleteImage deletes an image from Cloudinary
 func (s *ImageService) DeleteImage(ctx context.Context, publicID string) error {
-	_, err := s.cld.Upload.Destroy(ctx, map[string]interface{}{
-		"public_id":     publicID,
-		"resource_type": "image",
+	_, err := s.cld.Upload.Destroy(ctx, uploader.DestroyParams{
+		PublicID:     publicID,
+		ResourceType: "image",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to delete image from Cloudinary: %w", err)

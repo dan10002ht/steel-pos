@@ -86,25 +86,13 @@ const SalesDetailPage = () => {
       isLoading={isLoading}
       error={error}
       primaryActions={[
-        {
-          label: "Chỉnh sửa",
-          icon: <Edit size={16} />,
-          onClick: () => navigate(`/sales/detail/${id}`),
-        },
-        ...(invoice.status === 'confirmed' ? [{
+       invoice.status === 'confirmed' &&{
           label: "Hủy hóa đơn",
           icon: <X size={16} />,
           onClick: handleCancelInvoice,
           colorScheme: "red",
-        }] : []),
-      ]}
-      secondaryActions={[
-        {
-          label: "In hoá đơn",
-          icon: <Printer size={16} />,
-          onClick: handlePrint,
-        },
-      ]}
+        } ,
+      ].filter(Boolean)}
     >
 
         <Grid templateColumns="repeat(12, 1fr)" gap={6}>

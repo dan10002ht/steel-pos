@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -8,31 +8,17 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  Textarea,
   VStack,
   HStack,
-  Text,
   Alert,
   AlertIcon,
   AlertDescription,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Divider,
-  Badge,
-  Box,
-  Image,
-  IconButton,
   useToast,
 } from '@chakra-ui/react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { formatCurrency } from '@/utils/formatters';
+import { fetchApi } from '@/shared/services/api';
+import PaymentModalHeader from '@/components/molecules/PaymentModalHeader';
+import InvoiceSummary from '@/components/molecules/InvoiceSummary';
+import PaymentForm from '@/components/molecules/PaymentForm';
 
 const PaymentModal = ({
   isOpen,
@@ -51,15 +37,7 @@ const PaymentModal = ({
   });
 
   const [errors, setErrors] = useState({});
-  const [isDragOver, setIsDragOver] = useState(false);
   const toast = useToast();
-
-  const paymentMethods = [
-    { value: 'cash', label: 'Tiền mặt' },
-    { value: 'card', label: 'Thẻ' },
-    { value: 'bank_transfer', label: 'Chuyển khoản' },
-    { value: 'credit', label: 'Ghi nợ' },
-  ];
 
   const remainingAmount = invoice ? invoice.total_amount - invoice.paid_amount : 0;
 
@@ -135,95 +113,82 @@ const PaymentModal = ({
     }));
   };
 
-  const handleImageUpload = async (files) => {
-    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    
-    if (imageFiles.length === 0) {
-      toast({
-        title: 'Lỗi',
-        description: 'Vui lòng chọn file hình ảnh hợp lệ',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
+  const handleImageUpload = async (file, tempImage) => {
+    // If no file provided, just add temp image to state (for preview)
+    if (!file) {
+      setFormData(prev => ({
+        ...prev,
+        payment_images: [...prev.payment_images, tempImage]
+      }));
+      return tempImage;
     }
 
     // Create FormData for upload
-    const uploadFormData = new FormData();
-    imageFiles.forEach(file => {
-      uploadFormData.append('images', file);
-    });
+    const formData = new FormData();
+    formData.append('images', file);
 
     try {
-      // Upload images to backend
-      const response = await fetch('/api/images/upload', {
+      // Upload images using fetchApi
+      const response = await fetchApi({
         method: 'POST',
+        url: '/images/upload',
+        data: formData,
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'multipart/form-data',
         },
-        body: uploadFormData,
       });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Upload failed');
       }
 
-      const data = await response.json();
-      
-      // Add uploaded images to form data
-      const uploadedImages = data.data.images.map(img => ({
-        public_id: img.public_id,
-        url: img.secure_url,
-        name: img.public_id.split('/').pop(),
-        size: img.size
-      }));
+      // Get uploaded image data
+      const uploadedImage = response.data.data.images[0];
+      const uploadedImageData = {
+        id: tempImage.id, // Keep same ID
+        public_id: uploadedImage.public_id,
+        url: uploadedImage.secure_url,
+        name: uploadedImage.public_id.split('/').pop(),
+        size: uploadedImage.size,
+        isUploading: false,
+        // Keep preview for now, will be cleaned up later
+        preview: tempImage.preview,
+      };
 
+      // Replace temp image with uploaded image
       setFormData(prev => ({
         ...prev,
-        payment_images: [...prev.payment_images, ...uploadedImages]
+        payment_images: prev.payment_images.map(img => 
+          img.id === tempImage.id ? uploadedImageData : img
+        )
       }));
 
-      toast({
-        title: 'Thành công',
-        description: `Đã tải lên ${uploadedImages.length} hình ảnh`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      // Clean up preview after a short delay to allow smooth transition
+      setTimeout(() => {
+        setFormData(prev => ({
+          ...prev,
+          payment_images: prev.payment_images.map(img => 
+            img.id === tempImage.id ? { ...img, preview: undefined } : img
+          )
+        }));
+        URL.revokeObjectURL(tempImage.preview);
+      }, 1000);
+
+      return uploadedImageData;
     } catch (error) {
       console.error('Error uploading images:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể tải lên hình ảnh. Vui lòng thử lại.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+      
+      // Remove failed image from state
+      setFormData(prev => ({
+        ...prev,
+        payment_images: prev.payment_images.filter(img => img.id !== tempImage.id)
+      }));
+      
+      throw error;
     }
   };
 
-  const handleFileInputChange = (event) => {
-    handleImageUpload(event.target.files);
-  };
-
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    handleImageUpload(e.dataTransfer.files);
-  }, []);
-
-  const handleRemoveImage = (index) => {
+  const handleImageRemove = (index) => {
     setFormData(prev => ({
       ...prev,
       payment_images: prev.payment_images.filter((_, i) => i !== index)
@@ -237,19 +202,7 @@ const PaymentModal = ({
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          <VStack align="stretch" spacing={2}>
-            <Text fontSize="lg" fontWeight="bold">
-              Thanh toán hóa đơn
-            </Text>
-            <HStack justify="space-between">
-              <Text fontSize="sm" color="gray.600">
-                Mã hóa đơn: {invoice.invoice_code}
-              </Text>
-              <Badge colorScheme="blue" fontSize="xs">
-                {invoice.status}
-              </Badge>
-            </HStack>
-          </VStack>
+          <PaymentModalHeader invoice={invoice} />
         </ModalHeader>
         <ModalCloseButton />
         
@@ -257,29 +210,7 @@ const PaymentModal = ({
           <ModalBody>
             <VStack spacing={4} align="stretch">
               {/* Invoice Summary */}
-              <Box p={4} bg="gray.50" borderRadius="md">
-                <VStack spacing={2} align="stretch">
-                  <HStack justify="space-between">
-                    <Text fontSize="sm" color="gray.600">Tổng tiền hóa đơn:</Text>
-                    <Text fontWeight="medium">{formatCurrency(invoice.total_amount)}</Text>
-                  </HStack>
-                  <HStack justify="space-between">
-                    <Text fontSize="sm" color="gray.600">Đã thanh toán:</Text>
-                    <Text fontWeight="medium" color="green.600">
-                      {formatCurrency(invoice.paid_amount)}
-                    </Text>
-                  </HStack>
-                  <Divider />
-                  <HStack justify="space-between">
-                    <Text fontSize="md" fontWeight="bold" color="red.600">
-                      Còn lại:
-                    </Text>
-                    <Text fontSize="lg" fontWeight="bold" color="red.600">
-                      {formatCurrency(remainingAmount)}
-                    </Text>
-                  </HStack>
-                </VStack>
-              </Box>
+              <InvoiceSummary invoice={invoice} />
 
               {error && (
                 <Alert status="error" borderRadius="md">
@@ -289,215 +220,17 @@ const PaymentModal = ({
               )}
 
               {/* Payment Form */}
-              <VStack spacing={4} align="stretch">
-                <FormControl isRequired isInvalid={!!errors.amount}>
-                  <FormLabel>Số tiền thanh toán</FormLabel>
-                  <HStack>
-                    <NumberInput
-                      value={formData.amount}
-                      onChange={(value) => handleInputChange('amount', value)}
-                      min={0}
-                      max={remainingAmount}
-                      precision={2}
-                      flex={1}
-                    >
-                      <NumberInputField placeholder="Nhập số tiền" />
-                      <NumberInputStepper>
-                        <NumberIncrementStepper />
-                        <NumberDecrementStepper />
-                      </NumberInputStepper>
-                    </NumberInput>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handlePayFull}
-                      isDisabled={remainingAmount <= 0}
-                    >
-                      Trả đủ
-                    </Button>
-                  </HStack>
-                  {errors.amount && (
-                    <Text fontSize="sm" color="red.500" mt={1}>
-                      {errors.amount}
-                    </Text>
-                  )}
-                </FormControl>
-
-                <FormControl isRequired isInvalid={!!errors.payment_method}>
-                  <FormLabel>Phương thức thanh toán</FormLabel>
-                  <Select
-                    value={formData.payment_method}
-                    onChange={(e) => handleInputChange('payment_method', e.target.value)}
-                  >
-                    {paymentMethods.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {method.label}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.payment_method && (
-                    <Text fontSize="sm" color="red.500" mt={1}>
-                      {errors.payment_method}
-                    </Text>
-                  )}
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Ngày thanh toán</FormLabel>
-                  <Input
-                    type="datetime-local"
-                    value={formData.payment_date}
-                    onChange={(e) => handleInputChange('payment_date', e.target.value)}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Hình ảnh minh chứng thanh toán</FormLabel>
-                  <VStack spacing={3} align="stretch">
-                    {/* Dropzone */}
-                    <Box
-                      border="2px dashed"
-                      borderColor={isDragOver ? "blue.400" : "gray.300"}
-                      borderRadius="lg"
-                      p={6}
-                      textAlign="center"
-                      bg={isDragOver ? "blue.50" : "gray.50"}
-                      transition="all 0.2s"
-                      cursor="pointer"
-                      _hover={{
-                        borderColor: "blue.400",
-                        bg: "blue.50"
-                      }}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => document.getElementById('payment-image-upload').click()}
-                    >
-                      <VStack spacing={3}>
-                        <ImageIcon size={32} color={isDragOver ? "#3182ce" : "#718096"} />
-                        <VStack spacing={1}>
-                          <Text fontSize="md" fontWeight="medium" color={isDragOver ? "blue.600" : "gray.600"}>
-                            {isDragOver ? "Thả hình ảnh vào đây" : "Kéo thả hình ảnh vào đây"}
-                          </Text>
-                          <Text fontSize="sm" color="gray.500">
-                            hoặc click để chọn file
-                          </Text>
-                        </VStack>
-                        <Text fontSize="xs" color="gray.400">
-                          Hỗ trợ: JPG, PNG, GIF (tối đa 10MB mỗi file)
-                        </Text>
-                      </VStack>
-                    </Box>
-
-                    {/* Hidden file input */}
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileInputChange}
-                      display="none"
-                      id="payment-image-upload"
-                    />
-
-                    {/* Image Preview Slider */}
-                    {formData.payment_images.length > 0 && (
-                      <Box>
-                        <HStack justify="space-between" mb={3}>
-                          <Text fontSize="sm" fontWeight="medium">
-                            Hình ảnh đã tải lên ({formData.payment_images.length})
-                          </Text>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            leftIcon={<Upload size={12} />}
-                            onClick={() => document.getElementById('payment-image-upload').click()}
-                          >
-                            Thêm hình
-                          </Button>
-                        </HStack>
-                        
-                        {/* Horizontal scrollable container */}
-                        <Box
-                          overflowX="auto"
-                          overflowY="hidden"
-                          css={{
-                            '&::-webkit-scrollbar': {
-                              height: '6px',
-                            },
-                            '&::-webkit-scrollbar-track': {
-                              background: '#f1f1f1',
-                              borderRadius: '3px',
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                              background: '#c1c1c1',
-                              borderRadius: '3px',
-                            },
-                            '&::-webkit-scrollbar-thumb:hover': {
-                              background: '#a8a8a8',
-                            },
-                          }}
-                        >
-                          <HStack spacing={3} align="flex-start" pb={2}>
-                            {formData.payment_images.map((image, index) => (
-                              <Box key={index} position="relative" flexShrink={0}>
-                                <Image
-                                  src={image.url || image.preview}
-                                  alt={`Payment proof ${index + 1}`}
-                                  boxSize="120px"
-                                  objectFit="cover"
-                                  borderRadius="md"
-                                  border="1px solid"
-                                  borderColor="gray.200"
-                                  _hover={{
-                                    borderColor: "blue.300",
-                                    transform: "scale(1.02)",
-                                    transition: "all 0.2s"
-                                  }}
-                                />
-                                <IconButton
-                                  icon={<X size={12} />}
-                                  size="xs"
-                                  colorScheme="red"
-                                  variant="solid"
-                                  position="absolute"
-                                  top="-6px"
-                                  right="-6px"
-                                  borderRadius="full"
-                                  onClick={() => handleRemoveImage(index)}
-                                  aria-label="Xóa hình ảnh"
-                                  _hover={{
-                                    transform: "scale(1.1)"
-                                  }}
-                                />
-                                <Text
-                                  fontSize="xs"
-                                  color="gray.500"
-                                  mt={1}
-                                  textAlign="center"
-                                  noOfLines={1}
-                                  maxW="120px"
-                                >
-                                  {image.name}
-                                </Text>
-                              </Box>
-                            ))}
-                          </HStack>
-                        </Box>
-                      </Box>
-                    )}
-                  </VStack>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Ghi chú</FormLabel>
-                  <Textarea
-                    placeholder="Nhập ghi chú (nếu có)"
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    rows={3}
-                  />
-                </FormControl>
-              </VStack>
+              <PaymentForm
+                formData={formData}
+                errors={errors}
+                remainingAmount={remainingAmount}
+                onInputChange={handleInputChange}
+                onPayFull={handlePayFull}
+                onImageUpload={handleImageUpload}
+                onImageRemove={handleImageRemove}
+                isLoading={isLoading}
+                disabled={isLoading}
+              />
             </VStack>
           </ModalBody>
 
