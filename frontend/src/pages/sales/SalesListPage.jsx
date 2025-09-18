@@ -19,7 +19,7 @@ import CancelInvoiceModal from '@/components/molecules/sales/CancelInvoiceModal/
 import PaymentModal from '@/components/molecules/sales/PaymentModal/PaymentModal';
 import { useFetchApi } from '@/hooks/useFetchApi';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useCreateInvoicePayment } from '@/hooks/sales/useInvoicePayments';
+import { useCreateApi } from '@/hooks/useCreateApi';
 import { AuthContext } from '@/contexts/AuthContext';
 import { useContext } from 'react';
 
@@ -38,7 +38,9 @@ const SalesListPage = () => {
   const { isAdmin } = useContext(AuthContext);
   
   // Payment hook
-  const { createPayment, isLoading: isPaymentLoading, error: paymentError } = useCreateInvoicePayment();
+  const { mutate: createPayment, isPending: isPaymentLoading, error: paymentError } = useCreateApi('/invoice-payments', {
+    invalidateQueries: ['invoices']
+  });
   
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -67,38 +69,38 @@ const SalesListPage = () => {
     }
   );
 
-  const handleViewDetail = useCallback(id => {
+  const handleViewDetail = id => {
     navigate(`/sales/detail/${id}`);
-  }, []);
+  }
 
-  const handleEdit = useCallback(id => {
+  const handleEdit = id => {
     navigate(`/sales/detail/${id}`);
-  }, []);
+  }
 
   const handleCreateNew = useCallback(() => {
     navigate('/sales/create');
-  }, []);
+  }, [navigate]);
 
-  const handleSearchChange = useCallback((value) => {
+  const handleSearchChange = (value) => {
     setSearchTerm(value);
-  }, []);
+  }
 
-  const handleCancelInvoice = useCallback((invoice) => {
+  const handleCancelInvoice = (invoice) => {
     setSelectedInvoice(invoice);
     setCancelModalOpen(true);
-  }, []);
+  }
 
-  const handleCancelSuccess = useCallback(() => {
-    // Refresh data after successful cancellation
+  const handleCancelSuccess = () => {
     refetch();
-  }, [refetch]);
+  }
 
-  const handlePayment = useCallback((invoice) => {
+  const handlePayment = (invoice) => {
     setSelectedInvoice(invoice);
     setPaymentModalOpen(true);
-  }, []);
+  }
 
-  const handlePaymentSubmit = useCallback(async (paymentData) => {
+
+  const handlePaymentSubmit = async (paymentData) => {
     try {
       await createPayment({
         url: `/invoice-payments/${selectedInvoice.id}`,
@@ -110,12 +112,12 @@ const SalesListPage = () => {
     } catch (error) {
       console.error('Payment error:', error);
     }
-  }, [createPayment, selectedInvoice, refetch]);
+  }
 
-  const handlePaymentClose = useCallback(() => {
+  const handlePaymentClose = () => {
     setPaymentModalOpen(false);
     setSelectedInvoice(null);
-  }, []);
+  }
   // Extract data from API response - memoized to prevent unnecessary re-renders
   const invoices = useMemo(() => invoicesData?.invoices || [], [invoicesData?.invoices]);
   const totalCount = useMemo(() => invoicesData?.total || 0, [invoicesData?.total]);
@@ -129,7 +131,7 @@ const SalesListPage = () => {
       onClick: handleCreateNew,
       colorScheme: 'blue',
     },
-  ], []);
+  ], [handleCreateNew]);
 
   // Show error state
   if (error) {

@@ -23,7 +23,7 @@ import {
   AlertTitle,
   AlertDescription,
 } from "@chakra-ui/react";
-import { Printer, Mail, Edit, X } from "lucide-react";
+import { Printer, Mail, Edit, X, CreditCard, User, Clock, AlertCircle, CheckCircle, XCircle, Plus, Minus } from "lucide-react";
 import { useFetchApi } from "../../hooks/useFetchApi";
 import { formatCurrency } from "../../utils/formatters";
 import { 
@@ -34,15 +34,19 @@ import {
 } from "../../utils/statusHelpers";
 import Page from "../../components/organisms/Page/Page";
 import CancelInvoiceModal from "../../components/molecules/sales/CancelInvoiceModal/CancelInvoiceModal";
+import PaymentModal from "../../components/molecules/sales/PaymentModal/PaymentModal";
 import InvoicePdf from "../../components/molecules/sales/InvoicePdf/InvoicePdf";
+import { useCreateApi } from "../../hooks/useCreateApi";
+import { useInvoicePayments } from "../../hooks/sales/useInvoicePayments";
 
 const SalesDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   // Fetch invoice data from API
-  const { data: invoiceData, error, isPending: isLoading } = useFetchApi(
+  const { data: invoiceData, error, isPending: isLoading, refetch } = useFetchApi(
     ['invoice', id],
     `/invoices/${id}`,
     {
@@ -51,10 +55,24 @@ const SalesDetailPage = () => {
   );
   const invoice = invoiceData || {};
 
-  const handlePrint = () => {
-    // TODO: Implement print functionality
-    window.print();
-  };
+  // Payment hook
+  const { mutate: createPayment, isPending: isPaymentLoading, error: paymentError } = useCreateApi('/invoice-payments', {
+    invalidateQueries: ['invoice', 'invoices', 'invoice-payments', 'audit-logs']
+  });
+
+  // Payment history hook
+  const { payments, isLoading: isPaymentsLoading, error: paymentsError } = useInvoicePayments(id);
+
+  // Audit logs hook
+  const { data: auditLogsData, isLoading: isAuditLogsLoading, error: auditLogsError } = useFetchApi(
+    ['audit-logs', 'invoice', id],
+    `/invoices/${id}/audit-logs`,
+    {
+      enabled: !!id,
+    }
+  );
+  const auditLogs = auditLogsData || [];
+
 
   const handleCancelInvoice = useCallback(() => {
     setCancelModalOpen(true);
@@ -63,6 +81,27 @@ const SalesDetailPage = () => {
   const handleCancelSuccess = useCallback(() => {
     // Refresh data after successful cancellation
     window.location.reload();
+  }, []);
+
+  const handlePayment = useCallback(() => {
+    setPaymentModalOpen(true);
+  }, []);
+
+  const handlePaymentSubmit = useCallback(async (paymentData) => {
+    try {
+      await createPayment({
+        url: `/invoice-payments/${invoice.id}`,
+        data: paymentData,
+      });
+      setPaymentModalOpen(false);
+      refetch(); // Refresh data after successful payment
+    } catch (error) {
+      console.error('Payment error:', error);
+    }
+  }, [createPayment, invoice.id, refetch]);
+
+  const handlePaymentClose = useCallback(() => {
+    setPaymentModalOpen(false);
   }, []);
 
 
@@ -86,12 +125,20 @@ const SalesDetailPage = () => {
       isLoading={isLoading}
       error={error}
       primaryActions={[
-       invoice.status === 'confirmed' &&{
+        // Payment action - only show if invoice is not fully paid
+        invoice.payment_status !== 'paid' && invoice.status !== 'cancelled' && {
+          label: "Trả tiền",
+          icon: <CreditCard size={16} />,
+          onClick: handlePayment,
+          colorScheme: "green",
+        },
+        // Cancel action - only show if invoice is confirmed
+        invoice.status === 'confirmed' && {
           label: "Hủy hóa đơn",
           icon: <X size={16} />,
           onClick: handleCancelInvoice,
           colorScheme: "red",
-        } ,
+        },
       ].filter(Boolean)}
     >
 
@@ -271,6 +318,136 @@ const SalesDetailPage = () => {
                     </VStack>
                   </Box>
 
+                  <Divider />
+
+                  {/* Payment History */}
+                  <Box>
+                    <Text fontSize="lg" fontWeight="bold" mb={4}>
+                      Lịch sử thanh toán
+                    </Text>
+                    {isPaymentsLoading ? (
+                      <Text color="gray.500">Đang tải lịch sử thanh toán...</Text>
+                    ) : paymentsError ? (
+                      <Text color="red.500">Lỗi tải lịch sử thanh toán: {paymentsError.message}</Text>
+                    ) : payments && payments.length > 0 ? (
+                      <Box overflowX="auto">
+                        <Table variant="simple">
+                          <Thead>
+                            <Tr>
+                              <Th>Ngày thanh toán</Th>
+                              <Th>Phương thức</Th>
+                              <Th isNumeric>Số tiền</Th>
+                              <Th>Ghi chú</Th>
+                            </Tr>
+                          </Thead>
+                          <Tbody>
+                            {payments.map((payment) => (
+                              <Tr key={payment.id}>
+                                <Td>
+                                  {new Date(payment.payment_date).toLocaleString("vi-VN")}
+                                </Td>
+                                <Td>
+                                  <Badge colorScheme="blue">
+                                    {payment.payment_method === 'cash' && 'Tiền mặt'}
+                                    {payment.payment_method === 'card' && 'Thẻ'}
+                                    {payment.payment_method === 'bank_transfer' && 'Chuyển khoản'}
+                                    {payment.payment_method === 'credit' && 'Ghi nợ'}
+                                  </Badge>
+                                </Td>
+                                <Td isNumeric fontWeight="bold" color="green.500">
+                                  {formatCurrency(payment.amount)}
+                                </Td>
+                                <Td>{payment.notes || '-'}</Td>
+                              </Tr>
+                            ))}
+                          </Tbody>
+                        </Table>
+                      </Box>
+                    ) : (
+                      <Text color="gray.500">Chưa có lịch sử thanh toán</Text>
+                    )}
+                  </Box>
+
+                  <Divider />
+
+                  {/* Audit Logs */}
+                  <Box>
+                    <Text fontSize="lg" fontWeight="bold" mb={4}>
+                      Lịch sử hoạt động
+                    </Text>
+                    {isAuditLogsLoading ? (
+                      <Text color="gray.500">Đang tải lịch sử hoạt động...</Text>
+                    ) : auditLogsError ? (
+                      <Text color="red.500">Lỗi tải lịch sử hoạt động: {auditLogsError.message}</Text>
+                    ) : auditLogs && auditLogs.length > 0 ? (
+                      <VStack spacing={3} align="stretch">
+                        {auditLogs.map((log) => (
+                          <Box key={log.id} p={4} border="1px" borderColor="gray.200" borderRadius="md" bg="gray.50">
+                            <HStack justify="space-between" align="start" mb={2}>
+                              <HStack spacing={3}>
+                                {log.action === 'created' && <CheckCircle size={16} color="green" />}
+                                {log.action === 'updated' && <Edit size={16} color="blue" />}
+                                {log.action === 'cancelled' && <XCircle size={16} color="red" />}
+                                {log.action === 'payment_created' && <Plus size={16} color="green" />}
+                                {log.action === 'payment_updated' && <Edit size={16} color="blue" />}
+                                {log.action === 'payment_deleted' && <Minus size={16} color="red" />}
+                                {!['created', 'updated', 'cancelled', 'payment_created', 'payment_updated', 'payment_deleted'].includes(log.action) && 
+                                  <AlertCircle size={16} color="gray" />}
+                                <Text fontWeight="bold" fontSize="sm">
+                                  {log.display_text || `${log.user_name || log.created_by_name || 'Hệ thống'} thực hiện ${log.action} vào ${new Date(log.created_at).toLocaleString("vi-VN")}`}
+                                </Text>
+                              </HStack>
+                              <HStack spacing={2}>
+                                <Clock size={14} color="gray" />
+                                <Text fontSize="sm" color="gray.600">
+                                  {new Date(log.created_at).toLocaleString("vi-VN")}
+                                </Text>
+                              </HStack>
+                            </HStack>
+
+                            {log.changes_summary && (
+                              <Text fontSize="sm" color="gray.700" mb={2}>
+                                {log.changes_summary}
+                              </Text>
+                            )}
+
+                            {log.action === 'payment_created' && log.new_data && (
+                              <Box p={2} bg="green.50" borderRadius="md" border="1px" borderColor="green.200">
+                                <Text fontSize="sm" fontWeight="medium" color="green.700">
+                                  Thanh toán: {formatCurrency(log.new_data.amount || 0)} - {log.new_data.payment_method === 'cash' && 'Tiền mặt'}
+                                  {log.new_data.payment_method === 'card' && 'Thẻ'}
+                                  {log.new_data.payment_method === 'bank_transfer' && 'Chuyển khoản'}
+                                  {log.new_data.payment_method === 'credit' && 'Ghi nợ'}
+                                </Text>
+                                {log.new_data.notes && (
+                                  <Text fontSize="xs" color="green.600" mt={1}>
+                                    Ghi chú: {log.new_data.notes}
+                                  </Text>
+                                )}
+                              </Box>
+                            )}
+
+                            {log.action === 'cancelled' && log.new_data && (
+                              <Box p={2} bg="red.50" borderRadius="md" border="1px" borderColor="red.200">
+                                <Text fontSize="sm" fontWeight="medium" color="red.700">
+                                  Lý do hủy: {log.new_data.cancellation_reason || 'Không có lý do'}
+                                </Text>
+                              </Box>
+                            )}
+
+                            {log.notes && (
+                              <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                                {log.notes}
+                              </Text>
+                            )}
+                          </Box>
+                        ))}
+                      </VStack>
+                    ) : (
+                      <Text color="gray.500">Chưa có lịch sử hoạt động</Text>
+                    )}
+                  </Box>
+
                   {invoice.notes && (
                     <>
                       <Divider />
@@ -320,6 +497,16 @@ const SalesDetailPage = () => {
           onClose={() => setCancelModalOpen(false)}
           invoice={invoice}
           onSuccess={handleCancelSuccess}
+        />
+
+        {/* Payment Modal */}
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={handlePaymentClose}
+          invoice={invoice}
+          onSubmit={handlePaymentSubmit}
+          isLoading={isPaymentLoading}
+          error={paymentError}
         />
     </Page>
   );

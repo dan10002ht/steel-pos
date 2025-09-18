@@ -32,3 +32,4 @@ CREATE TRIGGER update_inventory_logs_updated_at
 
 
 
+

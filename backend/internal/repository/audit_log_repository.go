@@ -30,10 +30,18 @@ func (r *auditLogRepository) Create(auditLog *models.AuditLog) error {
 	query := `
 		INSERT INTO audit_logs (
 			entity_type, entity_id, action, user_id, user_name,
-			old_data, new_data, changes_summary, ip_address, user_agent
+			old_data, new_data, changes_summary, ip_address, user_agent,
+			log_category, log_type, inventory_data, business_data, system_data,
+			quantity_change, previous_value, new_value, reference_entity_type,
+			reference_entity_id, notes, severity, created_by, created_by_name,
+			display_text
 		) VALUES (
 			:entity_type, :entity_id, :action, :user_id, :user_name,
-			:old_data, :new_data, :changes_summary, :ip_address, :user_agent
+			:old_data, :new_data, :changes_summary, :ip_address, :user_agent,
+			:log_category, :log_type, :inventory_data, :business_data, :system_data,
+			:quantity_change, :previous_value, :new_value, :reference_entity_type,
+			:reference_entity_id, :notes, :severity, :created_by, :created_by_name,
+			:display_text
 		) RETURNING id, created_at, updated_at`
 
 	rows, err := r.db.NamedQuery(query, auditLog)
@@ -56,7 +64,10 @@ func (r *auditLogRepository) GetByID(id int) (*models.AuditLog, error) {
 	query := `
 		SELECT id, entity_type, entity_id, action, user_id, user_name,
 			   old_data, new_data, changes_summary, ip_address, user_agent,
-			   created_at, updated_at
+			   log_category, log_type, inventory_data, business_data, system_data,
+			   quantity_change, previous_value, new_value, reference_entity_type,
+			   reference_entity_id, notes, severity, created_by, created_by_name,
+			   display_text, created_at, updated_at
 		FROM audit_logs
 		WHERE id = $1`
 
@@ -76,7 +87,10 @@ func (r *auditLogRepository) GetByEntity(entityType string, entityID int) ([]mod
 	query := `
 		SELECT id, entity_type, entity_id, action, user_id, user_name,
 			   old_data, new_data, changes_summary, ip_address, user_agent,
-			   created_at, updated_at
+			   log_category, log_type, inventory_data, business_data, system_data,
+			   quantity_change, previous_value, new_value, reference_entity_type,
+			   reference_entity_id, notes, severity, created_by, created_by_name,
+			   display_text, created_at, updated_at
 		FROM audit_logs
 		WHERE entity_type = $1 AND entity_id = $2
 		ORDER BY created_at DESC`
@@ -108,7 +122,10 @@ func (r *auditLogRepository) GetByEntityWithPagination(entityType string, entity
 	query := `
 		SELECT id, entity_type, entity_id, action, user_id, user_name,
 			   old_data, new_data, changes_summary, ip_address, user_agent,
-			   created_at, updated_at
+			   log_category, log_type, inventory_data, business_data, system_data,
+			   quantity_change, previous_value, new_value, reference_entity_type,
+			   reference_entity_id, notes, severity, created_by, created_by_name,
+			   display_text, created_at, updated_at
 		FROM audit_logs
 		WHERE entity_type = $1 AND entity_id = $2
 		ORDER BY created_at DESC
@@ -190,7 +207,10 @@ func (r *auditLogRepository) GetByFilter(filter models.AuditLogFilter) ([]models
 	query := fmt.Sprintf(`
 		SELECT id, entity_type, entity_id, action, user_id, user_name,
 			   old_data, new_data, changes_summary, ip_address, user_agent,
-			   created_at, updated_at
+			   log_category, log_type, inventory_data, business_data, system_data,
+			   quantity_change, previous_value, new_value, reference_entity_type,
+			   reference_entity_id, notes, severity, created_by, created_by_name,
+			   display_text, created_at, updated_at
 		FROM audit_logs
 		%s
 		ORDER BY created_at DESC

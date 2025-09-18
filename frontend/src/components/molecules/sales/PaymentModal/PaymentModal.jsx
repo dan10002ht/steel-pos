@@ -37,7 +37,6 @@ const PaymentModal = ({
   });
 
   const [errors, setErrors] = useState({});
-  const toast = useToast();
 
   const remainingAmount = invoice ? invoice.total_amount - invoice.paid_amount : 0;
 

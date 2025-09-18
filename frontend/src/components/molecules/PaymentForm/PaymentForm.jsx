@@ -15,8 +15,8 @@ import {
   NumberDecrementStepper,
   Button,
 } from '@chakra-ui/react';
-import { formatCurrency } from '@/utils/formatters';
 import ImageUpload from '@/components/atoms/ImageUpload';
+import { PAYMENT_METHODS } from '@/constants/options';
 
 const PaymentForm = ({
   formData,
@@ -26,15 +26,8 @@ const PaymentForm = ({
   onPayFull,
   onImageUpload,
   onImageRemove,
-  isLoading = false,
   disabled = false,
 }) => {
-  const paymentMethods = [
-    { value: 'cash', label: 'Tiền mặt' },
-    { value: 'card', label: 'Thẻ' },
-    { value: 'bank_transfer', label: 'Chuyển khoản' },
-    { value: 'credit', label: 'Ghi nợ' },
-  ];
 
   return (
     <VStack spacing={4} align="stretch">
@@ -81,7 +74,7 @@ const PaymentForm = ({
           onChange={(e) => onInputChange('payment_method', e.target.value)}
           isDisabled={disabled}
         >
-          {paymentMethods.map((method) => (
+          {PAYMENT_METHODS.map((method) => (
             <option key={method.value} value={method.value}>
               {method.label}
             </option>

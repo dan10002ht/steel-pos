@@ -15,6 +15,7 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { Save } from "lucide-react";
+import { PAYMENT_METHODS } from "@/constants/options";
 
 const InvoiceSummary = ({
   invoice,
@@ -53,9 +54,11 @@ const InvoiceSummary = ({
           maxW="200px"
         >
           <option value="">Chọn hình thức</option>
-          <option value="cash">Tiền mặt</option>
-          <option value="bank">Chuyển khoản</option>
-          <option value="card">Thẻ tín dụng</option>
+          {PAYMENT_METHODS.map((method) => (
+            <option key={method.value} value={method.value}>
+              {method.label}
+            </option>
+          ))}
         </Select>
       </HStack>
 
