@@ -137,38 +137,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		return nil, err
 	}
 
-	// Log business event for invoice creation
-	newDataMap := map[string]interface{}{
-		"invoice_id": invoice.ID,
-		"customer_name": req.CustomerName,
-		"customer_phone": req.CustomerPhone,
-		"total_amount": invoice.TotalAmount,
-		"items_count": len(req.Items),
-	}
-	newDataJSON, _ := json.Marshal(newDataMap)
-	
-	_, err = s.invoiceRepo.GetDB().Exec(`
-		SELECT log_business_event(
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-		)
-	`, 
-		"invoice",           // entity_type
-		invoice.ID,          // entity_id
-		"created",           // action
-		"invoice_created",   // log_type
-		nil,                 // old_data
-		string(newDataJSON), // new_data as JSON string
-		nil,                 // business_data
-		fmt.Sprintf("Tạo hóa đơn với %d sản phẩm, tổng tiền: %.2f", len(req.Items), invoice.TotalAmount), // changes_summary
-		"",                  // notes
-		createdBy,           // created_by
-		createdByUsername,   // created_by_name
-		nil,                 // ip_address
-	)
-	if err != nil {
-		// Log error but don't fail the invoice creation
-		fmt.Printf("Failed to log business event: %v\n", err)
-	}
+	// Business event logging is handled by audit log service below
 
 	// Create invoice items
 	for _, itemReq := range req.Items {
@@ -228,6 +197,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 
 	// Log audit trail for invoice creation
 	if s.auditLogService != nil {
+		fmt.Printf("DEBUG: Creating audit log for invoice ID %d\n", invoice.ID)
 		userID := &createdBy
 		userName := &createdByUsername
 		err = s.auditLogService.LogInvoiceChange(
@@ -241,9 +211,12 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 			nil, // userAgent will be filled by handler
 		)
 		if err != nil {
-			// Log error but don't fail the creation
-			// You might want to use a proper logger here
+			fmt.Printf("ERROR: Failed to create audit log: %v\n", err)
+		} else {
+			fmt.Printf("DEBUG: Audit log created successfully for invoice ID %d\n", invoice.ID)
 		}
+	} else {
+		fmt.Printf("WARNING: Audit log service is nil\n")
 	}
 
 	return createdInvoice, nil
@@ -542,6 +515,28 @@ func (s *InvoiceService) CreateInvoicePayment(invoiceID int, req *models.CreateI
 		return nil, err
 	}
 
+	// Log payment creation
+	if s.auditLogService != nil {
+		fmt.Printf("DEBUG: Creating audit log for payment ID %d\n", payment.ID)
+		userID := &createdBy
+		userName := &createdByUsername
+		err = s.auditLogService.LogInvoiceChange(
+			invoiceID,
+			"payment_created",
+			nil, // no old data for payment creation
+			payment,
+			userID,
+			userName,
+			nil, // ipAddress will be filled by handler
+			nil, // userAgent will be filled by handler
+		)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to create payment audit log: %v\n", err)
+		} else {
+			fmt.Printf("DEBUG: Payment audit log created successfully for payment ID %d\n", payment.ID)
+		}
+	}
+
 	return payment, nil
 }
 
@@ -643,14 +638,92 @@ func (s *InvoiceService) UpdateInvoicePayment(paymentID int, req *models.UpdateI
 		}
 	}
 
+	// Log payment update
+	if s.auditLogService != nil {
+		fmt.Printf("DEBUG: Creating audit log for payment update ID %d\n", existingPayment.ID)
+		userID := &updatedBy
+		var userName string
+		err = s.invoiceRepo.GetDB().QueryRow("SELECT username FROM users WHERE id = $1", updatedBy).Scan(&userName)
+		if err != nil {
+			userName = "unknown"
+		}
+		userNamePtr := &userName
+		
+		err = s.auditLogService.LogInvoiceChange(
+			existingPayment.InvoiceID,
+			"payment_updated",
+			nil, // We could store old payment data here
+			existingPayment,
+			userID,
+			userNamePtr,
+			nil, // ipAddress will be filled by handler
+			nil, // userAgent will be filled by handler
+		)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to create payment update audit log: %v\n", err)
+		} else {
+			fmt.Printf("DEBUG: Payment update audit log created successfully for payment ID %d\n", existingPayment.ID)
+		}
+	}
+
 	return existingPayment, nil
 }
 
 func (s *InvoiceService) DeleteInvoicePayment(paymentID int) error {
-	// Get payment to find invoice ID
-	// Note: This is a simplified approach. In a real implementation,
-	// you might want to add a GetPaymentByID method to the repository
-	return s.invoiceRepo.DeleteInvoicePayment(paymentID)
+	// Get payment before deletion for logging
+	var payment models.InvoicePayment
+	err := s.invoiceRepo.GetDB().QueryRow(`
+		SELECT id, invoice_id, amount, payment_method, payment_date, 
+			   transaction_reference, notes, status, created_by, created_by_username
+		FROM invoice_payments 
+		WHERE id = $1
+	`, paymentID).Scan(
+		&payment.ID,
+		&payment.InvoiceID,
+		&payment.Amount,
+		&payment.PaymentMethod,
+		&payment.PaymentDate,
+		&payment.TransactionReference,
+		&payment.Notes,
+		&payment.Status,
+		&payment.CreatedBy,
+		&payment.CreatedByUsername,
+	)
+	
+	if err != nil {
+		return fmt.Errorf("payment not found: %w", err)
+	}
+
+	// Delete payment
+	err = s.invoiceRepo.DeleteInvoicePayment(paymentID)
+	if err != nil {
+		return err
+	}
+
+	// Log payment deletion
+	if s.auditLogService != nil {
+		fmt.Printf("DEBUG: Creating audit log for payment deletion ID %d\n", paymentID)
+		userID := payment.CreatedBy
+		userName := payment.CreatedByUsername
+		
+		err = s.auditLogService.LogInvoiceChange(
+			payment.InvoiceID,
+			"payment_deleted",
+			&payment, // old data
+			nil, // no new data for deletion
+			userID,
+			userName,
+			nil, // ipAddress will be filled by handler
+			nil, // userAgent will be filled by handler
+		)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to create payment deletion audit log: %v\n", err)
+		} else {
+			fmt.Printf("DEBUG: Payment deletion audit log created successfully for payment ID %d\n", paymentID)
+		}
+	}
+
+	return nil
 }
 
 // Helper methods
@@ -724,8 +797,8 @@ func (s *InvoiceService) createInventoryLogForSale(variantID int, quantity float
 	return err
 }
 
-func (s *InvoiceService) GetInvoiceSummary() (*models.InvoiceSummary, error) {
-	return s.invoiceRepo.GetInvoiceSummary()
+func (s *InvoiceService) GetInvoiceSummary(dateFrom, dateTo string) (*models.InvoiceSummary, error) {
+	return s.invoiceRepo.GetInvoiceSummary(dateFrom, dateTo)
 }
 
 // GetInvoiceAuditLogs gets audit logs for a specific invoice

@@ -11,12 +11,12 @@ import {
   Skeleton,
   SkeletonText,
 } from "@chakra-ui/react";
-import { Edit } from "lucide-react";
 import { useFetchApi } from "@/hooks/useFetchApi";
 import Page from "@/components/organisms/Page";
 import CustomerStatsGrid from "@/components/organisms/CustomerStatsGrid";
 import CustomerInfoSection from "@/components/molecules/CustomerInfoSection";
 import RecentInvoicesSection from "@/components/organisms/RecentInvoicesSection";
+import CustomerAuditLog from "@/components/molecules/customers/CustomerAuditLog";
 
 const CustomerDetailPage = () => {
   const { id } = useParams();
@@ -119,20 +119,11 @@ const CustomerDetailPage = () => {
         { label: "Khách hàng", href: "/customers" },
         { label: customer.name, href: `/customers/${id}` },
       ]}
-      primaryActions={[
-        {
-          label: "Chỉnh sửa",
-          onClick: () => navigate(`/customers/${id}/edit`),
-          colorScheme: "blue",
-          leftIcon: <Edit size={16} />,
-        },
-      ]}
     >
       <VStack spacing={6} align="stretch">
-        <CustomerStatsGrid customerId={id} />
-
         <CustomerInfoSection customer={customer} />
-
+        <CustomerStatsGrid customerId={id} />
+        <CustomerAuditLog customerId={id} />
         <RecentInvoicesSection
           customerId={id}
           onViewAll={() => navigate('/sales')}

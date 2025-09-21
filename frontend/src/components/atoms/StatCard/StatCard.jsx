@@ -1,8 +1,7 @@
 import React from 'react';
 import { Card, CardBody, HStack, VStack, Text, Icon } from '@chakra-ui/react';
 
-const StatCard = ({ label, value, change, icon: IconComponent, color, ...props }) => {
-  const isPositive = change.startsWith("+");
+const StatCard = ({ label, value,  icon: IconComponent, color, ...props }) => {
   
   return (
     <Card shadow="sm" {...props}>
@@ -15,20 +14,6 @@ const StatCard = ({ label, value, change, icon: IconComponent, color, ...props }
             <Text fontSize="2xl" fontWeight="bold" color="gray.800">
               {value}
             </Text>
-            <HStack spacing={1} align="center">
-              <Icon
-                as={isPositive ? "arrow-up" : "arrow-down"}
-                color={isPositive ? "green.500" : "red.500"}
-                boxSize={3}
-              />
-              <Text
-                fontSize="sm"
-                color={isPositive ? "green.500" : "red.500"}
-                fontWeight="medium"
-              >
-                {change}
-              </Text>
-            </HStack>
           </VStack>
           <Icon
             as={IconComponent}

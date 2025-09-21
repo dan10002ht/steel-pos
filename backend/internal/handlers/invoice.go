@@ -249,7 +249,10 @@ func (h *InvoiceHandler) DeleteInvoicePayment(c *gin.Context) {
 
 // Dashboard/Summary endpoints
 func (h *InvoiceHandler) GetInvoiceSummary(c *gin.Context) {
-	summary, err := h.invoiceService.GetInvoiceSummary()
+	dateFrom := c.Query("date_from")
+	dateTo := c.Query("date_to")
+	
+	summary, err := h.invoiceService.GetInvoiceSummary(dateFrom, dateTo)
 	if err != nil {
 		response.ServiceError(c, err)
 		return

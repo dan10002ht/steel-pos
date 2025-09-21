@@ -9,12 +9,14 @@ import (
 )
 
 type CustomerService struct {
-	customerRepo *repository.CustomerRepository
+	customerRepo    *repository.CustomerRepository
+	auditLogService AuditLogService
 }
 
-func NewCustomerService(customerRepo *repository.CustomerRepository) *CustomerService {
+func NewCustomerService(customerRepo *repository.CustomerRepository, auditLogService AuditLogService) *CustomerService {
 	return &CustomerService{
-		customerRepo: customerRepo,
+		customerRepo:    customerRepo,
+		auditLogService: auditLogService,
 	}
 }
 
@@ -87,6 +89,24 @@ func (s *CustomerService) CreateCustomer(customer *models.Customer) (*models.Cus
 		return nil, fmt.Errorf("failed to create customer: %w", err)
 	}
 
+	// Log audit trail for customer creation
+	if s.auditLogService != nil {
+		err = s.auditLogService.LogCustomerChange(
+			createdCustomer.ID,
+			"created",
+			nil, // No old data for creation
+			createdCustomer,
+			customer.CreatedBy,
+			nil, // userName
+			nil, // ipAddress
+			nil, // userAgent
+		)
+		if err != nil {
+			// Log error but don't fail the creation
+			fmt.Printf("ERROR: Failed to create customer audit log: %v\n", err)
+		}
+	}
+
 	return createdCustomer, nil
 }
 
@@ -113,13 +133,31 @@ func (s *CustomerService) CreateOrGetCustomer(phone, name, address string, creat
 		return nil, fmt.Errorf("failed to create customer: %w", err)
 	}
 
+	// Log audit trail for customer creation
+	if s.auditLogService != nil {
+		err = s.auditLogService.LogCustomerChange(
+			createdCustomer.ID,
+			"created",
+			nil, // No old data for creation
+			createdCustomer,
+			&createdBy,
+			nil, // userName
+			nil, // ipAddress
+			nil, // userAgent
+		)
+		if err != nil {
+			// Log error but don't fail the creation
+			fmt.Printf("ERROR: Failed to create customer audit log: %v\n", err)
+		}
+	}
+
 	return createdCustomer, nil
 }
 
 // UpdateCustomer updates customer information
 func (s *CustomerService) UpdateCustomer(id int, updateData map[string]interface{}, updatedBy int) (*models.Customer, error) {
-	// Check if customer exists
-	_, err := s.customerRepo.GetByID(id)
+	// Get existing customer for audit log
+	oldCustomer, err := s.customerRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("customer not found: %w", err)
 	}
@@ -130,13 +168,31 @@ func (s *CustomerService) UpdateCustomer(id int, updateData map[string]interface
 		return nil, fmt.Errorf("failed to update customer: %w", err)
 	}
 
+	// Log audit trail for customer update
+	if s.auditLogService != nil {
+		err = s.auditLogService.LogCustomerChange(
+			id,
+			"updated",
+			oldCustomer,
+			updatedCustomer,
+			&updatedBy,
+			nil, // userName
+			nil, // ipAddress
+			nil, // userAgent
+		)
+		if err != nil {
+			// Log error but don't fail the update
+			fmt.Printf("ERROR: Failed to create customer audit log: %v\n", err)
+		}
+	}
+
 	return updatedCustomer, nil
 }
 
 // DeleteCustomer deletes a customer
 func (s *CustomerService) DeleteCustomer(id int, deletedBy int) error {
-	// Check if customer exists
-	_, err := s.customerRepo.GetByID(id)
+	// Get existing customer for audit log
+	oldCustomer, err := s.customerRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("customer not found: %w", err)
 	}
@@ -145,6 +201,24 @@ func (s *CustomerService) DeleteCustomer(id int, deletedBy int) error {
 	err = s.customerRepo.Delete(id, deletedBy)
 	if err != nil {
 		return fmt.Errorf("failed to delete customer: %w", err)
+	}
+
+	// Log audit trail for customer deletion
+	if s.auditLogService != nil {
+		err = s.auditLogService.LogCustomerChange(
+			id,
+			"deleted",
+			oldCustomer,
+			nil, // No new data for deletion
+			&deletedBy,
+			nil, // userName
+			nil, // ipAddress
+			nil, // userAgent
+		)
+		if err != nil {
+			// Log error but don't fail the deletion
+			fmt.Printf("ERROR: Failed to create customer deletion audit log: %v\n", err)
+		}
 	}
 
 	return nil
@@ -180,4 +254,13 @@ func (s *CustomerService) GetCustomerInvoices(customerID int, page, limit int) (
 	}
 
 	return invoices, total, nil
+}
+
+// GetCustomerAuditLogs gets audit logs for a specific customer
+func (s *CustomerService) GetCustomerAuditLogs(customerID int) ([]models.AuditLog, error) {
+	if s.auditLogService == nil {
+		return []models.AuditLog{}, nil
+	}
+
+	return s.auditLogService.GetAuditLogsByEntity("customer", customerID)
 }

@@ -953,8 +953,25 @@ func (r *InvoiceRepository) GenerateInvoiceCode() (string, error) {
 }
 
 // Get invoice summary statistics
-func (r *InvoiceRepository) GetInvoiceSummary() (*models.InvoiceSummary, error) {
-	query := `
+func (r *InvoiceRepository) GetInvoiceSummary(dateFrom, dateTo string) (*models.InvoiceSummary, error) {
+	// Build WHERE clause based on date filters
+	whereClause := "WHERE status != 'cancelled'"
+	args := []interface{}{}
+	argIndex := 1
+
+	if dateFrom != "" {
+		whereClause += fmt.Sprintf(" AND DATE(created_at) >= $%d", argIndex)
+		args = append(args, dateFrom)
+		argIndex++
+	}
+
+	if dateTo != "" {
+		whereClause += fmt.Sprintf(" AND DATE(created_at) <= $%d", argIndex)
+		args = append(args, dateTo)
+		argIndex++
+	}
+
+	query := fmt.Sprintf(`
 		SELECT 
 			COUNT(*) as total_invoices,
 			COALESCE(SUM(total_amount), 0) as total_amount,
@@ -963,11 +980,11 @@ func (r *InvoiceRepository) GetInvoiceSummary() (*models.InvoiceSummary, error) 
 			COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as today_invoices,
 			COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN total_amount ELSE 0 END), 0) as today_amount
 		FROM invoices
-		WHERE status != 'cancelled'
-	`
+		%s
+	`, whereClause)
 
 	summary := &models.InvoiceSummary{}
-	err := r.db.QueryRow(query).Scan(
+	err := r.db.QueryRow(query, args...).Scan(
 		&summary.TotalInvoices,
 		&summary.TotalAmount,
 		&summary.PaidAmount,

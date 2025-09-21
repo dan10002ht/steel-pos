@@ -21,30 +21,18 @@ const Dashboard = () => {
     {
       label: "Doanh thu hôm nay",
       value: "12,500,000",
-      change: "+12.5%",
-      icon: TrendingUp,
-      color: "green",
     },
     {
       label: "Đơn hàng mới",
       value: "24",
-      change: "+8.2%",
-      icon: ShoppingCart,
-      color: "blue",
     },
     {
       label: "Sản phẩm tồn kho",
       value: "1,234",
-      change: "-2.1%",
-      icon: Package,
-      color: "orange",
     },
     {
       label: "Khách hàng mới",
       value: "8",
-      change: "+15.3%",
-      icon: Users,
-      color: "purple",
     },
   ];
 

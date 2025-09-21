@@ -94,27 +94,13 @@ const InventoryDetail = () => {
       subtitle={`Mã đơn: ${importOrder.import_code}`}
       onBack={handleBack}
       primaryActions={[
-        {
+        importOrder.status === 'pending' && {
           label: 'Sửa',
           onClick: handleEdit,
           colorScheme: 'blue',
           leftIcon: <Edit size={16} />,
         },
-      ]}
-      secondaryActions={[
-        {
-          label: 'Xuất Excel',
-          onClick: handleExportExcel,
-          variant: 'outline',
-          leftIcon: <Download size={16} />,
-        },
-        {
-          label: 'In phiếu',
-          onClick: handlePrint,
-          variant: 'outline',
-          leftIcon: <Printer size={16} />,
-        },
-      ]}
+      ].filter(Boolean)}
     >
       <Box w='100%' maxW='100%' mx='auto'>
         {/* Order Information */}

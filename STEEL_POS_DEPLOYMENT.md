@@ -10,12 +10,10 @@ Hướng dẫn deploy Steel POS lên VPS cùng với Drink POS (tiemtra3oclock.o
 System Nginx (Port 80/443)
 ├── Drink POS (tiemtra3oclock.online)
 │   ├── Frontend: Port 8080
-│   ├── Backend: Port 8081
-│   └── WebSocket: Port 8081
+│   └── Backend: Port 8081
 └── Steel POS (steel-pos.com)
     ├── Frontend: Port 8082
-    ├── Backend: Port 8083
-    └── WebSocket: Port 8084
+    └── Backend: Port 8083
 ```
 
 ## 🎯 Deployment Summary
@@ -128,7 +126,6 @@ CORS_ORIGIN=https://steel-pos.com
 
 # Frontend API URL
 VITE_API_URL=https://steel-pos.com/api
-VITE_WS_URL=wss://steel-pos.com/ws
 
 # Cloudinary (optional)
 CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
@@ -228,26 +225,6 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # WebSocket support
-    location /ws {
-        proxy_pass http://127.0.0.1:8084;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket specific timeouts
-        proxy_connect_timeout 7d;
-        proxy_send_timeout 7d;
-        proxy_read_timeout 7d;
-
-        # Disable buffering for real-time communication
-        proxy_buffering off;
-        proxy_cache off;
-    }
 
     # Health check
     location /health {

@@ -25,6 +25,7 @@ func SetupCustomerRoutes(api *gin.RouterGroup, customerHandler *handlers.Custome
 		// Customer analytics and invoices
 		customers.GET("/:id/analytics", customerHandler.GetCustomerAnalytics)
 		customers.GET("/:id/invoices", customerHandler.GetCustomerInvoices)
+		customers.GET("/:id/audit-logs", customerHandler.GetCustomerAuditLogs)
 
 	}
 }

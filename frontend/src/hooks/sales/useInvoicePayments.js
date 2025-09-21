@@ -8,7 +8,7 @@ import { useDeleteApi } from '../useDeleteApi';
  */
 export const useInvoicePayments = (invoiceId) => {
   const {
-    data: payments,
+    data,
     isLoading,
     error,
     refetch,
@@ -19,9 +19,10 @@ export const useInvoicePayments = (invoiceId) => {
       enabled: !!invoiceId,
     }
   );
+  const payments = data?.payments || [];
 
   return {
-    payments: payments || [],
+    payments,
     isLoading,
     error,
     refetch,

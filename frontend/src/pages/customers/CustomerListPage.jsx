@@ -86,10 +86,6 @@ const CustomerListPage = () => {
     navigate(`/customers/${id}`);
   };
 
-  const handleEditCustomer = id => {
-    navigate(`/customers/${id}/edit`);
-  };
-
   return (
     <Page
       title='Khách hàng'
@@ -149,7 +145,6 @@ const CustomerListPage = () => {
             <CustomerTable
               customers={filteredCustomers}
               onViewDetail={handleCustomerClick}
-              onEdit={handleEditCustomer}
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalCount}

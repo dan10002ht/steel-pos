@@ -43,18 +43,18 @@ const menuItems = [
     icon: <Users size={20} />,
     path: "/customers",
   },
-  {
-    id: "reports",
-    label: "Báo cáo",
-    icon: <FileText size={20} />,
-    path: "/reports",
-  },
-  {
-    id: "analytics",
-    label: "Thống kê",
-    icon: <TrendingUp size={20} />,
-    path: "/analytics",
-  },
+  // {
+  //   id: "reports",
+  //   label: "Báo cáo",
+  //   icon: <FileText size={20} />,
+  //   path: "/reports",
+  // },
+  // {
+  //   id: "analytics",
+  //   label: "Thống kê",
+  //   icon: <TrendingUp size={20} />,
+  //   path: "/analytics",
+  // },
 ];
 
 const NavigationMenu = () => {

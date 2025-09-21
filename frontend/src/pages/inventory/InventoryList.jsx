@@ -186,11 +186,11 @@ const InventoryList = () => {
     });
   };
 
-  const handleDelete = orderId => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa đơn nhập hàng này?')) {
-      deleteMutation.mutate(orderId);
-    }
-  };
+  // const handleDelete = orderId => {
+  //   if (window.confirm('Bạn có chắc chắn muốn xóa đơn nhập hàng này?')) {
+  //     deleteMutation.mutate(orderId);
+  //   }
+  // };
 
   const handleEdit = orderId => {
     // Navigate to edit page
@@ -200,30 +200,6 @@ const InventoryList = () => {
   const handleViewDetail = orderId => {
     // Navigate to detail page
     navigate(`/inventory/${orderId}`);
-  };
-
-  const handleExportExcel = order => {
-    // Export to Excel functionality
-    console.log('Exporting order:', order.import_code);
-    toast({
-      title: 'Thông báo',
-      description: 'Chức năng xuất Excel sẽ được implement sau',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
-  };
-
-  const handlePrint = order => {
-    // Print functionality
-    console.log('Printing order:', order.import_code);
-    toast({
-      title: 'Thông báo',
-      description: 'Chức năng in phiếu sẽ được implement sau',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
   };
 
   // Handle filter changes
@@ -428,7 +404,7 @@ const InventoryList = () => {
                               onClick={() => handleEdit(order.id)}
                             />
                           )}
-                          {isAdmin && <IconButton
+                          {/* {isAdmin && <IconButton
                             icon={<Trash2 size={18} />}
                             size='sm'
                             colorScheme='red'
@@ -436,7 +412,7 @@ const InventoryList = () => {
                             variant="ghost"
                             onClick={() => handleDelete(order.id)}
                             isLoading={deleteMutation.isPending}
-                          />}
+                          />} */}
                           <IconButton
                             icon={<Eye size={18} />}
                             size='sm'

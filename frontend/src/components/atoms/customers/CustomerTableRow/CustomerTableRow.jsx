@@ -1,17 +1,12 @@
 import React from 'react';
 import { Tr, Td, Text, VStack, HStack, Button, Badge } from '@chakra-ui/react';
-import { Eye, Edit } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { formatPhoneNumber } from '@/utils/formatters';
 
-const CustomerTableRow = ({ customer, onViewDetail, onEdit }) => {
+const CustomerTableRow = ({ customer, onViewDetail }) => {
   const handleViewClick = e => {
     e.stopPropagation();
     onViewDetail(customer.id);
-  };
-
-  const handleEditClick = e => {
-    e.stopPropagation();
-    onEdit(customer.id);
   };
 
   return (
@@ -74,15 +69,6 @@ const CustomerTableRow = ({ customer, onViewDetail, onEdit }) => {
             title='Xem chi tiết'
           >
             <Eye size={16} />
-          </Button>
-          <Button
-            size='sm'
-            variant='ghost'
-            colorScheme='orange'
-            onClick={handleEditClick}
-            title='Chỉnh sửa'
-          >
-            <Edit size={16} />
           </Button>
         </HStack>
       </Td>

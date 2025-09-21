@@ -17,6 +17,7 @@ type AuditLogService interface {
 	GetAuditLogsByFilter(filter models.AuditLogFilter) (*models.AuditLogListResponse, error)
 	DeleteAuditLog(id int) error
 	LogInvoiceChange(entityID int, action string, oldData, newData interface{}, userID *int, userName *string, ipAddress, userAgent *string) error
+	LogCustomerChange(entityID int, action string, oldData, newData interface{}, userID *int, userName *string, ipAddress, userAgent *string) error
 	GenerateChangesSummary(oldData, newData map[string]interface{}) string
 }
 
@@ -114,34 +115,57 @@ func (s *auditLogService) DeleteAuditLog(id int) error {
 }
 
 func (s *auditLogService) LogInvoiceChange(entityID int, action string, oldData, newData interface{}, userID *int, userName *string, ipAddress, userAgent *string) error {
+	fmt.Printf("DEBUG: LogInvoiceChange called with entityID=%d, action=%s\n", entityID, action)
+	
 	// Convert interface{} to map[string]interface{}
 	oldDataMap, err := s.interfaceToMap(oldData)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to convert old data: %v\n", err)
 		return fmt.Errorf("failed to convert old data: %w", err)
 	}
 
 	newDataMap, err := s.interfaceToMap(newData)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to convert new data: %v\n", err)
 		return fmt.Errorf("failed to convert new data: %w", err)
 	}
 
 	// Generate changes summary
 	changesSummary := s.GenerateChangesSummary(oldDataMap, newDataMap)
+	fmt.Printf("DEBUG: Changes summary: %s\n", changesSummary)
 
-	req := models.AuditLogCreateRequest{
-		EntityType:     "invoice",
-		EntityID:       entityID,
-		Action:         action,
-		UserID:         userID,
-		UserName:       userName,
-		OldData:        oldDataMap,
-		NewData:        newDataMap,
-		ChangesSummary: &changesSummary,
-		IPAddress:      ipAddress,
-		UserAgent:      userAgent,
+	// Convert to JSON for database function
+	oldDataJSON, _ := json.Marshal(oldDataMap)
+	newDataJSON, _ := json.Marshal(newDataMap)
+
+	// Use log_business_event function for better display_text generation
+	fmt.Printf("DEBUG: Calling log_business_event function\n")
+	_, err = s.auditLogRepo.GetDB().Exec(`
+		SELECT log_business_event(
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+		)
+	`, 
+		"invoice",           // entity_type
+		entityID,            // entity_id
+		action,              // action
+		"invoice_" + action, // log_type
+		string(oldDataJSON), // old_data
+		string(newDataJSON), // new_data
+		nil,                 // business_data
+		changesSummary,      // changes_summary
+		"",                  // notes
+		userID,              // created_by
+		userName,            // created_by_name
+		ipAddress,           // ip_address
+		userAgent,           // user_agent
+	)
+	
+	if err != nil {
+		fmt.Printf("ERROR: log_business_event failed: %v\n", err)
+	} else {
+		fmt.Printf("DEBUG: log_business_event completed successfully\n")
 	}
-
-	_, err = s.CreateAuditLog(req)
+	
 	return err
 }
 
@@ -317,4 +341,151 @@ func (s *auditLogService) compareItems(oldItems, newItems []map[string]interface
 	}
 
 	return changes
+}
+
+// LogCustomerChange logs customer changes
+func (s *auditLogService) LogCustomerChange(entityID int, action string, oldData, newData interface{}, userID *int, userName *string, ipAddress, userAgent *string) error {
+	fmt.Printf("DEBUG: LogCustomerChange called with entityID=%d, action=%s\n", entityID, action)
+	
+	var err error
+	var newDataMap map[string]interface{}
+	var oldDataMap map[string]interface{}
+	
+	// Convert new data to map (may be nil for deletions)
+	if newData != nil {
+		newDataMap, err = s.interfaceToMap(newData)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to convert new customer data: %v\n", err)
+			return fmt.Errorf("failed to convert new customer data: %w", err)
+		}
+	}
+
+	// Convert old data to map (may be nil for creations)
+	if oldData != nil {
+		oldDataMap, err = s.interfaceToMap(oldData)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to convert old customer data: %v\n", err)
+			return fmt.Errorf("failed to convert old customer data: %w", err)
+		}
+	}
+
+	var description string
+	var changes []string
+
+	// Handle different actions
+	if action == "created" {
+		// For creation, show what was created
+		customerName := s.getStringValue(newDataMap["name"])
+		customerPhone := s.getStringValue(newDataMap["phone"])
+		description = fmt.Sprintf("Customer created: %s (%s)", customerName, customerPhone)
+	} else if action == "deleted" {
+		// For deletion, show what was deleted
+		if oldDataMap != nil {
+			customerName := s.getStringValue(oldDataMap["name"])
+			customerPhone := s.getStringValue(oldDataMap["phone"])
+			description = fmt.Sprintf("Customer deleted: %s (%s)", customerName, customerPhone)
+		} else {
+			description = "Customer deleted"
+		}
+	} else {
+		// For updates, compare old and new data
+		changes = s.generateCustomerChanges(oldDataMap, newDataMap)
+		description = fmt.Sprintf("Customer %s", action)
+		if len(changes) > 0 {
+			description += ": " + strings.Join(changes, ", ")
+		}
+	}
+
+	// Create audit log
+	auditLog := &models.AuditLog{
+		Action:               action,
+		EntityType:           "customer",
+		EntityID:             entityID,
+		UserID:               userID,
+		UserName:             userName,
+		IPAddress:            ipAddress,
+		UserAgent:            userAgent,
+		LogCategory:          stringPtr("business"),
+		LogType:              stringPtr(action),
+		BusinessData:         models.JSONB(newDataMap),
+		ReferenceEntityType:  stringPtr("customer"),
+		ReferenceEntityID:    &entityID,
+		Severity:             stringPtr("info"),
+		ChangesSummary:       stringPtr(description),
+	}
+
+	err = s.auditLogRepo.Create(auditLog)
+	if err != nil {
+		fmt.Printf("ERROR: Failed to create customer audit log: %v\n", err)
+		return fmt.Errorf("failed to create customer audit log: %w", err)
+	}
+
+	fmt.Printf("DEBUG: Customer audit log created successfully for customer ID %d\n", entityID)
+	return nil
+}
+
+// generateCustomerChanges generates a list of changes between old and new customer data
+func (s *auditLogService) generateCustomerChanges(oldData, newData map[string]interface{}) []string {
+	var changes []string
+
+	// If oldData is nil, this is a creation, so no changes to track
+	if oldData == nil {
+		return changes
+	}
+
+	// Check name
+	oldName := s.getStringValue(oldData["name"])
+	newName := s.getStringValue(newData["name"])
+	if oldName != newName {
+		changes = append(changes, fmt.Sprintf("name: %s → %s", oldName, newName))
+	}
+
+	// Check phone
+	oldPhone := s.getStringValue(oldData["phone"])
+	newPhone := s.getStringValue(newData["phone"])
+	if oldPhone != newPhone {
+		changes = append(changes, fmt.Sprintf("phone: %s → %s", oldPhone, newPhone))
+	}
+
+	// Check address
+	oldAddress := s.getStringValue(oldData["address"])
+	newAddress := s.getStringValue(newData["address"])
+	if oldAddress != newAddress {
+		changes = append(changes, fmt.Sprintf("address: %s → %s", oldAddress, newAddress))
+	}
+
+	// Check is_active
+	oldActive := s.getBoolValue(oldData, "is_active")
+	newActive := s.getBoolValue(newData, "is_active")
+	if oldActive != newActive {
+		oldStatus := "inactive"
+		newStatus := "inactive"
+		if oldActive {
+			oldStatus = "active"
+		}
+		if newActive {
+			newStatus = "active"
+		}
+		changes = append(changes, fmt.Sprintf("status: %s → %s", oldStatus, newStatus))
+	}
+
+	return changes
+}
+
+// stringPtr returns a pointer to the string value
+func stringPtr(s string) *string {
+	return &s
+}
+
+// getBoolValue safely extracts boolean value from map
+func (s *auditLogService) getBoolValue(data map[string]interface{}, key string) bool {
+	if data == nil {
+		return false
+	}
+	if val, ok := data[key]; ok {
+		if boolVal, ok := val.(bool); ok {
+			return boolVal
+		}
+	}
+	return false
 }

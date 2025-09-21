@@ -16,7 +16,6 @@ import Pagination from '@/components/atoms/Pagination';
 const CustomerTable = ({
   customers,
   onViewDetail,
-  onEdit,
   showPagination = true,
   size = 'md',
   // Pagination props
@@ -54,7 +53,6 @@ const CustomerTable = ({
                   key={customer.id}
                   customer={customer}
                   onViewDetail={onViewDetail}
-                  onEdit={onEdit}
                 />
               ))
             )}

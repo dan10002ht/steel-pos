@@ -28,7 +28,6 @@ import {
 import { ArrowLeft, Edit, Package, Tag, Hash, DollarSign, Box as BoxIcon } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useFetchApi } from "../../hooks/useFetchApi";
-import { useInventoryLogs } from "../../hooks/products/useInventoryLogs";
 import Page from "../../components/organisms/Page";
 import InventoryLogTable from "../../components/molecules/products/InventoryLogTable/InventoryLogTable";
 import Pagination from "../../components/atoms/Pagination";
@@ -60,11 +59,13 @@ const ProductDetailPage = () => {
     data: inventoryLogsData,
     isLoading: isLogsLoading,
     error: logsError,
-  } = useInventoryLogs(id, null, {
-    enabled: !!id,
-    page: currentPage,
-    limit: pageSize,
-  });
+  } = useFetchApi(
+    ["inventory-logs", id, null, currentPage, pageSize],
+    `/products/${id}/inventory-logs?page=${currentPage}&limit=${pageSize}`,
+    {
+      enabled: !!id,
+    }
+  );
 
   // Extract logs and pagination info
   const inventoryLogs = inventoryLogsData?.logs || [];

@@ -16,6 +16,7 @@ type AuditLogRepository interface {
 	GetByFilter(filter models.AuditLogFilter) ([]models.AuditLog, int, error)
 	GetByEntityWithPagination(entityType string, entityID int, page, limit int) ([]models.AuditLog, int, error)
 	Delete(id int) error
+	GetDB() *sqlx.DB
 }
 
 type auditLogRepository struct {
@@ -244,4 +245,8 @@ func (r *auditLogRepository) Delete(id int) error {
 	}
 
 	return nil
+}
+
+func (r *auditLogRepository) GetDB() *sqlx.DB {
+	return r.db
 }

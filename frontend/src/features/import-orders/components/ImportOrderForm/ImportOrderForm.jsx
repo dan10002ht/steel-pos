@@ -19,7 +19,7 @@ import {
 import { Plus } from 'lucide-react';
 import { useImportOrderForm } from '../../hooks/useImportOrderForm';
 import { useImportOrderItems } from '../../hooks/useImportOrderItems';
-import { formatCurrency } from '../../../../utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import FormInput from '../../../../components/atoms/FormInput/FormInput';
 import FormDateInput from '../../../../components/atoms/FormDateInput';
 import FormSection from '../../../../components/molecules/FormSection/FormSection';

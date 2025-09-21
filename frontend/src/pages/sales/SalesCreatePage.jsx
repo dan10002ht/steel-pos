@@ -15,7 +15,10 @@ const SalesCreatePage = () => {
   ]);
   const toast = useToast();
   const createInvoiceMutation = useCreateApi('/invoices', {
-    invalidateQueries: [['invoices']],
+    invalidateQueries: [
+      ['invoices'], 
+      (query) => query.queryKey[0] === 'inventory-logs'
+    ],
   });
   
 

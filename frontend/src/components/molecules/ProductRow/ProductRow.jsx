@@ -11,7 +11,7 @@ import { Trash2 } from 'lucide-react';
 import ProductSearch from '../../ProductSearch';
 import FormSelect from '../../atoms/FormSelect';
 import FormNumberInput from '../../atoms/FormNumberInput';
-import { formatCurrency } from '../../../utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 
 const ProductRow = ({
   product,

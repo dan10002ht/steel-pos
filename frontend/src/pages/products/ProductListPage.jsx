@@ -36,7 +36,7 @@ import Pagination from '../../components/atoms/Pagination';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useDeleteApi } from '../../hooks/useDeleteApi';
 import { useDebounce } from '../../hooks/useDebounce';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 
 const ProductListPage = () => {
   const navigate = useNavigate();

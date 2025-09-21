@@ -277,4 +277,28 @@ func (h *CustomerHandler) GetCustomerInvoices(c *gin.Context) {
 	}, "Customer invoices retrieved successfully")
 }
 
+func (h *CustomerHandler) GetCustomerAuditLogs(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.BadRequest(c, "Invalid customer ID")
+		return
+	}
+
+	// Check if customer exists
+	_, err = h.customerService.GetCustomerByID(id)
+	if err != nil {
+		response.NotFound(c, "Customer not found")
+		return
+	}
+
+	auditLogs, err := h.customerService.GetCustomerAuditLogs(id)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, auditLogs, "Customer audit logs retrieved successfully")
+}
+
 

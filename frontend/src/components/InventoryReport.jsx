@@ -190,24 +190,7 @@ const InventoryReport = () => {
         {/* Header */}
         <Flex justify="space-between" align="center">
           <Heading size="lg">Báo cáo tồn kho</Heading>
-          <HStack spacing={3}>
-            <Button
-              leftIcon={<Download size={16} />}
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-            >
-              Xuất Excel
-            </Button>
-            <Button
-              leftIcon={<Printer size={16} />}
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-            >
-              In báo cáo
-            </Button>
-          </HStack>
+         
         </Flex>
 
         {/* Summary Cards */}

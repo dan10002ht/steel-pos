@@ -254,10 +254,8 @@ func (r *CustomerRepository) Update(id int, updateData map[string]interface{}, u
 		return nil, fmt.Errorf("no fields to update")
 	}
 
-	// Add updated_by and updated_at
-	setParts = append(setParts, fmt.Sprintf("updated_by = $%d", argIndex))
-	args = append(args, updatedBy)
-	argIndex++
+	// Add updated_at
+	setParts = append(setParts, "updated_at = NOW()")
 
 	// Add WHERE clause
 	args = append(args, id)

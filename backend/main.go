@@ -48,8 +48,8 @@ func main() {
 	authService := services.NewAuthService(userRepo, jwtService, cfg)
 	productService := services.NewProductService(productRepo)
 	importOrderService := services.NewImportOrderService(importOrderRepo)
-	customerService := services.NewCustomerService(customerRepo)
 	auditLogService := services.NewAuditLogService(auditLogRepo)
+	customerService := services.NewCustomerService(customerRepo, auditLogService)
 	invoiceService := services.NewInvoiceService(invoiceRepo, customerService, auditLogService)
 	pdfService := services.NewPDFService()
 	

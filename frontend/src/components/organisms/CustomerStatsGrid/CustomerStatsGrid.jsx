@@ -3,7 +3,7 @@ import { SimpleGrid } from "@chakra-ui/react";
 import { ShoppingCart, DollarSign } from "lucide-react";
 import CustomerStatCard from "../../atoms/CustomerStatCard";
 import SkeletonCard from "../../atoms/SkeletonCard";
-import { formatCurrency } from "../../../utils/formatters";
+import { formatCurrency } from '@/utils/formatters';
 import { useFetchApi } from "../../../hooks/useFetchApi";
 
 const CustomerStatsGrid = ({ customerId }) => {
