@@ -114,18 +114,38 @@ nano .env
 **Required Environment Variables:**
 
 ```bash
-# Database
-POSTGRES_PASSWORD=your_secure_password_here
+# Server Configuration
+SERVER_PORT=8080
+SERVER_HOST=0.0.0.0
 
-# JWT
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5434
+DB_USER=postgres
+DB_PASSWORD=your_secure_password_here
+DB_NAME=steel_pos
+DB_SSLMODE=disable
+
+# JWT Configuration
 JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
+JWT_ACCESS_TOKEN_EXPIRY=24h
+JWT_REFRESH_TOKEN_EXPIRY=720h
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# Log Level
+LOG_LEVEL=info
 
 # Domain
-DOMAIN_NAME=steel-pos.com
-CORS_ORIGIN=https://steel-pos.com
+DOMAIN_NAME=cuahangkienphuoc.site
+CORS_ORIGIN=https://cuahangkienphuoc.site
 
 # Frontend API URL
-VITE_API_URL=https://steel-pos.com/api
+VITE_API_URL=https://cuahangkienphuoc.site/api
 
 # Cloudinary (optional)
 CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
@@ -329,14 +349,14 @@ curl https://steel-pos.com/api/health
 sleep 15
 
 # Run migrations
-docker-compose -f docker-compose.prod.yml exec -T backend ./migrate_db -path=/root/migrations -database="postgresql://postgres:password@postgres:5432/steel_pos?sslmode=disable" up
+docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/migrate/main.go
 ```
 
 #### **6.2 Seed Database (Optional)**
 
 ```bash
 # Run seeding
-docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db
+docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/seed/main.go
 ```
 
 ### **Step 7: GitHub Actions Setup**

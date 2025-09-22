@@ -3,8 +3,9 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Install git and ca-certificates
+# Install git, ca-certificates and migrate tool
 RUN apk add --no-cache git ca-certificates
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 # Copy go mod files
 COPY go.mod go.sum ./
@@ -29,6 +30,7 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/cmd/seed/main.go ./cmd/seed/main.go
+COPY --from=builder /app/cmd/migrate/main.go ./cmd/migrate/main.go
 
 # Make the binary executable
 RUN chmod +x main
