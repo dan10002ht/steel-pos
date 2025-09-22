@@ -64,3 +64,4 @@ const InvoiceItemsTable = ({ items = [] }) => {
 export default InvoiceItemsTable;
 
 
+

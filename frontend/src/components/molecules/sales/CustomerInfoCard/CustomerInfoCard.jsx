@@ -46,3 +46,4 @@ const CustomerInfoCard = ({ customer }) => {
 export default CustomerInfoCard;
 
 
+
