@@ -349,14 +349,14 @@ curl https://steel-pos.com/api/health
 sleep 15
 
 # Run migrations
-docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/migrate/main.go
+docker-compose -f docker-compose.prod.yml exec -T backend ./migrate_db
 ```
 
 #### **6.2 Seed Database (Optional)**
 
 ```bash
 # Run seeding
-docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/seed/main.go
+docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db
 ```
 
 ### **Step 7: GitHub Actions Setup**

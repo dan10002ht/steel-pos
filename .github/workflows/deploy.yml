@@ -127,16 +127,16 @@ jobs:
 
             # Run database migrations
             echo "🗄️ Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/migrate/main.go || {
+            docker-compose -f docker-compose.prod.yml exec -T backend ./migrate_db || {
               echo "⚠️ Migration failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend go run cmd/migrate/main.go
+              docker-compose -f docker-compose.prod.yml run --rm backend ./migrate_db
             }
 
             # Run database seeding
             echo "🌱 Running database seeding..."
-            docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/seed/main.go || {
+            docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db || {
               echo "⚠️ Seeding failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend go run cmd/seed/main.go
+              docker-compose -f docker-compose.prod.yml run --rm backend ./seed_db
             }
 
             # Wait for services to be healthy

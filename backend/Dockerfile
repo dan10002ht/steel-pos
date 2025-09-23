@@ -3,9 +3,6 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Install git and ca-certificates
-RUN apk add --no-cache git ca-certificates
-
 # Copy go mod files
 COPY go.mod go.sum ./
 
@@ -16,7 +13,13 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Build migration binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate_db ./cmd/migrate
+
+# Build seed binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o seed_db ./cmd/seed
 
 # Final stage
 FROM alpine:latest
@@ -25,14 +28,16 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-# Copy the binary from builder stage
+# Copy the binaries from builder stage
 COPY --from=builder /app/main .
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/cmd/seed/main.go ./cmd/seed/main.go
-COPY --from=builder /app/cmd/migrate/main.go ./cmd/migrate/main.go
+COPY --from=builder /app/migrate_db .
+COPY --from=builder /app/seed_db .
 
-# Make the binary executable
-RUN chmod +x main
+# Copy migrations directory
+COPY --from=builder /app/migrations ./migrations
+
+# Make binaries executable
+RUN chmod +x main migrate_db seed_db
 
 # Expose port
 EXPOSE 8080
