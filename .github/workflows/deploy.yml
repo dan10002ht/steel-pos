@@ -127,16 +127,16 @@ jobs:
 
             # Run database migrations
             echo "🗄️ Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T backend ./migrate_db -path=/root/migrations -database="postgresql://postgres:password@postgres:5432/steel_pos?sslmode=disable" up || {
+            docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/migrate/main.go || {
               echo "⚠️ Migration failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend ./migrate_db -path=/root/migrations -database="postgresql://postgres:password@postgres:5432/steel_pos?sslmode=disable" up
+              docker-compose -f docker-compose.prod.yml run --rm backend go run cmd/migrate/main.go
             }
 
             # Run database seeding
             echo "🌱 Running database seeding..."
-            docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db || {
+            docker-compose -f docker-compose.prod.yml exec -T backend go run cmd/seed/main.go || {
               echo "⚠️ Seeding failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend ./seed_db
+              docker-compose -f docker-compose.prod.yml run --rm backend go run cmd/seed/main.go
             }
 
             # Wait for services to be healthy

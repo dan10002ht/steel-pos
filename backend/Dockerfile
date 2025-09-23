@@ -3,9 +3,8 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-# Install git, ca-certificates and migrate tool
+# Install git and ca-certificates
 RUN apk add --no-cache git ca-certificates
-RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 # Copy go mod files
 COPY go.mod go.sum ./

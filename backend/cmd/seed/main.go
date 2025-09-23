@@ -13,6 +13,8 @@ import (
 )
 
 func main() {
+	fmt.Println("🌱 Starting Steel POS database seeding...")
+
 	// Load config
 	cfg := config.Load()
 
@@ -37,14 +39,23 @@ func main() {
 		log.Fatalf("Failed to ping database: %v", err)
 	}
 
-	fmt.Println("Connected to database successfully!")
+	fmt.Println("✅ Connected to database successfully!")
+
+	// Check if already seeded
+	if isAlreadySeeded(db) {
+		fmt.Println("📋 Database already seeded, skipping...")
+		return
+	}
 
 	// Seed data
 	if err := seedData(db); err != nil {
 		log.Fatalf("Failed to seed data: %v", err)
 	}
 
-	fmt.Println("Data seeded successfully!")
+	// Mark as seeded
+	markAsSeeded(db)
+
+	fmt.Println("🎉 Steel POS database seeding completed!")
 }
 
 func seedData(db *sql.DB) error {
@@ -161,113 +172,31 @@ func seedData(db *sql.DB) error {
 		fmt.Printf("User %s created successfully!\n", user.username)
 	}
 
-	// Insert sample product categories
-	categories := []struct {
-		name        string
-		description string
-	}{
-		{"Vật liệu xây dựng", "Các loại vật liệu xây dựng cơ bản"},
-		{"Vật liệu hoàn thiện", "Vật liệu hoàn thiện công trình"},
-		{"Thiết bị điện", "Thiết bị điện và phụ kiện"},
-		{"Thiết bị nước", "Thiết bị nước và phụ kiện"},
-		{"Dụng cụ", "Dụng cụ và thiết bị"},
-		{"Khác", "Các sản phẩm khác"},
-	}
-
-	for _, category := range categories {
-		// Check if category already exists
-		err = db.QueryRow("SELECT COUNT(*) FROM product_categories WHERE name = $1", category.name).Scan(&count)
-		if err != nil {
-			return fmt.Errorf("failed to check existing category %s: %v", category.name, err)
-		}
-
-		if count > 0 {
-			fmt.Printf("Category %s already exists, skipping...\n", category.name)
-			continue
-		}
-
-		// Insert category
-		_, err = db.Exec(`
-			INSERT INTO product_categories (name, description, is_active, created_by, created_by_name, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
-		`,
-			category.name,
-			category.description,
-			true,
-			nil,      // created_by is NULL for seed data
-			"System", // created_by_name for seed data
-			time.Now(),
-			time.Now(),
-		)
-
-		if err != nil {
-			return fmt.Errorf("failed to insert category %s: %v", category.name, err)
-		}
-
-		fmt.Printf("Category %s created successfully!\n", category.name)
-	}
-
-	// Insert sample products
-	products := []struct {
-		name       string
-		categoryID int
-		unit       string
-		notes      string
-	}{
-		{
-			name:       "Ống phi",
-			categoryID: 1, // Vật liệu xây dựng
-			unit:       "m",
-			notes:      "Ống phi các loại",
-		},
-		{
-			name:       "Thép hộp",
-			categoryID: 1, // Vật liệu xây dựng
-			unit:       "m",
-			notes:      "Thép hộp các loại",
-		},
-		{
-			name:       "Thép tấm",
-			categoryID: 1, // Vật liệu xây dựng
-			unit:       "m²",
-			notes:      "Thép tấm các loại",
-		},
-	}
-
-	for _, product := range products {
-		// Check if product already exists
-		err = db.QueryRow("SELECT COUNT(*) FROM products WHERE name = $1", product.name).Scan(&count)
-		if err != nil {
-			return fmt.Errorf("failed to check existing product %s: %v", product.name, err)
-		}
-
-		if count > 0 {
-			fmt.Printf("Product %s already exists, skipping...\n", product.name)
-			continue
-		}
-
-		// Insert product
-		_, err = db.Exec(`
-			INSERT INTO products (name, category_id, unit, notes, is_active, created_by, created_by_name, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`,
-			product.name,
-			product.categoryID,
-			product.unit,
-			product.notes,
-			true,
-			nil,      // created_by is NULL for seed data
-			"System", // created_by_name for seed data
-			time.Now(),
-			time.Now(),
-		)
-
-		if err != nil {
-			return fmt.Errorf("failed to insert product %s: %v", product.name, err)
-		}
-
-		fmt.Printf("Product %s created successfully!\n", product.name)
-	}
-
 	return nil
+}
+
+func isAlreadySeeded(db *sql.DB) bool {
+	// Check if admin user exists (main indicator)
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users WHERE username = 'admin'").Scan(&count)
+	if err != nil {
+		return false
+	}
+	return count > 0
+}
+
+func markAsSeeded(db *sql.DB) {
+	// Create seeds table if not exists
+	query := `CREATE TABLE IF NOT EXISTS seeds (id SERIAL PRIMARY KEY, name VARCHAR(255) UNIQUE, seeded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
+	_, err := db.Exec(query)
+	if err != nil {
+		fmt.Printf("⚠️ Warning: Failed to create seeds table: %v\n", err)
+		return
+	}
+
+	// Mark as seeded
+	_, err = db.Exec("INSERT INTO seeds (name) VALUES ('initial_users') ON CONFLICT (name) DO NOTHING")
+	if err != nil {
+		fmt.Printf("⚠️ Warning: Failed to mark as seeded: %v\n", err)
+	}
 }
