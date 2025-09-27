@@ -83,21 +83,6 @@ const NavigationMenu = () => {
             isActive={isActiveRoute(item.path, item.isStartWith)}
             onClick={() => handleNavigation(item.path)}
           />
-
-          {/* Sub-menu items */}
-          {item.subItems && isActiveRoute(item.path) && (
-            <VStack spacing={1} mt={2} ml={4} align='stretch'>
-              {item.subItems.map(subItem => (
-                <MenuItem
-                  key={subItem.id}
-                  item={subItem}
-                  isActive={isActiveRoute(subItem.path)}
-                  onClick={() => handleNavigation(subItem.path)}
-                  isSubItem={true}
-                />
-              ))}
-            </VStack>
-          )}
         </Box>
       ))}
     </VStack>
