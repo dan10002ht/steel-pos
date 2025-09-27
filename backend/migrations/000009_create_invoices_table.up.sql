@@ -5,7 +5,7 @@
 -- Create invoices table
 CREATE TABLE invoices (
     id SERIAL PRIMARY KEY,
-    invoice_code VARCHAR(50) UNIQUE NOT NULL,  -- "INV-2024-001"
+    invoice_code VARCHAR(50) UNIQUE NOT NULL,  -- "KP-2024-001"
     
     -- Customer info (can be different from customers table)
     customer_id INTEGER REFERENCES customers(id),  -- For analytics and reporting

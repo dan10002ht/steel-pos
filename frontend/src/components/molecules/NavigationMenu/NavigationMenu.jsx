@@ -1,86 +1,81 @@
-import React from "react";
-import { VStack, Box } from "@chakra-ui/react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Home,
-  Package,
-  ShoppingCart,
-  Users,
-  FileText,
-  TrendingUp,
-} from "lucide-react";
-import MenuItem from "../../atoms/MenuItem";
-import { useLayoutUi } from "../../../contexts/UiContext";
+import React, { useContext } from 'react';
+import { VStack, Box } from '@chakra-ui/react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Home, Package, ShoppingCart, Users, UserPlus } from 'lucide-react';
+import MenuItem from '../../atoms/MenuItem';
+import { useLayoutUi } from '../../../contexts/UiContext';
+import { AuthContext } from '../../../contexts/AuthContext';
 
 const menuItems = [
   {
-    id: "dashboard",
-    label: "Dashboard",
+    id: 'dashboard',
+    label: 'Dashboard',
     icon: <Home size={20} />,
-    path: "/dashboard",
+    path: '/dashboard',
   },
   {
-    id: "products",
-    label: "Sản phẩm",
+    id: 'products',
+    label: 'Sản phẩm',
     icon: <Package size={20} />,
-    path: "/products",
+    path: '/products',
   },
   {
-    id: "sales",
-    label: "Bán hàng",
+    id: 'sales',
+    label: 'Bán hàng',
     icon: <ShoppingCart size={20} />,
-    path: "/sales",
+    path: '/sales',
   },
   {
-    id: "inventory",
-    label: "Nhập kho",
+    id: 'inventory',
+    label: 'Nhập kho',
     icon: <Package size={20} />,
-    path: "/inventory",
+    path: '/inventory',
   },
   {
-    id: "customers",
-    label: "Khách hàng",
+    id: 'customers',
+    label: 'Khách hàng',
     icon: <Users size={20} />,
-    path: "/customers",
+    path: '/customers',
   },
-  // {
-  //   id: "reports",
-  //   label: "Báo cáo",
-  //   icon: <FileText size={20} />,
-  //   path: "/reports",
-  // },
-  // {
-  //   id: "analytics",
-  //   label: "Thống kê",
-  //   icon: <TrendingUp size={20} />,
-  //   path: "/analytics",
-  // },
 ];
 
 const NavigationMenu = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { closeSidebar } = useLayoutUi();
+  const { isAdmin } = useContext(AuthContext);
 
-  const isActiveRoute = (path) => {
-    if (path === "/inventory") {
-      return location.pathname.startsWith("/inventory");
+  const isActiveRoute = path => {
+    if (path === '/inventory') {
+      return location.pathname.startsWith('/inventory');
     }
-    if (path === "/sales") {
-      return location.pathname.startsWith("/sales");
+    if (path === '/sales') {
+      return location.pathname.startsWith('/sales');
     }
     return location.pathname === path;
   };
 
-  const handleNavigation = (path) => {
+  const handleNavigation = path => {
     navigate(path);
     // Close sidebar on mobile after navigation
     closeSidebar();
   };
 
+  // Tạo danh sách menu items với menu quản lý tài khoản
+  const allMenuItems = [
+    ...menuItems,
+    // Chỉ hiển thị menu quản lý tài khoản cho admin
+    isAdmin && {
+      id: 'user-management',
+      label: 'Tài khoản',
+      icon: <UserPlus size={20} />,
+      path: '/user-management',
+    },
+  ].filter(Boolean);
+
   return (
-    <VStack spacing={1} p={4} align="stretch" pb={6}>
-      {menuItems.map((item) => (
+    <VStack spacing={1} p={4} align='stretch' pb={6}>
+      {allMenuItems.map(item => (
         <Box key={item.id}>
           <MenuItem
             item={item}
@@ -90,8 +85,8 @@ const NavigationMenu = () => {
 
           {/* Sub-menu items */}
           {item.subItems && isActiveRoute(item.path) && (
-            <VStack spacing={1} mt={2} ml={4} align="stretch">
-              {item.subItems.map((subItem) => (
+            <VStack spacing={1} mt={2} ml={4} align='stretch'>
+              {item.subItems.map(subItem => (
                 <MenuItem
                   key={subItem.id}
                   item={subItem}

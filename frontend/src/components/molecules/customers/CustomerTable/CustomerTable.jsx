@@ -32,9 +32,15 @@ const CustomerTable = ({
         <Table variant='simple' size={size}>
           <Thead>
             <Tr>
-              <Th fontWeight='bold'>Tên khách hàng</Th>
-              <Th fontWeight='bold'>Số điện thoại</Th>
-              <Th fontWeight='bold'>Địa chỉ</Th>
+              <Th minW='200px' fontWeight='bold'>
+                Tên khách hàng
+              </Th>
+              <Th minW='160px' fontWeight='bold'>
+                Số điện thoại
+              </Th>
+              <Th fontWeight='bold' minW='200px'>
+                Địa chỉ
+              </Th>
               <Th fontWeight='bold'>Trạng thái</Th>
               <Th fontWeight='bold'>Ngày tạo</Th>
               <Th fontWeight='bold'>Thao tác</Th>

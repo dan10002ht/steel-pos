@@ -16,7 +16,7 @@ const sampleAuditLogs = {
     userName: 'AdminA',
     createdAt: '2024-01-15T10:30:00Z',
     newData: {
-      invoice_code: 'INV-2024-001',
+      invoice_code: 'KP-2024-001',
       total_amount: 1500000,
       customer_name: 'Nguyễn Văn A'
     }
@@ -33,7 +33,7 @@ const sampleAuditLogs = {
     newData: {
       amount: 1500000,
       payment_method: 'cash',
-      invoice_code: 'INV-2024-001'
+      invoice_code: 'KP-2024-001'
     }
   },
 
@@ -47,7 +47,7 @@ const sampleAuditLogs = {
     createdAt: '2024-01-15T12:00:00Z',
     newData: {
       cancellation_reason: 'Khách hàng yêu cầu hủy',
-      invoice_code: 'INV-2024-002'
+      invoice_code: 'KP-2024-002'
     }
   },
 
@@ -116,7 +116,7 @@ const sampleAuditLogs = {
     userName: null,
     createdAt: '2024-01-15T17:00:00Z',
     newData: {
-      invoice_code: 'INV-2024-003',
+      invoice_code: 'KP-2024-003',
       status: 'paid'
     }
   }
@@ -138,14 +138,14 @@ export const testAuditLogFormatter = () => {
 
 // Expected outputs for verification
 export const expectedOutputs = {
-  invoiceCreated: 'AdminA tạo hoá đơn "INV-2024-001" vào 15/01/2024, 17:30:00',
-  invoicePayment: 'AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "INV-2024-001" vào 15/01/2024, 18:00:00',
-  invoiceCancelled: 'AdminB hủy hoá đơn "INV-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00',
+  invoiceCreated: 'AdminA tạo hoá đơn "KP-2024-001" vào 15/01/2024, 17:30:00',
+  invoicePayment: 'AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "KP-2024-001" vào 15/01/2024, 18:00:00',
+  invoiceCancelled: 'AdminB hủy hoá đơn "KP-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00',
   customerCreated: 'AdminA tạo khách hàng "Trần Thị B" vào 15/01/2024, 16:00:00',
   productCreated: 'AdminA tạo sản phẩm "Thép tấm 3mm" vào 15/01/2024, 15:00:00',
   productVariantRestored: 'AdminB khôi phục tồn kho cho biến thể sản phẩm "Thép tấm 3mm - 1000x2000mm" vào 15/01/2024, 21:00:00',
   importOrderCompleted: 'AdminA hoàn thành đơn nhập hàng "IMP-2024-001" vào 15/01/2024, 23:00:00',
-  systemAction: 'Hệ thống cập nhật hoá đơn "INV-2024-003" vào 15/01/2024, 00:00:00'
+  systemAction: 'Hệ thống cập nhật hoá đơn "KP-2024-003" vào 15/01/2024, 00:00:00'
 };
 
 export default sampleAuditLogs;

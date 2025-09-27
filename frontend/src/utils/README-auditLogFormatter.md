@@ -20,12 +20,12 @@ const auditLog = {
   userName: 'AdminA',
   createdAt: '2024-01-15T10:30:00Z',
   newData: {
-    invoice_code: 'INV-2024-001'
+    invoice_code: 'KP-2024-001'
   }
 };
 
 const logText = generateLog(auditLog);
-// Output: "AdminA tạo hoá đơn "INV-2024-001" vào 15/01/2024, 17:30:00"
+// Output: "AdminA tạo hoá đơn "KP-2024-001" vào 15/01/2024, 17:30:00"
 ```
 
 ### 3. Sử dụng với component
@@ -79,17 +79,17 @@ Format cho hiển thị UI, trả về object với metadata.
 
 ### Tạo hoá đơn
 ```
-AdminA tạo hoá đơn "INV-2024-001" vào 15/01/2024, 17:30:00
+AdminA tạo hoá đơn "KP-2024-001" vào 15/01/2024, 17:30:00
 ```
 
 ### Thanh toán
 ```
-AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "INV-2024-001" vào 15/01/2024, 18:00:00
+AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "KP-2024-001" vào 15/01/2024, 18:00:00
 ```
 
 ### Hủy hoá đơn
 ```
-AdminB hủy hoá đơn "INV-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
+AdminB hủy hoá đơn "KP-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
 ```
 
 ### Tạo khách hàng

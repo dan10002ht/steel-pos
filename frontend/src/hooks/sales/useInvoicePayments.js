@@ -1,6 +1,6 @@
 import { useFetchApi } from '../useFetchApi';
 import { useCreateApi } from '../useCreateApi';
-import { useUpdateApi } from '../useUpdateApi';
+import { useEditApi } from '../useEditApi';
 import { useDeleteApi } from '../useDeleteApi';
 
 /**
@@ -74,7 +74,7 @@ export const useUpdateInvoicePayment = () => {
     mutate: updatePayment,
     isLoading,
     error,
-  } = useUpdateApi('/invoice-payments', {
+  } = useEditApi('/invoice-payments', {
     onSuccess: () => {
       // Refetch payments after successful update
     },

@@ -18,6 +18,7 @@ import CustomersRoute from './routes/CustomersRoute';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import ProductsRoute from './routes/ProductsRoute';
+import UserManagement from './pages/user-management';
 
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
                 <Route path='inventory/*' element={<InventoryRoute />} />
                 <Route path='products/*' element={<ProductsRoute />} />
                 <Route path='customers/*' element={<CustomersRoute />} />
+                <Route path='user-management' element={<UserManagement />} />
                 <Route path='reports' element={<Reports />} />
                 <Route path='analytics' element={<Analytics />} />
 

@@ -71,7 +71,6 @@ export const useAuth = () => {
       // Verify token với server và lấy thông tin user hiện tại
       const response = await whoAmIQuery.refetch();
       const userData = response.data;
-      console.log(userData);
 
       setUser(userData);
       setIsAuthenticated(true);

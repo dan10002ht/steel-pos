@@ -24,10 +24,10 @@ BEGIN
     sequence_name := 'invoice_code_seq_' || current_year;
     
     -- Get the maximum existing number for this year
-    SELECT COALESCE(MAX(CAST(SUBSTRING(invoices.invoice_code FROM 'INV-' || current_year || '-([0-9]+)') AS INTEGER)), 0)
+    SELECT COALESCE(MAX(CAST(SUBSTRING(invoices.invoice_code FROM 'KP-' || current_year || '-([0-9]+)') AS INTEGER)), 0)
     INTO max_existing_number
     FROM invoices
-    WHERE invoices.invoice_code LIKE 'INV-' || current_year || '-%';
+    WHERE invoices.invoice_code LIKE 'KP-' || current_year || '-%';
     
     -- Set sequence to start from max_existing_number + 1 (ensure minimum value is 1)
     EXECUTE format('SELECT setval(''%s'', %s, false)', sequence_name, GREATEST(max_existing_number + 1, 1));
@@ -48,7 +48,7 @@ BEGIN
                 EXECUTE format('SELECT nextval(''%s'')', sequence_name) INTO next_number;
         END CASE;
         
-        result_code := 'INV-' || current_year || '-' || LPAD(next_number::TEXT, 3, '0');
+        result_code := 'KP-' || current_year || '-' || LPAD(next_number::TEXT, 3, '0');
         
         -- Check if this code already exists
         SELECT COUNT(*) INTO exists_count

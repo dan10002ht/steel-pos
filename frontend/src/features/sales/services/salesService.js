@@ -126,7 +126,7 @@ class SalesService {
   getMockInvoices() {
     return [
       {
-        id: "INV-001",
+        id: "KP-001",
         customerName: "Nguyễn Văn A",
         customerPhone: "0123456789",
         items: [
@@ -153,7 +153,7 @@ class SalesService {
         createdAt: "2024-01-15T10:30:00Z",
       },
       {
-        id: "INV-002",
+        id: "KP-002",
         customerName: "Trần Thị B",
         customerPhone: "0987654321",
         items: [

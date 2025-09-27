@@ -16,9 +16,9 @@ func SetupAuthRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, au
 	users := api.Group("/users")
 	{
 		users.POST("", authMiddleware.RequireAdmin(), authHandler.CreateUser)
-		users.GET("", authMiddleware.RequireManager(), authHandler.GetAllUsers)
-		users.GET("/:id", authMiddleware.RequireManager(), authHandler.GetUserByID)
-		users.PUT("/:id", authMiddleware.RequireManager(), authHandler.UpdateUser)
+		users.GET("", authMiddleware.RequireAdmin(), authHandler.GetAllUsers)
+		users.GET("/:id", authMiddleware.RequireAdmin(), authHandler.GetUserByID)
+		users.PUT("/:id", authMiddleware.RequireAdmin(), authHandler.UpdateUser)
 		users.DELETE("/:id", authMiddleware.RequireAdmin(), authHandler.DeleteUser)
 	}
 }

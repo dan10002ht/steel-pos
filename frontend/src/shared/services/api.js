@@ -30,6 +30,7 @@ let failedQueue = [];
 
 // Helper function để clear auth state và redirect
 const clearAuthAndRedirect = () => {
+  console.log("clearAuthAndRedirect");
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");

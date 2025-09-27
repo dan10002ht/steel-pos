@@ -89,6 +89,13 @@ export const USER_ROLE_COLORS = {
   user: "gray",
 };
 
+// User Role Options for Select/Dropdown
+export const USER_ROLE_OPTIONS = [
+  { value: USER_ROLES.ADMIN, label: USER_ROLE_LABELS[USER_ROLES.ADMIN] },
+  { value: USER_ROLES.MANAGER, label: USER_ROLE_LABELS[USER_ROLES.MANAGER] },
+  { value: USER_ROLES.ACCOUNTANT, label: USER_ROLE_LABELS[USER_ROLES.ACCOUNTANT] },
+];
+
 // Invoice Status Options
 export const INVOICE_STATUS_OPTIONS = [
   { value: "", label: "Tất cả trạng thái" },

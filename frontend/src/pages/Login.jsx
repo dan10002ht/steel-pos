@@ -40,9 +40,16 @@ const Login = () => {
 
   const handleInputChange = e => {
     const { name, value } = e.target;
+    let processedValue = value;
+
+    // Convert username to lowercase and remove spaces
+    if (name === 'username') {
+      processedValue = value.toLowerCase().replace(/\s/g, '');
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
   };
 

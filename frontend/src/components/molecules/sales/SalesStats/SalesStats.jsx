@@ -60,11 +60,22 @@ const SalesStats = () => {
   );
 
   // Handle preset selection
-  const handlePresetChange = (preset) => {
+  const handlePresetChange = preset => {
     setSelectedPreset(preset);
     const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    const startOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const endOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      23,
+      59,
+      59
+    );
 
     switch (preset) {
       case 'today': {
@@ -102,7 +113,11 @@ const SalesStats = () => {
         break;
       }
       case 'lastMonth': {
-        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthStart = new Date(
+          today.getFullYear(),
+          today.getMonth() - 1,
+          1
+        );
         const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
         setDateFrom(lastMonthStart.toISOString().split('T')[0]);
         setDateTo(lastMonthEnd.toISOString().split('T')[0]);
@@ -198,19 +213,19 @@ const SalesStats = () => {
               direction={{ base: 'column', md: 'row' }}
               gap={4}
               wrap='wrap'
-              align='flex-end'
+              align={{ base: 'flex-start', md: 'flex-end' }}
             >
-              <Box flex='1' minW='200px'>
+              <Box flex='1'>
                 <Text fontSize='sm' fontWeight='medium' mb={2} color='gray.600'>
                   Khoảng thời gian nhanh
                 </Text>
                 <Select
                   placeholder='Chọn khoảng thời gian'
                   value={selectedPreset}
-                  onChange={(e) => handlePresetChange(e.target.value)}
+                  onChange={e => handlePresetChange(e.target.value)}
                   size='md'
                 >
-                  {datePresets.map((preset) => (
+                  {datePresets.map(preset => (
                     <option key={preset.value} value={preset.value}>
                       {preset.label}
                     </option>

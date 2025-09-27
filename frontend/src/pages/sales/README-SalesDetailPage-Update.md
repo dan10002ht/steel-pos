@@ -128,9 +128,9 @@ AdminA thực hiện payment_created vào 15/01/2024, 18:00:00
 
 ### ✅ **Format mới:**
 ```
-AdminA tạo hoá đơn "INV-2024-001" vào 15/01/2024, 17:30:00
-AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "INV-2024-001" vào 15/01/2024, 18:00:00
-AdminB hủy hoá đơn "INV-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
+AdminA tạo hoá đơn "KP-2024-001" vào 15/01/2024, 17:30:00
+AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "KP-2024-001" vào 15/01/2024, 18:00:00
+AdminB hủy hoá đơn "KP-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
 ```
 
 ## Imports đã thay đổi
@@ -165,6 +165,7 @@ const { data: auditLogsData } = useFetchApi(...)
 - ✅ **Tính năng đầy đủ** - Compare, expand, detailed view
 - ✅ **Consistent** - Format nhất quán
 - ✅ **No linter errors** - Code sạch
+
 
 
 

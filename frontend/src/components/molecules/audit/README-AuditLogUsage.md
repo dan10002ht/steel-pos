@@ -221,9 +221,9 @@ AdminA - Tạo mới - 15/01/2024, 17:30:00
 
 ### ✅ **Format mới:**
 ```
-AdminA tạo hoá đơn "INV-2024-001" vào 15/01/2024, 17:30:00
-AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "INV-2024-001" vào 15/01/2024, 18:00:00
-AdminB hủy hoá đơn "INV-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
+AdminA tạo hoá đơn "KP-2024-001" vào 15/01/2024, 17:30:00
+AdminA thanh toán 1.500.000 ₫ bằng tiền mặt cho hoá đơn "KP-2024-001" vào 15/01/2024, 18:00:00
+AdminB hủy hoá đơn "KP-2024-002" (Lý do: Khách hàng yêu cầu hủy) vào 15/01/2024, 19:00:00
 ```
 
 ## Benefits
@@ -234,6 +234,7 @@ AdminB hủy hoá đơn "INV-2024-002" (Lý do: Khách hàng yêu cầu hủy) v
 4. **Flexible** - Có thể customize theo nhu cầu
 5. **Reusable** - Có thể dùng cho nhiều entity types
 6. **Localized** - Hỗ trợ tiếng Việt
+
 
 
 
