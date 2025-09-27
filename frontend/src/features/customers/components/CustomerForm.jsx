@@ -67,9 +67,9 @@ const CustomerForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -86,39 +86,23 @@ const CustomerForm = ({
   };
 
   return (
-    <Box maxW="2xl" mx="auto">
-      <Card shadow="sm">
-        <CardHeader>
-          <HStack justify="space-between" align="center">
-            <VStack align="start" spacing={1}>
-              <Text fontSize="xl" fontWeight="bold">
-                {title}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                {customer ? 'Cập nhật thông tin khách hàng' : 'Nhập thông tin khách hàng mới'}
-              </Text>
-            </VStack>
-            <Button
-              variant="ghost"
-              leftIcon={<ArrowLeft size={16} />}
-              onClick={() => navigate(-1)}
-            >
-              Quay lại
-            </Button>
-          </HStack>
-        </CardHeader>
+    <Box maxW='2xl' mx='auto'>
+      <Card shadow='sm'>
         <CardBody>
           <form onSubmit={handleSubmit}>
-            <VStack spacing={6} align="stretch">
+            <VStack spacing={6} align='stretch'>
               {/* Phone Number */}
               <FormControl isInvalid={!!errors.phone}>
-                <FormLabel fontWeight="medium">
-                  Số điện thoại <Text as="span" color="red.500">*</Text>
+                <FormLabel fontWeight='medium'>
+                  Số điện thoại{' '}
+                  <Text as='span' color='red.500'>
+                    *
+                  </Text>
                 </FormLabel>
                 <Input
-                  placeholder="Nhập số điện thoại"
+                  placeholder='Nhập số điện thoại'
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={e => handleInputChange('phone', e.target.value)}
                   isDisabled={isLoading}
                 />
                 <FormErrorMessage>{errors.phone}</FormErrorMessage>
@@ -126,13 +110,16 @@ const CustomerForm = ({
 
               {/* Customer Name */}
               <FormControl isInvalid={!!errors.name}>
-                <FormLabel fontWeight="medium">
-                  Tên khách hàng <Text as="span" color="red.500">*</Text>
+                <FormLabel fontWeight='medium'>
+                  Tên khách hàng{' '}
+                  <Text as='span' color='red.500'>
+                    *
+                  </Text>
                 </FormLabel>
                 <Input
-                  placeholder="Nhập tên khách hàng"
+                  placeholder='Nhập tên khách hàng'
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={e => handleInputChange('name', e.target.value)}
                   isDisabled={isLoading}
                 />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
@@ -140,11 +127,11 @@ const CustomerForm = ({
 
               {/* Address */}
               <FormControl>
-                <FormLabel fontWeight="medium">Địa chỉ</FormLabel>
+                <FormLabel fontWeight='medium'>Địa chỉ</FormLabel>
                 <Textarea
-                  placeholder="Nhập địa chỉ (tùy chọn)"
+                  placeholder='Nhập địa chỉ (tùy chọn)'
                   value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  onChange={e => handleInputChange('address', e.target.value)}
                   isDisabled={isLoading}
                   rows={3}
                 />
@@ -152,36 +139,38 @@ const CustomerForm = ({
 
               {/* Active Status */}
               <FormControl>
-                <HStack justify="space-between" align="center">
+                <HStack justify='space-between' align='center'>
                   <Box>
-                    <FormLabel fontWeight="medium" mb={1}>
+                    <FormLabel fontWeight='medium' mb={1}>
                       Trạng thái hoạt động
                     </FormLabel>
-                    <Text fontSize="sm" color="gray.600">
+                    <Text fontSize='sm' color='gray.600'>
                       Khách hàng có thể sử dụng hệ thống
                     </Text>
                   </Box>
                   <Switch
                     isChecked={formData.is_active}
-                    onChange={(e) => handleInputChange('is_active', e.target.checked)}
+                    onChange={e =>
+                      handleInputChange('is_active', e.target.checked)
+                    }
                     isDisabled={isLoading}
-                    colorScheme="green"
+                    colorScheme='green'
                   />
                 </HStack>
               </FormControl>
 
               {/* Submit Button */}
-              <HStack justify="flex-end" spacing={4} pt={4}>
+              <HStack justify='flex-end' spacing={4} pt={4}>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => navigate(-1)}
                   isDisabled={isLoading}
                 >
                   Hủy
                 </Button>
                 <Button
-                  type="submit"
-                  colorScheme="blue"
+                  type='submit'
+                  colorScheme='blue'
                   leftIcon={<Save size={16} />}
                   isLoading={isLoading}
                   loadingText={customer ? 'Đang cập nhật...' : 'Đang tạo...'}
@@ -198,4 +187,3 @@ const CustomerForm = ({
 };
 
 export default CustomerForm;
-

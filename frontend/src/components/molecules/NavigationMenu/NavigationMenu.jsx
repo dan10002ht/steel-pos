@@ -18,24 +18,28 @@ const menuItems = [
     label: 'Sản phẩm',
     icon: <Package size={20} />,
     path: '/products',
+    isStartWith: true,
   },
   {
     id: 'sales',
     label: 'Bán hàng',
     icon: <ShoppingCart size={20} />,
     path: '/sales',
+    isStartWith: true,
   },
   {
     id: 'inventory',
     label: 'Nhập kho',
     icon: <Package size={20} />,
     path: '/inventory',
+    isStartWith: true,
   },
   {
     id: 'customers',
     label: 'Khách hàng',
     icon: <Users size={20} />,
     path: '/customers',
+    isStartWith: true,
   },
 ];
 
@@ -45,12 +49,9 @@ const NavigationMenu = () => {
   const { closeSidebar } = useLayoutUi();
   const { isAdmin } = useContext(AuthContext);
 
-  const isActiveRoute = path => {
-    if (path === '/inventory') {
-      return location.pathname.startsWith('/inventory');
-    }
-    if (path === '/sales') {
-      return location.pathname.startsWith('/sales');
+  const isActiveRoute = (path, isStartWith) => {
+    if (isStartWith) {
+      return location.pathname.startsWith(path);
     }
     return location.pathname === path;
   };
@@ -79,7 +80,7 @@ const NavigationMenu = () => {
         <Box key={item.id}>
           <MenuItem
             item={item}
-            isActive={isActiveRoute(item.path)}
+            isActive={isActiveRoute(item.path, item.isStartWith)}
             onClick={() => handleNavigation(item.path)}
           />
 

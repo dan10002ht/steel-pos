@@ -23,4 +23,11 @@ func SetupAuditLogRoutes(api *gin.RouterGroup, auditLogHandler *handlers.AuditLo
 		// Delete audit log (admin only - you might want to add admin middleware here)
 		auditLogs.DELETE("/id/:id", auditLogHandler.DeleteAuditLog)
 	}
+
+	// Dashboard routes
+	dashboard := api.Group("/dashboard")
+	{
+		// Get dashboard logs
+		dashboard.GET("/logs", auditLogHandler.GetDashboardLogs)
+	}
 }

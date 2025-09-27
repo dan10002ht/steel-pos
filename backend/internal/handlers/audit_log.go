@@ -227,3 +227,42 @@ func (h *AuditLogHandler) DeleteAuditLog(c *gin.Context) {
 		"message": "Audit log deleted successfully",
 	})
 }
+
+// GetDashboardLogs godoc
+// @Summary Get latest logs for dashboard
+// @Description Get latest audit logs for dashboard display
+// @Tags audit-logs
+// @Accept json
+// @Produce json
+// @Param limit query int false "Number of logs to return" default(10)
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /dashboard/logs [get]
+func (h *AuditLogHandler) GetDashboardLogs(c *gin.Context) {
+	// Get limit parameter
+	limit := 10
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 50 {
+			limit = l
+		}
+	}
+
+	// Get latest audit logs
+	filter := models.AuditLogFilter{
+		Page:  1,
+		Limit: limit,
+	}
+
+	result, err := h.auditLogService.GetAuditLogsByFilter(filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get dashboard logs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    result.AuditLogs,
+	})
+}
+

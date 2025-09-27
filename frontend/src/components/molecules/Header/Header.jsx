@@ -54,7 +54,7 @@ const Header = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const { isSidebarOpen, toggleSidebar } = useLayoutUi();
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isMobile = useBreakpointValue({ base: true, lg: false });
 
   if (!isMobile) return null;
 
