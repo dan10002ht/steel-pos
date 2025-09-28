@@ -43,8 +43,11 @@ export const getInvoiceStatusText = (status) => {
  * @param {string} status - Payment status
  * @returns {string} Chakra UI color scheme
  */
-export const getPaymentStatusColor = (status) => {
-  switch (status) {
+export const getPaymentStatusColor = (paymentStatus, invoiceStatus) => {
+  if(invoiceStatus === "cancelled") {
+    return "red";
+  }
+  switch (paymentStatus) {
     case "paid":
       return "green";
     case "pending":
@@ -63,7 +66,10 @@ export const getPaymentStatusColor = (status) => {
  * @param {string} status - Payment status
  * @returns {string} Vietnamese status text
  */
-export const getPaymentStatusText = (status) => {
+export const getPaymentStatusText = (status, invoiceStatus) => {
+  if (invoiceStatus === "cancelled") {
+    return "Đã hủy";
+  }
   switch (status) {
     case "paid":
       return "Đã thanh toán";
@@ -84,6 +90,9 @@ export const getPaymentStatusText = (status) => {
  * @returns {string} Payment status text with remaining amount if partial
  */
 export const getPaymentStatusWithRemaining = (invoice) => {
+  if (invoice.status === "cancelled") {
+    return "Đã hủy";
+  }
   if (invoice.payment_status === "partial") {
     const remaining = invoice.total_amount - invoice.paid_amount;
     return `Còn lại: ${remaining.toLocaleString("vi-VN")} VNĐ`;

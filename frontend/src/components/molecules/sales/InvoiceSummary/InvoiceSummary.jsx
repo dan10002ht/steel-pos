@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   VStack,
@@ -13,9 +13,9 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Button,
-} from "@chakra-ui/react";
-import { Save } from "lucide-react";
-import { PAYMENT_METHODS } from "@/constants/options";
+} from '@chakra-ui/react';
+import { Save } from 'lucide-react';
+import { PAYMENT_METHODS } from '@/constants/options';
 
 const InvoiceSummary = ({
   invoice,
@@ -41,20 +41,20 @@ const InvoiceSummary = ({
   };
 
   return (
-    <VStack spacing={4} align="stretch">
-      <Text fontSize="lg" fontWeight="bold">
+    <VStack spacing={4} align='stretch'>
+      <Text fontSize='lg' fontWeight='bold'>
         Thông tin hoá đơn
       </Text>
 
-      <HStack justify="space-between">
+      <HStack justify='space-between'>
         <Text>Hình thức thanh toán:</Text>
         <Select
-          value={invoice.paymentMethod || ""}
-          onChange={(e) => onUpdateInvoice("paymentMethod", e.target.value)}
-          maxW="200px"
+          value={invoice.paymentMethod || ''}
+          onChange={e => onUpdateInvoice('paymentMethod', e.target.value)}
+          maxW='200px'
         >
-          <option value="">Chọn hình thức</option>
-          {PAYMENT_METHODS.map((method) => (
+          <option value=''>Chọn hình thức</option>
+          {PAYMENT_METHODS.map(method => (
             <option key={method.value} value={method.value}>
               {method.label}
             </option>
@@ -63,13 +63,13 @@ const InvoiceSummary = ({
       </HStack>
 
       <Box>
-        <Text fontSize="sm" color="gray.600" mb={1}>
+        <Text fontSize='sm' color='gray.600' mb={1}>
           Ghi chú (nội bộ)
         </Text>
         <Textarea
-          value={invoice.notes || ""}
-          onChange={(e) => onUpdateInvoice("notes", e.target.value)}
-          placeholder="Nhập ghi chú nếu cần..."
+          value={invoice.notes || ''}
+          onChange={e => onUpdateInvoice('notes', e.target.value)}
+          placeholder='Nhập ghi chú nếu cần...'
           rows={3}
         />
       </Box>
@@ -77,84 +77,76 @@ const InvoiceSummary = ({
       <Divider />
 
       {/* Payment Summary */}
-      <VStack spacing={2} align="stretch">
-        <HStack justify="space-between">
+      <VStack spacing={2} align='stretch'>
+        <HStack justify='space-between'>
           <Text>Thành tiền:</Text>
-          <Text>{calculateSubtotal().toLocaleString("vi-VN")} VNĐ</Text>
+          <Text>{calculateSubtotal().toLocaleString('vi-VN')} VNĐ</Text>
         </HStack>
 
-        <HStack justify="space-between">
+        <HStack justify='space-between'>
           <Text>Giảm giá:</Text>
           <NumberInput
             value={invoice.discount || 0}
             min={0}
             max={calculateSubtotal()}
-            onChange={(value) => onUpdateInvoice("discount", parseInt(value))}
-            maxW="150px"
+            onChange={value => onUpdateInvoice('discount', parseInt(value))}
+            maxW='150px'
           >
             <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
           </NumberInput>
         </HStack>
 
         <Divider />
 
-        <HStack justify="space-between">
-          <Text fontWeight="bold" fontSize="lg">
+        <HStack justify='space-between'>
+          <Text fontWeight='bold' fontSize='lg'>
             Tổng cộng:
           </Text>
-          <Text fontWeight="bold" fontSize="lg" color="blue.500">
-            {calculateFinalAmount().toLocaleString("vi-VN")} VNĐ
+          <Text fontWeight='bold' fontSize='lg' color='blue.500'>
+            {calculateFinalAmount().toLocaleString('vi-VN')} VNĐ
           </Text>
         </HStack>
 
         <Divider />
 
         {/* Payment Amount Fields */}
-        <HStack justify="space-between">
+        <HStack justify='space-between'>
           <Text>Đã thanh toán:</Text>
           <NumberInput
             value={invoice.paidAmount || 0}
             min={0}
             max={calculateFinalAmount()}
-            onChange={(value) => onUpdateInvoice("paidAmount", parseInt(value))}
-            maxW="150px"
+            onChange={value => onUpdateInvoice('paidAmount', parseInt(value))}
+            maxW='150px'
           >
             <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
           </NumberInput>
         </HStack>
 
-        <HStack justify="space-between">
+        <HStack justify='space-between'>
           <Text
-            fontWeight="bold"
-            color={calculateRemainingAmount() > 0 ? "red.500" : "green.500"}
+            fontWeight='bold'
+            color={calculateRemainingAmount() > 0 ? 'red.500' : 'green.500'}
           >
             Còn lại:
           </Text>
           <Text
-            fontWeight="bold"
-            color={calculateRemainingAmount() > 0 ? "red.500" : "green.500"}
+            fontWeight='bold'
+            color={calculateRemainingAmount() > 0 ? 'red.500' : 'green.500'}
           >
-            {calculateRemainingAmount().toLocaleString("vi-VN")} VNĐ
+            {calculateRemainingAmount().toLocaleString('vi-VN')} VNĐ
           </Text>
         </HStack>
       </VStack>
 
       <Button
         leftIcon={<Save size={16} />}
-        colorScheme="blue"
-        size="lg"
+        colorScheme='blue'
+        size='lg'
         onClick={onCreateInvoice}
         isDisabled={isDisabled}
         isLoading={isLoading}
-        loadingText="Đang tạo..."
+        loadingText='Đang tạo...'
       >
         Tạo hoá đơn
       </Button>

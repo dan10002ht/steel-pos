@@ -179,6 +179,28 @@ func (s *AuthService) UpdateUser(userID int, req *models.UpdateUserRequest, upda
 	}
 	user.UpdatedAt = time.Now()
 
+	// Xử lý đổi mật khẩu nếu có
+	if req.NewPassword != "" {
+		// Nếu admin đang đổi mật khẩu cho tài khoản khác, không cần current password
+		if userID == updatedBy {
+			// Admin đang đổi mật khẩu cho chính mình, cần current password
+			if req.CurrentPassword == "" {
+				return nil, errors.New("current password is required when changing your own password")
+			}
+			if !s.checkPassword(req.CurrentPassword, user.PasswordHash) {
+				return nil, errors.New("current password is incorrect")
+			}
+		}
+		// Admin đang đổi mật khẩu cho tài khoản khác, không cần current password
+
+		// Hash password mới
+		hashedPassword, err := s.hashPassword(req.NewPassword)
+		if err != nil {
+			return nil, err
+		}
+		user.PasswordHash = hashedPassword
+	}
+
 	// Update trong database
 	err = s.userRepo.Update(user)
 	if err != nil {

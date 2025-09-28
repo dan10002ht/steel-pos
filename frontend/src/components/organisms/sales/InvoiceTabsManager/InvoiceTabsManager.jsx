@@ -1,31 +1,34 @@
 import React from 'react';
-import { Tabs, TabPanels, TabPanel } from '@chakra-ui/react';
+import { Tabs, TabPanels, TabPanel, Box } from '@chakra-ui/react';
 import InvoiceTabList from '../../../molecules/sales/InvoiceTabList';
 import InvoiceTabManager from '../InvoiceTabManager';
 
-const InvoiceTabsManager = ({ 
-  invoices, 
-  activeTab, 
-  onTabChange, 
-  onCloseTab, 
-  onCreateNew, 
+const InvoiceTabsManager = ({
+  invoices,
+  activeTab,
+  onTabChange,
+  onCloseTab,
+  onCreateNew,
   onUpdateInvoice,
-  onInvoiceCreated
+  onInvoiceCreated,
 }) => {
   return (
-    <Tabs index={activeTab} onChange={onTabChange} variant="enclosed">
+    <Tabs index={activeTab} onChange={onTabChange} variant='enclosed'>
       <InvoiceTabList
         invoices={invoices}
         onCloseTab={onCloseTab}
         onCreateNew={onCreateNew}
+        activeTab={activeTab}
       />
-      
+
       <TabPanels>
         {invoices.map((invoice, index) => (
           <TabPanel key={invoice.id}>
             <InvoiceTabManager
               invoice={invoice}
-              onUpdate={(updatedInvoice) => onUpdateInvoice(index, updatedInvoice)}
+              onUpdate={updatedInvoice =>
+                onUpdateInvoice(index, updatedInvoice)
+              }
               onInvoiceCreated={onInvoiceCreated}
             />
           </TabPanel>

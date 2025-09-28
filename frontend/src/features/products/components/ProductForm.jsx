@@ -195,7 +195,7 @@ const ProductForm = ({
   };
 
   return (
-    <Box as='form' onSubmit={handleSubmit}>
+    <Box as='form' onSubmit={handleSubmit} noValidate>
       <VStack spacing={6} align='stretch'>
         {/* Header */}
         <HStack justify='space-between' align='center'>
@@ -226,6 +226,7 @@ const ProductForm = ({
                   value={formData.name}
                   onChange={e => handleInputChange('name', e.target.value)}
                   placeholder='Nhập tên sản phẩm'
+                  errorBorderColor='red.300'
                 />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
               </FormControl>
@@ -237,6 +238,7 @@ const ProductForm = ({
                     value={formData.unit}
                     onChange={e => handleInputChange('unit', e.target.value)}
                     placeholder='Nhập đơn vị (ví dụ: m, m², kg, cái, bộ...)'
+                    errorBorderColor='red.300'
                   />
                   <FormErrorMessage>{errors.unit}</FormErrorMessage>
                 </FormControl>

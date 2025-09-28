@@ -48,6 +48,7 @@ const Page = ({
   // Custom
   headerRight,
   headerLeft,
+  mb = 6,
 }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const iconSize = isMobile ? 8 : 16;
@@ -84,7 +85,7 @@ const Page = ({
   return (
     <Box maxW={maxW} mx='auto'>
       {/* Header Section */}
-      <Box py={4} mb={6}>
+      <Box py={4} mb={mb}>
         <VStack spacing={4} align='stretch'>
           {/* Breadcrumbs - Temporarily hidden */}
           {/* {breadcrumbs.length > 0 && (
@@ -125,7 +126,11 @@ const Page = ({
                 </Heading>
               </HStack>
               {subtitle && (
-                <Text pl={onBack ? 8 : 0} color='gray.600' fontSize={{ base: 'xs', md: 'sm' }}>
+                <Text
+                  pl={onBack ? 8 : 0}
+                  color='gray.600'
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                >
                   {subtitle}
                 </Text>
               )}

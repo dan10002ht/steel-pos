@@ -1,26 +1,21 @@
-import React, { useState } from "react";
-import {
-  useToast,
-} from "@chakra-ui/react";
-import Page from "../../components/organisms/Page/Page";
-import InvoiceTabsManager from "../../components/organisms/sales/InvoiceTabsManager";
-import { TOAST_DURATION } from "../../constants/options";
-import { useCreateApi } from "../../hooks/useCreateApi";
-import { generateDefaultInvoice } from "../../utils/invoiceHelpers";
+import React, { useState } from 'react';
+import { useToast } from '@chakra-ui/react';
+import Page from '../../components/organisms/Page/Page';
+import InvoiceTabsManager from '../../components/organisms/sales/InvoiceTabsManager';
+import { TOAST_DURATION } from '../../constants/options';
+import { useCreateApi } from '../../hooks/useCreateApi';
+import { generateDefaultInvoice } from '../../utils/invoiceHelpers';
 
 const SalesCreatePage = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [invoices, setInvoices] = useState([
-    generateDefaultInvoice("1"),
-  ]);
+  const [invoices, setInvoices] = useState([generateDefaultInvoice('1')]);
   const toast = useToast();
   const createInvoiceMutation = useCreateApi('/invoices', {
     invalidateQueries: [
-      ['invoices'], 
-      (query) => query.queryKey[0] === 'inventory-logs'
+      ['invoices'],
+      query => query.queryKey[0] === 'inventory-logs',
     ],
   });
-  
 
   const handleCreateNewInvoice = () => {
     const newInvoice = generateDefaultInvoice((invoices.length + 1).toString());
@@ -28,12 +23,12 @@ const SalesCreatePage = () => {
     setActiveTab(invoices.length);
   };
 
-  const handleCloseTab = (index) => {
+  const handleCloseTab = index => {
     if (invoices.length === 1) {
       toast({
-        title: "Không thể đóng",
-        description: "Phải có ít nhất một hoá đơn",
-        status: "warning",
+        title: 'Không thể đóng',
+        description: 'Phải có ít nhất một hoá đơn',
+        status: 'warning',
         duration: TOAST_DURATION.MEDIUM,
         isClosable: true,
       });
@@ -55,7 +50,7 @@ const SalesCreatePage = () => {
     setInvoices(newInvoices);
   };
 
-  const handleInvoiceCreated = async (createdInvoice) => {
+  const handleInvoiceCreated = async createdInvoice => {
     try {
       // Transform frontend data to backend format
       const payload = {
@@ -82,33 +77,34 @@ const SalesCreatePage = () => {
         notes: createdInvoice.notes || null,
       };
 
-      const {data, success} = await createInvoiceMutation.mutateAsync(payload);
+      const { data, success } =
+        await createInvoiceMutation.mutateAsync(payload);
       if (success) {
         toast({
-          title: "Tạo hoá đơn thành công",
+          title: 'Tạo hoá đơn thành công',
           description: `Hoá đơn ${data.invoice_code} đã được tạo`,
-          status: "success",
+          status: 'success',
           duration: TOAST_DURATION.MEDIUM,
           isClosable: true,
         });
-        
+
         // Remove the created invoice from the list
-        setInvoices((prev) => [...prev].filter((_, index) => index !== activeTab));
-        
+        setInvoices(prev =>
+          [...prev].filter((_, index) => index !== activeTab)
+        );
+
         // Switch to the first tab if current tab was removed
         if (activeTab > invoices.length - 1) {
           setActiveTab(0);
         }
       }
-
-
     } catch (error) {
       console.error('Error creating invoice:', error);
-      
+
       toast({
-        title: "Lỗi tạo hoá đơn",
-        description: error.message || "Có lỗi xảy ra khi tạo hoá đơn",
-        status: "error",
+        title: 'Lỗi tạo hoá đơn',
+        description: error.message || 'Có lỗi xảy ra khi tạo hoá đơn',
+        status: 'error',
         duration: TOAST_DURATION.LONG,
         isClosable: true,
       });
@@ -116,10 +112,7 @@ const SalesCreatePage = () => {
   };
 
   return (
-    <Page
-      title="Tạo hoá đơn mới"
-      subtitle="Quản lý và tạo hoá đơn bán hàng"
-    >
+    <Page title='Tạo hoá đơn mới' subtitle='Quản lý và tạo hoá đơn bán hàng'>
       <InvoiceTabsManager
         invoices={invoices}
         activeTab={activeTab}

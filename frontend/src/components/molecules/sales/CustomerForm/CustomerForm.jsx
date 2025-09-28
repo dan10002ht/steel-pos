@@ -54,11 +54,21 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
   };
 
   const handleSelectCustomer = selectedCustomer => {
-    onSelectCustomer({customer_id: selectedCustomer.id, customer_name: selectedCustomer.name, customer_phone: selectedCustomer.phone, customer_address: selectedCustomer.address});
+    onSelectCustomer({
+      customer_id: selectedCustomer.id,
+      customer_name: selectedCustomer.name,
+      customer_phone: selectedCustomer.phone,
+      customer_address: selectedCustomer.address,
+    });
   };
 
   const handleClearForm = () => {
-    onSelectCustomer({customer_id: null, customer_name: '', customer_phone: '', customer_address: ''});
+    onSelectCustomer({
+      customer_id: null,
+      customer_name: '',
+      customer_phone: '',
+      customer_address: '',
+    });
     clearSearch();
   };
 
@@ -107,24 +117,6 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
       <VStack spacing={3} align='stretch'>
         <Box>
           <Text fontSize='sm' color='gray.600' mb={1}>
-            Họ và tên *
-          </Text>
-          <Input
-            value={customer.name}
-            onChange={e => handleInputChange('name', e.target.value)}
-            placeholder='Nhập họ và tên khách hàng'
-            borderColor={errors.name ? 'red.300' : undefined}
-            _focus={{ borderColor: errors.name ? 'red.500' : 'blue.500' }}
-          />
-          {errors.name && (
-            <Text fontSize='xs' color='red.500' mt={1}>
-              {errors.name}
-            </Text>
-          )}
-        </Box>
-
-        <Box>
-          <Text fontSize='sm' color='gray.600' mb={1}>
             Số điện thoại *
           </Text>
           <Input
@@ -137,6 +129,23 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
           {errors.phone && (
             <Text fontSize='xs' color='red.500' mt={1}>
               {errors.phone}
+            </Text>
+          )}
+        </Box>
+        <Box>
+          <Text fontSize='sm' color='gray.600' mb={1}>
+            Họ và tên *
+          </Text>
+          <Input
+            value={customer.name}
+            onChange={e => handleInputChange('name', e.target.value)}
+            placeholder='Nhập họ và tên khách hàng'
+            borderColor={errors.name ? 'red.300' : undefined}
+            _focus={{ borderColor: errors.name ? 'red.500' : 'blue.500' }}
+          />
+          {errors.name && (
+            <Text fontSize='xs' color='red.500' mt={1}>
+              {errors.name}
             </Text>
           )}
         </Box>

@@ -3,7 +3,7 @@ import { TabList, Button } from '@chakra-ui/react';
 import { Plus } from 'lucide-react';
 import InvoiceTab from '../InvoiceTab';
 
-const InvoiceTabList = ({ invoices, onCloseTab, onCreateNew }) => {
+const InvoiceTabList = ({ invoices, onCloseTab, onCreateNew, activeTab }) => {
   return (
     <TabList>
       {invoices.map((invoice, index) => (
@@ -11,11 +11,12 @@ const InvoiceTabList = ({ invoices, onCloseTab, onCreateNew }) => {
           key={invoice.id}
           invoice={invoice}
           onClose={() => onCloseTab(index)}
+          isActive={activeTab === index}
         />
       ))}
       <Button
         leftIcon={<Plus size={16} />}
-        variant="ghost"
+        variant='ghost'
         onClick={onCreateNew}
         ml={2}
       >

@@ -167,11 +167,11 @@ func (r *UserRepository) GetAll(limit, offset int) ([]*models.User, error) {
 func (r *UserRepository) Update(user *models.User) error {
 	query := `
 		UPDATE users
-		SET full_name = $1, role = $2, is_active = $3, updated_at = $4
-		WHERE id = $5
+		SET full_name = $1, role = $2, is_active = $3, updated_at = $4, password_hash = $5
+		WHERE id = $6
 	`
 	
-	result, err := r.db.Exec(query, user.FullName, user.Role, user.IsActive, user.UpdatedAt, user.ID)
+	result, err := r.db.Exec(query, user.FullName, user.Role, user.IsActive, user.UpdatedAt, user.PasswordHash, user.ID)
 	if err != nil {
 		return err
 	}

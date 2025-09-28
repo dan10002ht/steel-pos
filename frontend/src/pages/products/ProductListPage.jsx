@@ -239,7 +239,7 @@ const ProductListPage = () => {
                 <Thead>
                   <Tr>
                     <Th fontWeight='bold'>Tên sản phẩm</Th>
-                    <Th fontWeight='bold'>Variants của sản phẩm</Th>
+                    <Th fontWeight='bold'>Phân loại sản phẩm</Th>
                     <Th fontWeight='bold'>Đơn vị</Th>
                     <Th fontWeight='bold'>Tồn kho</Th>
                     <Th fontWeight='bold'>Đã bán</Th>

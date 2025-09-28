@@ -12,6 +12,7 @@ func SetupAuthRoutes(api *gin.RouterGroup, authHandler *handlers.AuthHandler, au
 	auth := api.Group("/auth")
 	{
 		auth.GET("/whoami", authHandler.WhoAmI)
+		auth.POST("/change-password", authHandler.ChangePassword)
 	}
 	users := api.Group("/users")
 	{

@@ -68,8 +68,24 @@ const Login = () => {
     }
 
     try {
-      const resp = await login(formData);
-      console.log(resp);
+      const { success } = await login(formData);
+      if (!success) {
+        toast({
+          title: 'Đăng nhập thất bại',
+          description: 'Tên đăng nhập hoặc mật khẩu không đúng',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+      toast({
+        title: 'Đăng nhập thành công',
+        description: 'Chào mừng bạn đến với hệ thống',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
       // Chuyển hướng sẽ được xử lý trong useEffect
     } catch (error) {
       toast({

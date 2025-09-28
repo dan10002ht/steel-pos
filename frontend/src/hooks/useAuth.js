@@ -100,7 +100,7 @@ export const useAuth = () => {
     isLoading,
 
     // Actions
-    login: loginMutation.mutate,
+    login: loginMutation.mutateAsync,
     logout,
     checkAuthStatus,
 

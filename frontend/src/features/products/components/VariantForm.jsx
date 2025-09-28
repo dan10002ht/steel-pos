@@ -110,7 +110,7 @@ const VariantForm = ({
         </HStack>
 
         {/* Stock and Price */}
-        <HStack spacing={4}>
+        <HStack spacing={4} align='stretch'>
           <FormControl isInvalid={!!errors.stock} isRequired>
             <FormLabel>Số lượng tồn kho</FormLabel>
             {isReadOnly || isDeleted ? (
@@ -120,6 +120,7 @@ const VariantForm = ({
                 value={variant.stock}
                 onChange={value => handleChange('stock', Number(value))}
                 min={0}
+                bg={isReadOnly || isDeleted ? 'gray.50' : 'white'}
                 precision={0}
               >
                 <NumberInputField />
@@ -138,7 +139,7 @@ const VariantForm = ({
               <Input
                 value={variant.price}
                 isReadOnly
-                bg='gray.50'
+                bg={isReadOnly || isDeleted ? 'gray.50' : 'white'}
                 color='blue.600'
                 fontWeight='medium'
               />
@@ -148,12 +149,9 @@ const VariantForm = ({
                 onChange={value => handleChange('price', Number(value))}
                 min={0}
                 precision={0}
+                bg={'white'}
               >
                 <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
               </NumberInput>
             )}
             <FormErrorMessage>{errors.price}</FormErrorMessage>

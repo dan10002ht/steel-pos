@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   VStack,
@@ -24,19 +24,31 @@ import {
   AlertDescription,
   Grid,
   GridItem,
-} from "@chakra-ui/react";
-import { ArrowLeft, Edit, Package, Tag, Hash, DollarSign, Box as BoxIcon } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useFetchApi } from "../../hooks/useFetchApi";
-import Page from "../../components/organisms/Page";
-import InventoryLogTable from "../../components/molecules/products/InventoryLogTable/InventoryLogTable";
-import Pagination from "../../components/atoms/Pagination";
-import { formatCurrency, formatNumber, formatDateTime } from "../../utils/formatters";
+} from '@chakra-ui/react';
+import {
+  ArrowLeft,
+  Edit,
+  Package,
+  Tag,
+  Hash,
+  DollarSign,
+  Box as BoxIcon,
+} from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useFetchApi } from '../../hooks/useFetchApi';
+import Page from '../../components/organisms/Page';
+import InventoryLogTable from '../../components/molecules/products/InventoryLogTable/InventoryLogTable';
+import Pagination from '../../components/atoms/Pagination';
+import {
+  formatCurrency,
+  formatNumber,
+  formatDateTime,
+} from '../../utils/formatters';
 
 const ProductDetailPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -46,13 +58,9 @@ const ProductDetailPage = () => {
     data: product,
     isLoading,
     error,
-  } = useFetchApi(
-    ["product", id],
-    `/products/${id}`,
-    {
-      enabled: !!id,
-    }
-  );
+  } = useFetchApi(['product', id], `/products/${id}`, {
+    enabled: !!id,
+  });
 
   // Fetch inventory logs with pagination
   const {
@@ -60,7 +68,7 @@ const ProductDetailPage = () => {
     isLoading: isLogsLoading,
     error: logsError,
   } = useFetchApi(
-    ["inventory-logs", id, null, currentPage, pageSize],
+    ['inventory-logs', id, null, currentPage, pageSize],
     `/products/${id}/inventory-logs?page=${currentPage}&limit=${pageSize}`,
     {
       enabled: !!id,
@@ -73,24 +81,21 @@ const ProductDetailPage = () => {
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Pagination handlers
-  const handlePageChange = (page) => {
+  const handlePageChange = page => {
     setCurrentPage(page);
   };
 
-  const handlePageSizeChange = (newPageSize) => {
+  const handlePageSizeChange = newPageSize => {
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
   if (isLoading) {
     return (
-      <Page
-        title="Chi tiết sản phẩm"
-        subtitle="Đang tải thông tin sản phẩm..."
-      >
-        <VStack spacing={4} align="center" justify="center" minH="400px">
-          <Spinner size="lg" color="blue.500" />
-          <Text color="gray.500">Đang tải dữ liệu...</Text>
+      <Page title='Chi tiết sản phẩm' subtitle='Đang tải thông tin sản phẩm...'>
+        <VStack spacing={4} align='center' justify='center' minH='400px'>
+          <Spinner size='lg' color='blue.500' />
+          <Text color='gray.500'>Đang tải dữ liệu...</Text>
         </VStack>
       </Page>
     );
@@ -99,15 +104,16 @@ const ProductDetailPage = () => {
   if (error) {
     return (
       <Page
-        title="Chi tiết sản phẩm"
-        subtitle="Không thể tải thông tin sản phẩm"
+        title='Chi tiết sản phẩm'
+        subtitle='Không thể tải thông tin sản phẩm'
       >
-        <Alert status="error" borderRadius="md">
+        <Alert status='error' borderRadius='md'>
           <AlertIcon />
           <Box>
             <AlertTitle>Lỗi!</AlertTitle>
             <AlertDescription>
-              {error.message || "Không thể tải thông tin sản phẩm. Vui lòng thử lại."}
+              {error.message ||
+                'Không thể tải thông tin sản phẩm. Vui lòng thử lại.'}
             </AlertDescription>
           </Box>
         </Alert>
@@ -117,11 +123,8 @@ const ProductDetailPage = () => {
 
   if (!product) {
     return (
-      <Page
-        title="Chi tiết sản phẩm"
-        subtitle="Không tìm thấy sản phẩm"
-      >
-        <Alert status="warning" borderRadius="md">
+      <Page title='Chi tiết sản phẩm' subtitle='Không tìm thấy sản phẩm'>
+        <Alert status='warning' borderRadius='md'>
           <AlertIcon />
           <Box>
             <AlertTitle>Cảnh báo!</AlertTitle>
@@ -134,103 +137,113 @@ const ProductDetailPage = () => {
     );
   }
 
-  const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
-  const avgPrice = product.variants?.length > 0 
-    ? product.variants.reduce((sum, v) => sum + v.price, 0) / product.variants.length 
-    : 0;
+  const totalStock =
+    product.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+  const avgPrice =
+    product.variants?.length > 0
+      ? product.variants.reduce((sum, v) => sum + v.price, 0) /
+        product.variants.length
+      : 0;
 
   return (
     <Page
-      title="Chi tiết sản phẩm"
+      title='Chi tiết sản phẩm'
       subtitle={`Thông tin chi tiết về ${product.name}`}
       breadcrumbs={[
-        { label: "Dashboard", href: "/dashboard" },
-        { label: "Sản phẩm", href: "/products" },
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Sản phẩm', href: '/products' },
         { label: product.name, href: `/products/${id}` },
       ]}
       primaryActions={[
         {
-          label: "Chỉnh sửa",
+          label: 'Chỉnh sửa',
           onClick: () => navigate(`/products/${id}/edit`),
-          colorScheme: "blue",
+          colorScheme: 'blue',
           leftIcon: <Edit size={16} />,
         },
       ]}
       secondaryActions={[
         {
-          label: "Quay lại",
-          onClick: () => navigate("/products"),
-          variant: "outline",
+          label: 'Quay lại',
+          onClick: () => navigate('/products'),
+          variant: 'outline',
           leftIcon: <ArrowLeft size={16} />,
         },
       ]}
     >
-      <VStack spacing={6} align="stretch">
+      <VStack spacing={6} align='stretch'>
         {/* Product Overview */}
-        <Card shadow="sm">
+        <Card shadow='sm'>
           <CardHeader>
-            <HStack justify="space-between" align="center">
+            <HStack justify='space-between' align='center'>
               <HStack spacing={3}>
-               
-                <VStack align="flex-start" spacing={0}>
-                  <Text fontSize="xl" fontWeight="bold">
+                <VStack align='flex-start' spacing={0}>
+                  <Text fontSize='xl' fontWeight='bold'>
                     Tên sản phẩm: {product.name}
                   </Text>
-                
                 </VStack>
               </HStack>
-              <Badge 
-                colorScheme={product.is_active ? "green" : "gray"}
-                fontSize="sm"
+              <Badge
+                colorScheme={product.is_active ? 'green' : 'gray'}
+                fontSize='sm'
                 px={3}
                 py={1}
               >
-                {product.is_active ? "Hoạt động" : "Không hoạt động"}
+                {product.is_active ? 'Hoạt động' : 'Không hoạt động'}
               </Badge>
             </HStack>
           </CardHeader>
           <CardBody>
-            <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={6}>
+            <Grid
+              templateColumns='repeat(auto-fit, minmax(200px, 1fr))'
+              gap={6}
+            >
               <GridItem>
-                <VStack align="flex-start" spacing={2}>
-                  <HStack spacing={2} color="gray.600">
-                    <Text fontSize="sm" fontWeight="medium">Đơn vị</Text>
+                <VStack align='flex-start' spacing={2}>
+                  <HStack spacing={2} color='gray.600'>
+                    <Text fontSize='sm' fontWeight='medium'>
+                      Đơn vị
+                    </Text>
                   </HStack>
-                  <Text fontSize="md">{product.unit}</Text>
+                  <Text fontSize='md'>{product.unit}</Text>
                 </VStack>
               </GridItem>
-              
+
               <GridItem>
-                <VStack align="flex-start" spacing={2}>
-                  <HStack spacing={2} color="gray.600">
-                    <Text fontSize="sm" fontWeight="medium">Tổng tồn kho</Text>
+                <VStack align='flex-start' spacing={2}>
+                  <HStack spacing={2} color='gray.600'>
+                    <Text fontSize='sm' fontWeight='medium'>
+                      Tổng tồn kho
+                    </Text>
                   </HStack>
-                  <Text fontSize="md" fontWeight="semibold">
+                  <Text fontSize='md' fontWeight='semibold'>
                     {formatNumber(totalStock)} {product.unit}
                   </Text>
                 </VStack>
               </GridItem>
-              
+
               <GridItem>
-                <VStack align="flex-start" spacing={2}>
-                  <HStack spacing={2} color="gray.600">
-                    <Text fontSize="sm" fontWeight="medium">Giá trung bình</Text>
+                <VStack align='flex-start' spacing={2}>
+                  <HStack spacing={2} color='gray.600'>
+                    <Text fontSize='sm' fontWeight='medium'>
+                      Giá trung bình
+                    </Text>
                   </HStack>
-                  <Text fontSize="md" fontWeight="semibold" color="blue.600">
+                  <Text fontSize='md' fontWeight='semibold' color='blue.600'>
                     {formatCurrency(avgPrice)}
                   </Text>
                 </VStack>
               </GridItem>
             </Grid>
-            
+
             {product.notes && (
               <>
                 <Divider my={4} />
-                <VStack align="flex-start" spacing={2}>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.600">
+                <VStack align='flex-start' spacing={2}>
+                  <Text fontSize='sm' fontWeight='medium' color='gray.600'>
                     Ghi chú
                   </Text>
-                  <Text fontSize="md" whiteSpace="pre-wrap">
+                  <Text fontSize='md' whiteSpace='pre-wrap'>
                     {product.notes}
                   </Text>
                 </VStack>
@@ -240,40 +253,41 @@ const ProductDetailPage = () => {
         </Card>
 
         {/* Variants Table */}
-        <Card shadow="sm">
+        <Card shadow='sm'>
           <CardHeader>
-            <HStack justify="space-between" align="center">
-              <Text fontSize="lg" fontWeight="bold">
+            <HStack justify='space-between' align='center'>
+              <Text fontSize='lg' fontWeight='bold'>
                 Variants của sản phẩm
               </Text>
-              <Badge colorScheme="blue" fontSize="sm">
+              <Badge colorScheme='blue' fontSize='sm'>
                 {product.variants?.length || 0} variants
               </Badge>
             </HStack>
           </CardHeader>
           <CardBody>
             {!product.variants || product.variants.length === 0 ? (
-              <VStack spacing={4} align="center" justify="center" minH="200px" py={8}>
-                <Box
-                  p={4}
-                  borderRadius="full"
-                  bg="gray.50"
-                  color="gray.400"
-                >
+              <VStack
+                spacing={4}
+                align='center'
+                justify='center'
+                minH='200px'
+                py={8}
+              >
+                <Box p={4} borderRadius='full' bg='gray.50' color='gray.400'>
                   <Package size={32} />
                 </Box>
-                <VStack spacing={2} textAlign="center">
-                  <Text fontSize="lg" fontWeight="semibold" color="gray.700">
+                <VStack spacing={2} textAlign='center'>
+                  <Text fontSize='lg' fontWeight='semibold' color='gray.700'>
                     Chưa có variants
                   </Text>
-                  <Text fontSize="md" color="gray.500">
+                  <Text fontSize='md' color='gray.500'>
                     Sản phẩm này chưa có variants nào được tạo.
                   </Text>
                 </VStack>
               </VStack>
             ) : (
               <TableContainer>
-                <Table variant="simple">
+                <Table variant='simple'>
                   <Thead>
                     <Tr>
                       <Th>Tên variant</Th>
@@ -286,40 +300,46 @@ const ProductDetailPage = () => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {product.variants.map((variant) => (
+                    {product.variants.map(variant => (
                       <Tr key={variant.id}>
                         <Td>
-                          <Text fontWeight="medium">{variant.name}</Text>
+                          <Text fontWeight='medium'>{variant.name}</Text>
                         </Td>
                         <Td>
-                          <Text fontFamily="mono" fontSize="sm" color="gray.600">
+                          <Text
+                            fontFamily='mono'
+                            fontSize='sm'
+                            color='gray.600'
+                          >
                             {variant.sku}
                           </Text>
                         </Td>
                         <Td isNumeric>
-                          <Text fontWeight="medium">
+                          <Text fontWeight='medium'>
                             {formatNumber(variant.stock)}
                           </Text>
                         </Td>
                         <Td isNumeric>
-                          <Text color="gray.600">
+                          <Text color='gray.600'>
                             {formatNumber(variant.sold)}
                           </Text>
                         </Td>
                         <Td isNumeric>
-                          <Text fontWeight="medium" color="blue.600">
+                          <Text fontWeight='medium' color='blue.600'>
                             {formatCurrency(variant.price)}
                           </Text>
                         </Td>
                         <Td>
-                          <Text color="gray.600">{variant.unit}</Text>
+                          <Text color='gray.600'>{variant.unit}</Text>
                         </Td>
                         <Td>
-                          <Badge 
-                            colorScheme={variant.is_active ? "green" : "gray"}
-                            fontSize="xs"
+                          <Badge
+                            colorScheme={variant.is_active ? 'green' : 'gray'}
+                            fontSize='xs'
                           >
-                            {variant.is_active ? "Hoạt động" : "Không hoạt động"}
+                            {variant.is_active
+                              ? 'Hoạt động'
+                              : 'Không hoạt động'}
                           </Badge>
                         </Td>
                       </Tr>
@@ -332,19 +352,19 @@ const ProductDetailPage = () => {
         </Card>
 
         {/* Inventory Logs */}
-        <Card shadow="sm">
+        <Card shadow='sm'>
           <CardHeader>
-            <HStack justify="space-between" align="center">
-              <Text fontSize="lg" fontWeight="bold">
+            <HStack justify='space-between' align='center'>
+              <Text fontSize='lg' fontWeight='bold'>
                 Lịch sử tồn kho
               </Text>
-              <Badge colorScheme="blue" fontSize="sm">
+              <Badge colorScheme='blue' fontSize='sm'>
                 {totalCount} hoạt động
               </Badge>
             </HStack>
           </CardHeader>
           <CardBody>
-            <InventoryLogTable 
+            <InventoryLogTable
               logs={inventoryLogs}
               isLoading={isLogsLoading}
               error={logsError}
@@ -364,7 +384,7 @@ const ProductDetailPage = () => {
         </Card>
 
         {/* Product Metadata */}
-        <Card shadow="sm">
+        {/* <Card shadow="sm">
           <CardHeader>
             <Text fontSize="lg" fontWeight="bold">
               Thông tin hệ thống
@@ -388,7 +408,7 @@ const ProductDetailPage = () => {
               </VStack>
             </Grid>
           </CardBody>
-        </Card>
+        </Card> */}
       </VStack>
     </Page>
   );

@@ -33,7 +33,7 @@ const SalesTable = ({
   onPageChange,
   onPageSizeChange,
 }) => {
-  const {isAdmin} = useContext(AuthContext);
+  const { isAdmin } = useContext(AuthContext);
   return (
     <VStack spacing={4} align='stretch'>
       <Box position='relative' overflowX='auto'>
@@ -47,7 +47,6 @@ const SalesTable = ({
               <Th>Ngày tạo</Th>
               <Th>Tổng tiền</Th>
               <Th>Trạng thái</Th>
-              <Th>Thanh toán</Th>
               <Th>Hành động</Th>
             </Tr>
           </Thead>
@@ -73,7 +72,7 @@ const SalesTable = ({
             )}
           </Tbody>
         </Table>
-        
+
         {isLoading && (
           <Box
             position='absolute'
@@ -89,7 +88,9 @@ const SalesTable = ({
           >
             <VStack spacing={3}>
               <Spinner size='lg' color='blue.500' thickness='4px' />
-              <Text color='gray.600' fontSize='sm'>Đang tải dữ liệu...</Text>
+              <Text color='gray.600' fontSize='sm'>
+                Đang tải dữ liệu...
+              </Text>
             </VStack>
           </Box>
         )}
