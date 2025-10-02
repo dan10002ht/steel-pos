@@ -27,7 +27,7 @@ const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
   // Get authenticated PDF URL
   const getAuthenticatedPDFUrl = () => {
     const token = localStorage.getItem('accessToken');
-    return `http://${import.meta.env.VITE_API_URL}/api/invoices/${invoiceId}/pdf?token=${token}`;
+    return `${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/pdf?token=${token}`;
   };
 
   // Log component mount/unmount

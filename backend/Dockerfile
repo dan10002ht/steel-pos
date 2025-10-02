@@ -36,6 +36,9 @@ COPY --from=builder /app/seed_db .
 # Copy migrations directory
 COPY --from=builder /app/migrations ./migrations
 
+# Copy fonts directory for PDF generation
+COPY --from=builder /app/fonts ./fonts
+
 # Make binaries executable
 RUN chmod +x main migrate_db seed_db
 
