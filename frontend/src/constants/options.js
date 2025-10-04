@@ -5,9 +5,7 @@
 // Payment Methods
 export const PAYMENT_METHODS = [
   { value: "cash", label: "Tiền mặt" },
-  { value: "card", label: "Thẻ" },
   { value: "bank_transfer", label: "Chuyển khoản" },
-  { value: "credit", label: "Ghi nợ" },
 ];
 
 // Order Status Options

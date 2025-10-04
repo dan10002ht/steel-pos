@@ -11,20 +11,12 @@ import {
 import { Eye, Edit, X, CreditCard } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import {
-  getInvoiceStatusColor,
-  getInvoiceStatusText,
   getPaymentStatusColor,
   getPaymentStatusWithRemaining,
 } from '@/utils/statusHelpers';
 
-const SalesTableRow = ({
-  invoice,
-  onViewDetail,
-  onEdit,
-  onCancel,
-  onPayment,
-  isAdmin = false,
-}) => {
+const SalesTableRow = ({ invoice, onViewDetail, onPayment }) => {
+  const remainingAmount = invoice.total_amount - invoice.paid_amount;
   return (
     <Tr
       _hover={{ bg: 'gray.50' }}
@@ -34,10 +26,9 @@ const SalesTableRow = ({
       <Td fontWeight='medium'>{invoice.invoice_code}</Td>
       <Td>{invoice.customer_name}</Td>
       <Td>{invoice.customer_phone}</Td>
-      <Td maxW='200px'>{invoice.customer_address || 'Không có địa chỉ'}</Td>
       <Td>{new Date(invoice.created_at).toLocaleDateString('vi-VN')}</Td>
       <Td fontWeight='medium'>{formatCurrency(invoice.total_amount)}</Td>
-
+      <Td fontWeight='medium'>{formatCurrency(remainingAmount)}</Td>
       <Td>
         <Badge
           colorScheme={getPaymentStatusColor(
@@ -56,7 +47,10 @@ const SalesTableRow = ({
                 <IconButton
                   size='sm'
                   icon={<CreditCard size={16} />}
-                  onClick={() => onPayment(invoice)}
+                  onClick={e => {
+                    e.stopPropagation();
+                    onPayment(invoice);
+                  }}
                   colorScheme='green'
                   variant='ghost'
                 />

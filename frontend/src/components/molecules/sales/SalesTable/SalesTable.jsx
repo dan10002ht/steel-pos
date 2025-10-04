@@ -43,9 +43,9 @@ const SalesTable = ({
               <Th>Mã hoá đơn</Th>
               <Th>Tên khách hàng</Th>
               <Th>Số điện thoại</Th>
-              <Th>Địa chỉ</Th>
               <Th>Ngày tạo</Th>
               <Th>Tổng tiền</Th>
+              <Th>Còn lại</Th>
               <Th>Trạng thái</Th>
               <Th>Hành động</Th>
             </Tr>

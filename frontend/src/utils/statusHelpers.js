@@ -94,8 +94,7 @@ export const getPaymentStatusWithRemaining = (invoice) => {
     return "Đã hủy";
   }
   if (invoice.payment_status === "partial") {
-    const remaining = invoice.total_amount - invoice.paid_amount;
-    return `Còn lại: ${remaining.toLocaleString("vi-VN")} VNĐ`;
+    return `Tồn nợ`;
   }
   return getPaymentStatusText(invoice.payment_status);
 };

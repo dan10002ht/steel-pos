@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -13,12 +13,19 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
-  useToast,
 } from '@chakra-ui/react';
 import { fetchApi } from '@/shared/services/api';
 import PaymentModalHeader from '@/components/molecules/PaymentModalHeader';
 import InvoiceSummary from '@/components/molecules/InvoiceSummary';
 import PaymentForm from '@/components/molecules/PaymentForm';
+import { formatCurrency } from '@/utils/formatters';
+
+// Helper function to get current datetime in VN timezone
+const getCurrentDateTimeVN = () => {
+  return new Date()
+    .toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+    .slice(0, 16);
+};
 
 const PaymentModal = ({
   isOpen,
@@ -31,62 +38,102 @@ const PaymentModal = ({
   const [formData, setFormData] = useState({
     amount: '',
     payment_method: 'cash',
-    payment_date: new Date().toISOString().slice(0, 16), // YYYY-MM-DDTHH:MM format
+    payment_date: getCurrentDateTimeVN(), // YYYY-MM-DDTHH:MM format in VN timezone
     payment_images: [],
     notes: '',
   });
 
   const [errors, setErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
-  const remainingAmount = invoice ? invoice.total_amount - invoice.paid_amount : 0;
+  const remainingAmount = invoice
+    ? invoice.total_amount - invoice.paid_amount
+    : 0;
+
+  // Validate form on mount and when formData changes
+  useEffect(() => {
+    const newErrors = {};
+
+    // Validate amount - same logic as validateForm
+    if (!formData.amount || formData.amount === '') {
+      newErrors.amount = 'Vui lòng nhập số tiền';
+    } else if (
+      isNaN(parseFloat(formData.amount)) ||
+      parseFloat(formData.amount) <= 0
+    ) {
+      newErrors.amount = 'Số tiền phải lớn hơn 0';
+    } else if (parseFloat(formData.amount) > remainingAmount) {
+      newErrors.amount = `Số tiền không được vượt quá số tiền còn lại (${formatCurrency(remainingAmount)})`;
+    }
+
+    // Validate payment method - same logic as validateForm
+    if (!formData.payment_method) {
+      newErrors.payment_method = 'Vui lòng chọn phương thức thanh toán';
+    }
+
+    setErrors(newErrors);
+    const isValid = Object.keys(newErrors).length === 0;
+    setIsFormValid(isValid);
+  }, [formData, remainingAmount]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: '',
-      }));
-    }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    // Validate amount - required for submission
+    if (!formData.amount || formData.amount === '') {
+      newErrors.amount = 'Vui lòng nhập số tiền';
+    } else if (
+      isNaN(parseFloat(formData.amount)) ||
+      parseFloat(formData.amount) <= 0
+    ) {
       newErrors.amount = 'Số tiền phải lớn hơn 0';
     } else if (parseFloat(formData.amount) > remainingAmount) {
       newErrors.amount = `Số tiền không được vượt quá số tiền còn lại (${formatCurrency(remainingAmount)})`;
     }
 
+    // Validate payment method - required for submission
     if (!formData.payment_method) {
       newErrors.payment_method = 'Vui lòng chọn phương thức thanh toán';
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    setIsFormValid(isValid);
+
+    return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
-    
-    if (!validateForm()) {
+
+    // Double check validation before submitting
+    const validationResult = validateForm();
+    if (!validationResult || !isFormValid) {
       return;
     }
 
     const paymentData = {
       amount: parseFloat(formData.amount),
       payment_method: formData.payment_method,
-      payment_date: formData.payment_date ? new Date(formData.payment_date).toISOString() : null,
-      payment_images: formData.payment_images.length > 0 ? JSON.stringify(formData.payment_images.map(img => ({
-        public_id: img.public_id,
-        url: img.url
-      }))) : null,
+      payment_date: formData.payment_date
+        ? new Date(formData.payment_date).toISOString()
+        : null,
+      payment_images:
+        formData.payment_images.length > 0
+          ? JSON.stringify(
+              formData.payment_images.map(img => ({
+                public_id: img.public_id,
+                url: img.url,
+              }))
+            )
+          : null,
       notes: formData.notes || null,
     };
 
@@ -97,11 +144,12 @@ const PaymentModal = ({
     setFormData({
       amount: '',
       payment_method: 'cash',
-      payment_date: new Date().toISOString().slice(0, 16),
+      payment_date: getCurrentDateTimeVN(),
       payment_images: [],
       notes: '',
     });
     setErrors({});
+    setIsFormValid(false);
     onClose();
   };
 
@@ -117,7 +165,7 @@ const PaymentModal = ({
     if (!file) {
       setFormData(prev => ({
         ...prev,
-        payment_images: [...prev.payment_images, tempImage]
+        payment_images: [...prev.payment_images, tempImage],
       }));
       return tempImage;
     }
@@ -136,7 +184,7 @@ const PaymentModal = ({
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       if (!response.success) {
         throw new Error(response.message || 'Upload failed');
       }
@@ -157,18 +205,18 @@ const PaymentModal = ({
       // Replace temp image with uploaded image
       setFormData(prev => ({
         ...prev,
-        payment_images: prev.payment_images.map(img => 
+        payment_images: prev.payment_images.map(img =>
           img.id === tempImage.id ? uploadedImageData : img
-        )
+        ),
       }));
 
       // Clean up preview after a short delay to allow smooth transition
       setTimeout(() => {
         setFormData(prev => ({
           ...prev,
-          payment_images: prev.payment_images.map(img => 
+          payment_images: prev.payment_images.map(img =>
             img.id === tempImage.id ? { ...img, preview: undefined } : img
-          )
+          ),
         }));
         URL.revokeObjectURL(tempImage.preview);
       }, 1000);
@@ -176,43 +224,45 @@ const PaymentModal = ({
       return uploadedImageData;
     } catch (error) {
       console.error('Error uploading images:', error);
-      
+
       // Remove failed image from state
       setFormData(prev => ({
         ...prev,
-        payment_images: prev.payment_images.filter(img => img.id !== tempImage.id)
+        payment_images: prev.payment_images.filter(
+          img => img.id !== tempImage.id
+        ),
       }));
-      
+
       throw error;
     }
   };
 
-  const handleImageRemove = (index) => {
+  const handleImageRemove = index => {
     setFormData(prev => ({
       ...prev,
-      payment_images: prev.payment_images.filter((_, i) => i !== index)
+      payment_images: prev.payment_images.filter((_, i) => i !== index),
     }));
   };
 
   if (!invoice) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size='lg'>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
           <PaymentModalHeader invoice={invoice} />
         </ModalHeader>
         <ModalCloseButton />
-        
+
         <form onSubmit={handleSubmit}>
           <ModalBody>
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={4} align='stretch'>
               {/* Invoice Summary */}
               <InvoiceSummary invoice={invoice} />
 
               {error && (
-                <Alert status="error" borderRadius="md">
+                <Alert status='error' borderRadius='md'>
                   <AlertIcon />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -235,15 +285,19 @@ const PaymentModal = ({
 
           <ModalFooter>
             <HStack spacing={3}>
-              <Button variant="ghost" onClick={handleClose} isDisabled={isLoading}>
+              <Button
+                variant='ghost'
+                onClick={handleClose}
+                isDisabled={isLoading}
+              >
                 Hủy
               </Button>
               <Button
-                type="submit"
-                colorScheme="blue"
+                type='submit'
+                colorScheme='blue'
                 isLoading={isLoading}
-                loadingText="Đang xử lý..."
-                isDisabled={remainingAmount <= 0}
+                loadingText='Đang xử lý...'
+                isDisabled={remainingAmount <= 0 || !isFormValid}
               >
                 Xác nhận thanh toán
               </Button>
