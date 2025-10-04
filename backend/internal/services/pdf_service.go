@@ -17,6 +17,15 @@ func NewPDFService() *PDFService {
 	return &PDFService{}
 }
 
+// setFont sets the appropriate font based on availability
+func (s *PDFService) setFont(pdf *gofpdf.Fpdf, style string, size float64, fontAvailable bool) {
+	if fontAvailable {
+		pdf.SetFont("NotoSans", style, size)
+	} else {
+		pdf.SetFont("Arial", style, size)
+	}
+}
+
 func (s *PDFService) FormatCurrency(amount float64) string {
 	return fmt.Sprintf("%.0f VNĐ", amount)
 }
@@ -26,36 +35,38 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf := gofpdf.New("P", "mm", "A4", "")
 
 	// Add Noto Sans font that supports Vietnamese
+	// Try to add custom fonts, fallback to default if not available
+	fontAvailable := true
 	pdf.AddUTF8Font("NotoSans", "", "fonts/NotoSans-Regular.ttf")
 	pdf.AddUTF8Font("NotoSans", "B", "fonts/NotoSans-Bold.ttf")
 
 	pdf.AddPage()
 	pdf.SetAutoPageBreak(true, 0)
 
-	// Set font - using Noto Sans that supports Vietnamese
-	pdf.SetFont("NotoSans", "B", 22)
+	// Set font - using Noto Sans that supports Vietnamese or fallback to Arial
+	s.setFont(pdf, "B", 22, fontAvailable)
 
 	pdf.SetTextColor(0, 0, 0)
 	pdf.CellFormat(0, 12, "NHÀ MÁY TÔN THÉP KIÊN PHƯỚC", "", 0, "C", false, 0, "")
 	pdf.Ln(10)
 
-	pdf.SetFont("NotoSans", "", 14)
+	s.setFont(pdf, "", 14, fontAvailable)
 	pdf.SetTextColor(100, 100, 100)
 	pdf.CellFormat(0, 6, "CHUYÊN CUNG CẤP TÔN, SẮT, THÉP VÀ CÁC MẶT HÀNG CƠ KHÍ.", "", 0, "C", false, 0, "")
 
 	pdf.Ln(10)
-	pdf.SetFont("NotoSans", "", 12)
+	s.setFont(pdf, "", 12, fontAvailable)
 	pdf.CellFormat(0, 6, "Địa chỉ: Xã Đức Minh - Tỉnh Hà Tĩnh", "", 0, "C", false, 0, "")
 	pdf.Ln(6)
 	pdf.CellFormat(0, 6, "Điện thoại: 0972851015 - 0974498918", "", 0, "C", false, 0, "")
 	pdf.Ln(8)
 
-	pdf.SetFont("NotoSans", "B", 22)
+	s.setFont(pdf, "B", 22, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.CellFormat(0, 12, "HOÁ ĐƠN BÁN HÀNG", "", 0, "C", false, 0, "")
 	pdf.Ln(15)
 
-	pdf.SetFont("NotoSans", "", 12)
+	s.setFont(pdf, "", 12, fontAvailable)
 
 	// Customer info in two columns (50% each)
 	pdf.Cell(95, 6, fmt.Sprintf("Tên khách hàng: %s", invoice.CustomerName))
@@ -71,13 +82,13 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.Cell(95, 6, fmt.Sprintf("Ngày tạo đơn: %s", invoice.CreatedAt.Format("02/01/2006")))
 	pdf.Ln(6)
 
-	pdf.SetFont("NotoSans", "B", 10)
+	s.setFont(pdf, "B", 10, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.Cell(0, 6, "Ghi chú:")
 	pdf.Ln(6)
 	hasNotes := false
 	if invoice.Notes != nil && *invoice.Notes != "" {
-		pdf.SetFont("NotoSans", "", 10)
+		s.setFont(pdf, "", 10, fontAvailable)
 		pdf.SetTextColor(100, 100, 100)
 		pdf.Cell(0, 6, *invoice.Notes)
 		pdf.Ln(10)
@@ -90,7 +101,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	}
 
 	// Table header with better colors - centered
-	pdf.SetFont("NotoSans", "B", 10)
+	s.setFont(pdf, "B", 10, fontAvailable)
 	pdf.SetFillColor(52, 144, 220)  // Blue header
 	pdf.SetTextColor(255, 255, 255) // White text
 
@@ -115,7 +126,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.CellFormat(w5, 10, "Thành tiền", "1", 1, "C", true, 0, "")
 
 	// Table content with alternating row colors
-	pdf.SetFont("NotoSans", "", 9)
+	s.setFont(pdf, "", 9, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 
 	for _, item := range invoice.Items {
@@ -131,7 +142,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	}
 
 	// Total row - single cell spanning all columns
-	pdf.SetFont("NotoSans", "B", 10)
+	s.setFont(pdf, "B", 10, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetX(startX) // Reset X position for total row
 
@@ -142,11 +153,11 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	pdf.Ln(8)
 
 	// Summary section with better styling
-	pdf.SetFont("NotoSans", "", 11)
+	s.setFont(pdf, "", 11, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 
 	// Summary table without borders - full width
-	pdf.SetFont("NotoSans", "", 11)
+	s.setFont(pdf, "", 11, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 
 	// Use same full width as product table
@@ -163,7 +174,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	}
 
 	// Total row with highlight
-	pdf.SetFont("NotoSans", "B", 14)
+	s.setFont(pdf, "B", 14, fontAvailable)
 	pdf.SetTextColor(220, 38, 38) // Red color for total
 	pdf.CellFormat(summaryW1, 8, "TỔNG CỘNG:", "", 0, "L", false, 0, "")
 	pdf.CellFormat(summaryW2, 8, s.FormatCurrency(invoice.TotalAmount), "", 1, "R", false, 0, "")
@@ -171,7 +182,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	// Paid amount row
 	if invoice.PaidAmount > 0 {
-		pdf.SetFont("NotoSans", "", 11)
+		s.setFont(pdf, "", 11, fontAvailable)
 		pdf.SetTextColor(0, 0, 0)
 		pdf.CellFormat(summaryW1, 6, "Đã thanh toán:", "", 0, "L", false, 0, "")
 		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(invoice.PaidAmount), "", 1, "R", false, 0, "")
@@ -181,7 +192,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 	// Remaining amount row
 	if invoice.PaymentStatus == "partial" {
 		remaining := invoice.TotalAmount - invoice.PaidAmount
-		pdf.SetFont("NotoSans", "B", 11)
+		s.setFont(pdf, "B", 11, fontAvailable)
 		pdf.SetTextColor(220, 38, 38) // Red color for remaining
 		pdf.CellFormat(summaryW1, 6, "Còn lại:", "", 0, "L", false, 0, "")
 		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(remaining), "", 1, "R", false, 0, "")
@@ -190,7 +201,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	pdf.SetY(230) // Position near bottom of A4 page
 
-	pdf.SetFont("NotoSans", "", 12)
+	s.setFont(pdf, "", 12, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
 
 	// Date row with space between
@@ -200,7 +211,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	// Signature section with space between
 	pdf.SetTextColor(100, 100, 100)
-	pdf.SetFont("NotoSans", "B", 13)
+	s.setFont(pdf, "B", 13, fontAvailable)
 	pdf.CellFormat(95, 6, "Khách hàng", "", 0, "C", false, 0, "")
 	pdf.CellFormat(95, 6, "Người bán", "", 0, "C", false, 0, "")
 	pdf.Ln(6)
@@ -209,8 +220,7 @@ func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error)
 
 	// Generate PDF bytes
 	var buf bytes.Buffer
-	err := pdf.Output(&buf)
-	if err != nil {
+	if err := pdf.Output(&buf); err != nil {
 		return nil, err
 	}
 
