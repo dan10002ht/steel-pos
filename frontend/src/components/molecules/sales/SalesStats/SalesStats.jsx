@@ -217,7 +217,7 @@ const SalesStats = () => {
             >
               <Box flex='1'>
                 <Text fontSize='sm' fontWeight='medium' mb={2} color='gray.600'>
-                  Khoảng thời gian nhanh
+                  Chọn nhanh khoảng thời gian
                 </Text>
                 <Select
                   placeholder='Chọn khoảng thời gian'

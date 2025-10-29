@@ -42,6 +42,7 @@ import {
   Select,
   Heading,
   Text,
+  Tooltip,
 } from '@chakra-ui/react';
 import {
   Plus,
@@ -62,6 +63,7 @@ import Pagination from '../../components/atoms/Pagination';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import { useEditApi } from '../../hooks/useEditApi';
 import { useDeleteApi } from '../../hooks/useDeleteApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -73,6 +75,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 const InventoryList = () => {
   const { isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
@@ -98,7 +101,11 @@ const InventoryList = () => {
   const apiUrl = `/import-orders${queryString ? `?${queryString}` : ''}`;
 
   // Fetch import orders
-  const { data: importOrdersData, error, isPending: isLoading } = useFetchApi(
+  const {
+    data: importOrdersData,
+    error,
+    isPending: isLoading,
+  } = useFetchApi(
     [
       'import-orders',
       {
@@ -116,7 +123,15 @@ const InventoryList = () => {
   const approveMutation = useEditApi('/import-orders', {
     method: 'POST',
     invalidateQueries: [['import-orders']],
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Invalidate specific import order query after approval
+      const orderId = variables.url?.split('/')[2]; // Extract ID from URL
+      if (orderId) {
+        queryClient.invalidateQueries({
+          queryKey: ['import-order', orderId],
+        });
+      }
+
       toast({
         title: 'Thành công',
         description: 'Đơn nhập hàng đã được phê duyệt',
@@ -273,16 +288,20 @@ const InventoryList = () => {
             <VStack spacing={4} align='stretch'>
               <InventoryFilters
                 searchTerm={searchTerm}
-                onSearchChange={(value) => handleFilterChange('search', value)}
+                onSearchChange={value => handleFilterChange('search', value)}
                 statusFilter={statusFilter}
-                onStatusChange={(value) => handleFilterChange('status', value)}
+                onStatusChange={value => handleFilterChange('status', value)}
                 supplierFilter={supplierFilter}
-                onSupplierChange={(value) => handleFilterChange('supplier', value)}
+                onSupplierChange={value =>
+                  handleFilterChange('supplier', value)
+                }
                 pageSize={pageSize}
-                onPageSizeChange={(value) => handleFilterChange('pageSize', value)}
+                onPageSizeChange={value =>
+                  handleFilterChange('pageSize', value)
+                }
                 suppliers={suppliers.map(name => ({ name }))}
               />
-              
+
               <Button
                 size='sm'
                 variant='outline'
@@ -291,68 +310,6 @@ const InventoryList = () => {
               >
                 Xóa bộ lọc
               </Button>
-
-              {/* Mobile: Column layout */}
-              <VStack
-                spacing={3}
-                align='stretch'
-                display={{ base: 'flex', md: 'none' }}
-              >
-                {/* Search Input */}
-                <FormControl>
-                  <FormLabel fontSize='sm'>Tìm kiếm</FormLabel>
-                  <InputGroup size='sm'>
-                    <Input
-                      placeholder='Tìm kiếm...'
-                      value={searchTerm}
-                      onChange={e =>
-                        handleFilterChange('search', e.target.value)
-                      }
-                    />
-                    <InputRightElement>
-                      <Search size={16} color='gray.500' />
-                    </InputRightElement>
-                  </InputGroup>
-                </FormControl>
-
-                {/* Status Filter */}
-                <FormControl>
-                  <FormLabel fontSize='sm'>Trạng thái</FormLabel>
-                  <Select
-                    placeholder='Tất cả'
-                    value={statusFilter}
-                    onChange={e => handleFilterChange('status', e.target.value)}
-                    size='sm'
-                  >
-                    <option value='pending'>Chờ phê duyệt</option>
-                    <option value='approved'>Đã phê duyệt</option>
-                  </Select>
-                </FormControl>
-
-                {/* Supplier Filter */}
-                <FormControl>
-                  <FormLabel fontSize='sm'>Nhà cung cấp</FormLabel>
-                  <Select
-                    placeholder='Tất cả'
-                    value={supplierFilter}
-                    onChange={e =>
-                      handleFilterChange('supplier', e.target.value)
-                    }
-                    size='sm'
-                  >
-                    {suppliers.map(supplier => (
-                      <option key={supplier} value={supplier}>
-                        {supplier}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Clear Filters Button */}
-                <Button size='sm' variant='outline' onClick={clearFilters}>
-                  Xóa bộ lọc
-                </Button>
-              </VStack>
             </VStack>
           </CardBody>
         </Card>
@@ -375,53 +332,74 @@ const InventoryList = () => {
                 </Thead>
                 <Tbody>
                   {importOrders.map(order => (
-                    <Tr key={order.id}>
-                                      <Td>{order.import_code}</Td>
-                <Td>{order.supplier_name}</Td>
-                <Td>{formatDate(order.import_date)}</Td>
-                                      <Td isNumeric>{formatCurrency(order.total_amount)}</Td>
-                <Td isNumeric>{order.items?.length || 0}</Td>
+                    <Tr
+                      height={'60px'}
+                      _hover={{ bg: 'gray.50' }}
+                      onClick={() => handleViewDetail(order.id)}
+                      cursor='pointer'
+                      key={order.id}
+                    >
+                      <Td>{order.import_code}</Td>
+                      <Td>{order.supplier_name}</Td>
+                      <Td>{formatDate(order.import_date)}</Td>
+                      <Td isNumeric>{formatCurrency(order.total_amount)}</Td>
+                      <Td isNumeric>
+                        {order.items?.reduce(
+                          (acc, item) => acc + item.quantity,
+                          0
+                        ) || 0}
+                      </Td>
                       <Td>
                         <StatusBadge status={order.status} />
                       </Td>
                       <Td>
-                        <HStack spacing={1}>
+                        <HStack spacing={1} justify='flex-end'>
                           {order.status === 'pending' && (
-                            <IconButton
-                              icon={<Check size={18} />}
-                              size='sm'
-                              colorScheme='green'
-                              aria-label='Phê duyệt'
-                              onClick={() => handleApproval(order)}
-                              isLoading={approveMutation.isPending}
-                            />
+                            <Tooltip label='Phê duyệt' placement='top' hasArrow>
+                              <IconButton
+                                icon={<Check size={18} />}
+                                size='sm'
+                                colorScheme='green'
+                                aria-label='Phê duyệt'
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleApproval(order);
+                                }}
+                                isLoading={approveMutation.isPending}
+                              />
+                            </Tooltip>
                           )}
                           {order.status === 'pending' && (
-                            <IconButton
-                              icon={<Edit size={18} />}
-                              size='sm'
-                              aria-label='Sửa'
-                              onClick={() => handleEdit(order.id)}
-                            />
+                            <Tooltip label='Sửa' placement='top' hasArrow>
+                              <IconButton
+                                icon={<Edit size={18} />}
+                                size='sm'
+                                aria-label='Sửa'
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleEdit(order.id);
+                                }}
+                              />
+                            </Tooltip>
                           )}
-                          {/* {isAdmin && <IconButton
-                            icon={<Trash2 size={18} />}
-                            size='sm'
-                            colorScheme='red'
-                            aria-label='Xóa'
-                            variant="ghost"
-                            onClick={() => handleDelete(order.id)}
-                            isLoading={deleteMutation.isPending}
-                          />} */}
-                          <IconButton
-                            icon={<Eye size={18} />}
-                            size='sm'
-                            colorScheme='blue'
-                            aria-label='Xem chi tiết'
-                            variant="ghost"
-                            onClick={() => handleViewDetail(order.id)}
-                          />
-                     
+
+                          <Tooltip
+                            label='Xem chi tiết'
+                            placement='top'
+                            hasArrow
+                          >
+                            <IconButton
+                              icon={<Eye size={18} />}
+                              size='sm'
+                              colorScheme='blue'
+                              aria-label='Xem chi tiết'
+                              variant='ghost'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleViewDetail(order.id);
+                              }}
+                            />
+                          </Tooltip>
                         </HStack>
                       </Td>
                     </Tr>
@@ -474,10 +452,7 @@ const InventoryList = () => {
                     </Button>
                   )}
                   {(searchTerm || statusFilter || supplierFilter) && (
-                    <Button
-                      variant='outline'
-                      onClick={clearFilters}
-                    >
+                    <Button variant='outline' onClick={clearFilters}>
                       Xóa bộ lọc
                     </Button>
                   )}

@@ -137,28 +137,6 @@ const CustomerForm = ({
                 />
               </FormControl>
 
-              {/* Active Status */}
-              <FormControl>
-                <HStack justify='space-between' align='center'>
-                  <Box>
-                    <FormLabel fontWeight='medium' mb={1}>
-                      Trạng thái hoạt động
-                    </FormLabel>
-                    <Text fontSize='sm' color='gray.600'>
-                      Khách hàng có thể sử dụng hệ thống
-                    </Text>
-                  </Box>
-                  <Switch
-                    isChecked={formData.is_active}
-                    onChange={e =>
-                      handleInputChange('is_active', e.target.checked)
-                    }
-                    isDisabled={isLoading}
-                    colorScheme='green'
-                  />
-                </HStack>
-              </FormControl>
-
               {/* Submit Button */}
               <HStack justify='flex-end' spacing={4} pt={4}>
                 <Button

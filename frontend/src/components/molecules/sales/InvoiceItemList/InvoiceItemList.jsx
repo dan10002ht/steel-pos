@@ -69,9 +69,14 @@ const InvoiceItemList = ({ items, onUpdateItem, onRemoveItem }) => {
                   value={item.quantity}
                   min={1}
                   max={item.stock}
-                  onChange={value =>
-                    handleUpdateItem(item.id, 'quantity', parseInt(value))
-                  }
+                  onChange={value => {
+                    const numberValue = parseInt(value);
+                    handleUpdateItem(
+                      item.id,
+                      'quantity',
+                      Math.min(numberValue, item.stock)
+                    );
+                  }}
                 >
                   <NumberInputField />
                   <NumberInputStepper>

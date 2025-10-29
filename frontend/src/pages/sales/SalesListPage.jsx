@@ -7,6 +7,7 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
+  Flex,
 } from '@chakra-ui/react';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +29,7 @@ const SalesListPage = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -36,16 +38,23 @@ const SalesListPage = () => {
 
   const navigate = useNavigate();
   const { isAdmin } = useContext(AuthContext);
-  
+
   // Payment hook
-  const { mutate: createPayment, isPending: isPaymentLoading, error: paymentError } = useCreateApi('/invoice-payments', {
-    invalidateQueries: ['invoices']
+  const {
+    mutate: createPayment,
+    isPending: isPaymentLoading,
+    error: paymentError,
+  } = useCreateApi('/invoice-payments', {
+    invalidateQueries: ['invoices'],
   });
-  
+
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch invoices from API
+  // Build customer ID parameter
+  const customerId = selectedCustomer ? selectedCustomer.id : '';
+
   const {
     data: invoicesData,
     error,
@@ -60,10 +69,11 @@ const SalesListPage = () => {
       paymentStatusFilter,
       dateFrom,
       dateTo,
+      customerId,
     ],
     debouncedSearchTerm
-      ? `/invoices/search?q=${debouncedSearchTerm.trim()}&page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}`
-      : `/invoices?page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}`,
+      ? `/invoices/search?q=${debouncedSearchTerm.trim()}&page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}&customer_id=${customerId}`
+      : `/invoices?page=${currentPage}&limit=${pageSize}&payment_status=${paymentStatusFilter}&date_from=${dateFrom}&date_to=${dateTo}&customer_id=${customerId}`,
     {
       enabled: true,
     }
@@ -71,36 +81,35 @@ const SalesListPage = () => {
 
   const handleViewDetail = id => {
     navigate(`/sales/detail/${id}`);
-  }
+  };
 
   const handleEdit = id => {
     navigate(`/sales/detail/${id}`);
-  }
+  };
 
   const handleCreateNew = useCallback(() => {
     navigate('/sales/create');
   }, [navigate]);
 
-  const handleSearchChange = (value) => {
+  const handleSearchChange = value => {
     setSearchTerm(value);
-  }
+  };
 
-  const handleCancelInvoice = (invoice) => {
+  const handleCancelInvoice = invoice => {
     setSelectedInvoice(invoice);
     setCancelModalOpen(true);
-  }
+  };
 
   const handleCancelSuccess = () => {
     refetch();
-  }
+  };
 
-  const handlePayment = (invoice) => {
+  const handlePayment = invoice => {
     setSelectedInvoice(invoice);
     setPaymentModalOpen(true);
-  }
+  };
 
-
-  const handlePaymentSubmit = async (paymentData) => {
+  const handlePaymentSubmit = async paymentData => {
     try {
       await createPayment({
         url: `/invoice-payments/${selectedInvoice.id}`,
@@ -112,26 +121,38 @@ const SalesListPage = () => {
     } catch (error) {
       console.error('Payment error:', error);
     }
-  }
+  };
 
   const handlePaymentClose = () => {
     setPaymentModalOpen(false);
     setSelectedInvoice(null);
-  }
+  };
   // Extract data from API response - memoized to prevent unnecessary re-renders
-  const invoices = useMemo(() => invoicesData?.invoices || [], [invoicesData?.invoices]);
-  const totalCount = useMemo(() => invoicesData?.total || 0, [invoicesData?.total]);
-  const totalPages = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
+  const invoices = useMemo(
+    () => invoicesData?.invoices || [],
+    [invoicesData?.invoices]
+  );
+  const totalCount = useMemo(
+    () => invoicesData?.total || 0,
+    [invoicesData?.total]
+  );
+  const totalPages = useMemo(
+    () => Math.ceil(totalCount / pageSize),
+    [totalCount, pageSize]
+  );
 
   // Memoize primary actions to prevent re-renders
-  const primaryActions = useMemo(() => [
-    {
-      label: 'Tạo hoá đơn mới',
-      icon: <Plus size={16} />,
-      onClick: handleCreateNew,
-      colorScheme: 'blue',
-    },
-  ], [handleCreateNew]);
+  const primaryActions = useMemo(
+    () => [
+      {
+        label: 'Tạo hoá đơn mới',
+        icon: <Plus size={16} />,
+        onClick: handleCreateNew,
+        colorScheme: 'blue',
+      },
+    ],
+    [handleCreateNew]
+  );
 
   // Show error state
   if (error) {
@@ -163,22 +184,31 @@ const SalesListPage = () => {
       {/* Search and Actions */}
       <Card>
         <CardBody>
-          <HStack justify='space-between' mb={4}>
-            <SalesSearch
-              searchTerm={searchTerm}
-              onSearchChange={handleSearchChange}
-            />
-          </HStack>
+          <Flex alignItems='end' gap={4}>
+            <HStack
+              justify='space-between'
+              flexDirection={{ base: 'column', md: 'row' }}
+              mb={4}
+              flex={1}
+            >
+              <SalesSearch
+                searchTerm={searchTerm}
+                onSearchChange={handleSearchChange}
+              />
+            </HStack>
 
-          {/* Filters */}
-          <SalesFilters
-            paymentStatusFilter={paymentStatusFilter}
-            setPaymentStatusFilter={setPaymentStatusFilter}
-            dateFrom={dateFrom}
-            setDateFrom={setDateFrom}
-            dateTo={dateTo}
-            setDateTo={setDateTo}
-          />
+            {/* Filters */}
+            <SalesFilters
+              paymentStatusFilter={paymentStatusFilter}
+              setPaymentStatusFilter={setPaymentStatusFilter}
+              dateFrom={dateFrom}
+              setDateFrom={setDateFrom}
+              dateTo={dateTo}
+              setDateTo={setDateTo}
+              selectedCustomer={selectedCustomer}
+              setSelectedCustomer={setSelectedCustomer}
+            />
+          </Flex>
 
           {/* Table */}
           <SalesTable

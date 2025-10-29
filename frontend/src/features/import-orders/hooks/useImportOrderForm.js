@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useCreateApi } from '../../../hooks/useCreateApi';
-import { fetchApi } from '../../../shared/services/api';
+// import { fetchApi } from '../../../shared/services/api'; // Not used in this hook
 
 export const useImportOrderForm = ({
   isEditing = false,
@@ -22,6 +22,20 @@ export const useImportOrderForm = ({
   // Initialize form data when editing
   useEffect(() => {
     if (isEditing && initialData) {
+      // Normalize import_images from API (array of URL strings) to documents format
+      const normalizedDocuments = (initialData.import_images || []).map((imageUrl, index) => {
+        // Extract filename from URL
+        const urlParts = imageUrl.split('/');
+        const filename = urlParts[urlParts.length - 1];
+        
+        return {
+          id: `existing_${index}`,
+          url: imageUrl,
+          name: filename,
+          isUploading: false,
+        };
+      });
+
       setFormData({
         importCode: initialData.import_code || formData.importCode,
         supplier: initialData.supplier_name || '',
@@ -29,10 +43,10 @@ export const useImportOrderForm = ({
           ? new Date(initialData.import_date).toISOString().split('T')[0]
           : formData.importDate,
         notes: initialData.notes || '',
-        documents: initialData.import_images || [],
+        documents: normalizedDocuments,
       });
     }
-  }, [isEditing, initialData]);
+  }, [isEditing, initialData, formData.importCode, formData.importDate]);
 
   // Create import order mutation
   const createMutation = useCreateApi('/import-orders', {
@@ -45,6 +59,9 @@ export const useImportOrderForm = ({
         duration: 3000,
         isClosable: true,
       });
+
+      console.log('Đơn nhập hàng đã được tạo và gửi phê duyệt');
+      console.log('success', onNavigateToList);
 
       if (onNavigateToList) {
         onNavigateToList();
@@ -78,6 +95,11 @@ export const useImportOrderForm = ({
 
     if (!formData.importDate) {
       newErrors.importDate = 'Không được bỏ trống ngày nhập kho';
+    }
+
+    // Check if at least one document/image is uploaded
+    if (!formData.documents || formData.documents.length === 0) {
+      newErrors.documents = 'Vui lòng tải lên ít nhất 1 hình ảnh chứng từ';
     }
 
     // Check if at least one product is selected
@@ -133,7 +155,9 @@ export const useImportOrderForm = ({
       supplier_name: formData.supplier,
       import_date: new Date(formData.importDate),
       notes: formData.notes,
-      import_images: formData.documents,
+      import_images: formData.documents.length > 0
+        ? formData.documents.map(doc => doc.url).filter(Boolean)
+        : [],
       items: processedItems,
     };
 
@@ -150,5 +174,6 @@ export const useImportOrderForm = ({
     handleInputChange,
     handleSubmit,
     isLoading: createMutation.isPending,
+    setFormData, // Export setFormData for direct state updates
   };
 };

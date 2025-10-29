@@ -1,8 +1,17 @@
-import React, { useEffect, useCallback } from 'react';
-import { Box, VStack, Text, useToast } from '@chakra-ui/react';
+import React, { useEffect, useCallback, useRef } from 'react';
+import {
+  Box,
+  VStack,
+  Text,
+  useToast,
+  Button,
+  HStack,
+  Icon,
+} from '@chakra-ui/react';
 
 const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
   const toast = useToast();
+  const iframeRef = useRef(null);
 
   // Logging functions
   const logPDFEvent = useCallback(
@@ -25,10 +34,10 @@ const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
   );
 
   // Get authenticated PDF URL
-  const getAuthenticatedPDFUrl = () => {
+  const getAuthenticatedPDFUrl = useCallback(() => {
     const token = localStorage.getItem('accessToken');
     return `${import.meta.env.VITE_API_URL}/invoices/${invoiceId}/pdf?token=${token}`;
-  };
+  }, [invoiceId]);
 
   // Log component mount/unmount
   useEffect(() => {
@@ -87,6 +96,7 @@ const InvoicePdf = ({ invoiceId, invoiceCode, onLoad, onError }) => {
       >
         <Box position='relative' w='100%' h='100%'>
           <iframe
+            ref={iframeRef}
             id={`pdf-iframe-${invoiceId}`}
             src={getAuthenticatedPDFUrl()}
             width='100%'

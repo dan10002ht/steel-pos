@@ -14,13 +14,15 @@ import {
   NumberDecrementStepper,
   Button,
 } from '@chakra-ui/react';
-import { Save } from 'lucide-react';
+import { Save, Printer } from 'lucide-react';
 import { PAYMENT_METHODS } from '@/constants/options';
+import { formatCurrency } from '@/utils';
 
 const InvoiceSummary = ({
   invoice,
   onUpdateInvoice,
   onCreateInvoice,
+  onCreateInvoiceAndPrint,
   isDisabled = false,
   isLoading = false,
 }) => {
@@ -80,7 +82,7 @@ const InvoiceSummary = ({
       <VStack spacing={2} align='stretch'>
         <HStack justify='space-between'>
           <Text>Thành tiền:</Text>
-          <Text>{calculateSubtotal().toLocaleString('vi-VN')} VNĐ</Text>
+          <Text>{formatCurrency(calculateSubtotal())}</Text>
         </HStack>
 
         <HStack justify='space-between'>
@@ -103,7 +105,7 @@ const InvoiceSummary = ({
             Tổng cộng:
           </Text>
           <Text fontWeight='bold' fontSize='lg' color='blue.500'>
-            {calculateFinalAmount().toLocaleString('vi-VN')} VNĐ
+            {formatCurrency(calculateFinalAmount())}
           </Text>
         </HStack>
 
@@ -134,22 +136,38 @@ const InvoiceSummary = ({
             fontWeight='bold'
             color={calculateRemainingAmount() > 0 ? 'red.500' : 'green.500'}
           >
-            {calculateRemainingAmount().toLocaleString('vi-VN')} VNĐ
+            {formatCurrency(calculateRemainingAmount())}
           </Text>
         </HStack>
       </VStack>
 
-      <Button
-        leftIcon={<Save size={16} />}
-        colorScheme='blue'
-        size='lg'
-        onClick={onCreateInvoice}
-        isDisabled={isDisabled}
-        isLoading={isLoading}
-        loadingText='Đang tạo...'
-      >
-        Tạo hoá đơn
-      </Button>
+      <HStack spacing={3}>
+        <Button
+          leftIcon={<Save size={16} />}
+          colorScheme='blue'
+          size='lg'
+          onClick={onCreateInvoice}
+          isDisabled={isDisabled}
+          isLoading={isLoading}
+          loadingText='Đang tạo...'
+          flex={1}
+        >
+          Tạo hoá đơn
+        </Button>
+
+        <Button
+          leftIcon={<Printer size={16} />}
+          colorScheme='green'
+          size='lg'
+          onClick={onCreateInvoiceAndPrint}
+          isDisabled={isDisabled}
+          isLoading={isLoading}
+          loadingText='Đang tạo...'
+          flex={1}
+        >
+          Tạo hoá đơn và in
+        </Button>
+      </HStack>
     </VStack>
   );
 };

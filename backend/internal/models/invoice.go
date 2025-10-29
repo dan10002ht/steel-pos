@@ -156,6 +156,7 @@ type UpdateInvoicePaymentRequest struct {
 	PaymentMethod        *string    `json:"payment_method"`
 	PaymentDate          *time.Time `json:"payment_date"`
 	TransactionReference *string    `json:"transaction_reference"`
+	PaymentImages        *string    `json:"payment_images"`
 	Notes                *string    `json:"notes"`
 	CorrectionReason     *string    `json:"correction_reason"`
 	Status               *string    `json:"status"`

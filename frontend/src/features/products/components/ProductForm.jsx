@@ -20,6 +20,7 @@ import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import VariantForm from './VariantForm';
+import Page from '@/components/organisms/Page';
 
 const ProductForm = ({
   product = null,
@@ -196,30 +197,15 @@ const ProductForm = ({
 
   return (
     <Box as='form' onSubmit={handleSubmit} noValidate>
-      <VStack spacing={6} align='stretch'>
-        {/* Header */}
-        <HStack justify='space-between' align='center'>
-          <Text fontSize='2xl' fontWeight='bold' color='gray.800'>
-            {title}
+      <Card shadow='sm'>
+        <CardHeader>
+          <Text fontSize='lg' fontWeight='bold'>
+            Thông tin sản phẩm
           </Text>
-          <Button
-            leftIcon={<ArrowLeft size={16} />}
-            variant='outline'
-            onClick={() => navigate('/products')}
-          >
-            Quay lại
-          </Button>
-        </HStack>
-
-        {/* Product Information */}
-        <Card shadow='sm'>
-          <CardHeader>
-            <Text fontSize='lg' fontWeight='bold'>
-              Thông tin sản phẩm
-            </Text>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align='stretch'>
+        </CardHeader>
+        <CardBody>
+          <VStack spacing={4} align='stretch'>
+            <HStack>
               <FormControl isInvalid={!!errors.name} isRequired>
                 <FormLabel>Tên sản phẩm</FormLabel>
                 <Input
@@ -230,95 +216,92 @@ const ProductForm = ({
                 />
                 <FormErrorMessage>{errors.name}</FormErrorMessage>
               </FormControl>
-
-              <HStack spacing={4}>
-                <FormControl isInvalid={!!errors.unit} isRequired>
-                  <FormLabel>Đơn vị</FormLabel>
-                  <Input
-                    value={formData.unit}
-                    onChange={e => handleInputChange('unit', e.target.value)}
-                    placeholder='Nhập đơn vị (ví dụ: m, m², kg, cái, bộ...)'
-                    errorBorderColor='red.300'
-                  />
-                  <FormErrorMessage>{errors.unit}</FormErrorMessage>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Ghi chú</FormLabel>
-                  <Textarea
-                    value={formData.notes}
-                    onChange={e => handleInputChange('notes', e.target.value)}
-                    placeholder='Ghi chú về sản phẩm (tùy chọn)'
-                    rows={3}
-                  />
-                </FormControl>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Variants */}
-        <Card shadow='sm'>
-          <CardHeader>
-            <HStack justify='space-between' align='center'>
-              <Text fontSize='lg' fontWeight='bold'>
-                Phân loại sản phẩm
-              </Text>
-              <Button
-                leftIcon={<Plus size={16} />}
-                colorScheme='blue'
-                variant='outline'
-                onClick={addVariant}
-                size='sm'
-              >
-                Thêm phân loại
-              </Button>
+              <FormControl isInvalid={!!errors.unit} isRequired>
+                <FormLabel>Đơn vị</FormLabel>
+                <Input
+                  value={formData.unit}
+                  onChange={e => handleInputChange('unit', e.target.value)}
+                  placeholder='Nhập đơn vị (ví dụ: m, m², kg, cái, bộ...)'
+                  errorBorderColor='red.300'
+                />
+                <FormErrorMessage>{errors.unit}</FormErrorMessage>
+              </FormControl>
             </HStack>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align='stretch'>
-              {formData.variants.map((variant, index) => (
-                <Box key={variant.id || `new-${index}`}>
-                  <VariantForm
-                    variant={variant}
-                    index={index}
-                    errors={errors.variants?.[index] || {}}
-                    onChange={(field, value) =>
-                      handleVariantChange(index, field, value)
-                    }
-                    onRemove={() => removeVariant(index)}
-                    canRemove={formData.variants.length > 1}
-                    defaultUnit={formData.unit}
-                    isReadOnly={false}
-                    simplified={true} // Add this prop to indicate simplified form
-                  />
-                  {index < formData.variants.length - 1 && <Divider my={4} />}
-                </Box>
-              ))}
-            </VStack>
-          </CardBody>
-        </Card>
 
-        {/* Submit Button */}
-        <HStack justify='flex-end' spacing={4}>
-          <Button
-            variant='outline'
-            onClick={() => navigate('/products')}
-            isDisabled={isLoading}
-          >
-            Hủy
-          </Button>
-          <Button
-            type='submit'
-            colorScheme='blue'
-            leftIcon={<Save size={16} />}
-            isLoading={isLoading}
-            loadingText='Đang lưu...'
-          >
-            {submitText}
-          </Button>
-        </HStack>
-      </VStack>
+            <FormControl>
+              <FormLabel>Ghi chú</FormLabel>
+              <Textarea
+                value={formData.notes}
+                onChange={e => handleInputChange('notes', e.target.value)}
+                placeholder='Ghi chú về sản phẩm (tùy chọn)'
+                rows={3}
+              />
+            </FormControl>
+          </VStack>
+        </CardBody>
+      </Card>
+
+      {/* Variants */}
+      <Card shadow='sm'>
+        <CardHeader>
+          <HStack justify='space-between' align='center'>
+            <Text fontSize='lg' fontWeight='bold'>
+              Phân loại sản phẩm
+            </Text>
+            <Button
+              leftIcon={<Plus size={16} />}
+              colorScheme='blue'
+              variant='outline'
+              onClick={addVariant}
+              size='sm'
+            >
+              Thêm phân loại
+            </Button>
+          </HStack>
+        </CardHeader>
+        <CardBody>
+          <VStack spacing={4} align='stretch'>
+            {formData.variants.map((variant, index) => (
+              <Box key={variant.id || `new-${index}`}>
+                <VariantForm
+                  variant={variant}
+                  index={index}
+                  errors={errors.variants?.[index] || {}}
+                  onChange={(field, value) =>
+                    handleVariantChange(index, field, value)
+                  }
+                  onRemove={() => removeVariant(index)}
+                  canRemove={formData.variants.length > 1}
+                  defaultUnit={formData.unit}
+                  isReadOnly={false}
+                  simplified={true} // Add this prop to indicate simplified form
+                />
+                {index < formData.variants.length - 1 && <Divider my={4} />}
+              </Box>
+            ))}
+          </VStack>
+        </CardBody>
+      </Card>
+
+      {/* Submit Button */}
+      <HStack justify='flex-end' spacing={4}>
+        <Button
+          variant='outline'
+          onClick={() => navigate('/products')}
+          isDisabled={isLoading}
+        >
+          Hủy
+        </Button>
+        <Button
+          type='submit'
+          colorScheme='blue'
+          leftIcon={<Save size={16} />}
+          isLoading={isLoading}
+          loadingText='Đang lưu...'
+        >
+          {submitText}
+        </Button>
+      </HStack>
     </Box>
   );
 };

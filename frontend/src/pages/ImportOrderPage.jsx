@@ -7,13 +7,13 @@ const ImportOrderPage = () => {
   const navigate = useNavigate();
 
   const handleNavigateToList = () => {
-    navigate('/import-orders');
+    navigate('/inventory');
   };
 
   return (
-    <Page 
-      title="Tạo đơn nhập kho"
-      subtitle="Tạo đơn nhập kho mới và quản lý thông tin nhập hàng"
+    <Page
+      title='Tạo đơn nhập kho'
+      subtitle='Tạo đơn nhập kho mới và quản lý thông tin nhập hàng'
     >
       <ImportOrderForm onNavigateToList={handleNavigateToList} />
     </Page>

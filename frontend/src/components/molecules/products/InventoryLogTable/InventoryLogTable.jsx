@@ -20,17 +20,20 @@ import {
   Icon,
   Button,
 } from '@chakra-ui/react';
-import { ArrowUp, ArrowDown, Package, ShoppingCart, RotateCcw, ExternalLink } from 'lucide-react';
+import {
+  ArrowUp,
+  ArrowDown,
+  Package,
+  ShoppingCart,
+  RotateCcw,
+  ExternalLink,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateTime, formatNumber } from '../../../../utils/formatters';
 
-const InventoryLogTable = ({ 
-  logs, 
-  isLoading, 
-  error
-}) => {
+const InventoryLogTable = ({ logs, isLoading, error }) => {
   const navigate = useNavigate();
-  const getMovementIcon = (logType) => {
+  const getMovementIcon = logType => {
     switch (logType) {
       case 'sale':
         return ShoppingCart;
@@ -47,7 +50,7 @@ const InventoryLogTable = ({
     }
   };
 
-  const getMovementColor = (logType) => {
+  const getMovementColor = logType => {
     switch (logType) {
       case 'sale':
         return 'red';
@@ -64,7 +67,7 @@ const InventoryLogTable = ({
     }
   };
 
-  const getMovementLabel = (logType) => {
+  const getMovementLabel = logType => {
     switch (logType) {
       case 'sale':
         return 'Bán hàng';
@@ -81,7 +84,7 @@ const InventoryLogTable = ({
     }
   };
 
-  const formatQuantityChange = (quantityChange) => {
+  const formatQuantityChange = quantityChange => {
     const isPositive = quantityChange > 0;
     const prefix = isPositive ? '+' : '';
     return `${prefix}${formatNumber(quantityChange)}`;
@@ -105,7 +108,7 @@ const InventoryLogTable = ({
     }
   };
 
-  const getReferenceLabel = (referenceType) => {
+  const getReferenceLabel = referenceType => {
     switch (referenceType) {
       case 'invoice':
         return 'Hóa đơn';
@@ -120,21 +123,22 @@ const InventoryLogTable = ({
 
   if (isLoading) {
     return (
-      <VStack spacing={4} align="center" justify="center" minH="200px">
-        <Spinner size="lg" color="blue.500" />
-        <Text color="gray.500">Đang tải lịch sử tồn kho...</Text>
+      <VStack spacing={4} align='center' justify='center' minH='200px'>
+        <Spinner size='lg' color='blue.500' />
+        <Text color='gray.500'>Đang tải lịch sử tồn kho...</Text>
       </VStack>
     );
   }
 
   if (error) {
     return (
-      <Alert status="error" borderRadius="md">
+      <Alert status='error' borderRadius='md'>
         <AlertIcon />
         <Box>
           <AlertTitle>Lỗi!</AlertTitle>
           <AlertDescription>
-            {error.message || "Không thể tải lịch sử tồn kho. Vui lòng thử lại."}
+            {error.message ||
+              'Không thể tải lịch sử tồn kho. Vui lòng thử lại.'}
           </AlertDescription>
         </Box>
       </Alert>
@@ -143,20 +147,15 @@ const InventoryLogTable = ({
 
   if (!logs || logs.length === 0) {
     return (
-      <VStack spacing={4} align="center" justify="center" minH="200px" py={8}>
-        <Box
-          p={4}
-          borderRadius="full"
-          bg="gray.50"
-          color="gray.400"
-        >
+      <VStack spacing={4} align='center' justify='center' minH='200px' py={8}>
+        <Box p={4} borderRadius='full' bg='gray.50' color='gray.400'>
           <Package size={32} />
         </Box>
-        <VStack spacing={2} textAlign="center">
-          <Text fontSize="lg" fontWeight="semibold" color="gray.700">
+        <VStack spacing={2} textAlign='center'>
+          <Text fontSize='lg' fontWeight='semibold' color='gray.700'>
             Chưa có lịch sử tồn kho
           </Text>
-          <Text fontSize="md" color="gray.500">
+          <Text fontSize='md' color='gray.500'>
             Sản phẩm này chưa có hoạt động tồn kho nào.
           </Text>
         </VStack>
@@ -166,7 +165,7 @@ const InventoryLogTable = ({
 
   return (
     <TableContainer>
-      <Table variant="simple" size="sm">
+      <Table variant='simple' size='sm'>
         <Thead>
           <Tr>
             <Th>Loại</Th>
@@ -179,82 +178,89 @@ const InventoryLogTable = ({
           </Tr>
         </Thead>
         <Tbody>
-          {logs.map((log) => (
+          {logs.map(log => (
             <Tr key={log.id}>
               <Td>
                 <HStack spacing={2}>
-                  <Icon 
-                    as={getMovementIcon(log.log_type)} 
+                  <Icon
+                    as={getMovementIcon(log.log_type)}
                     color={`${getMovementColor(log.log_type)}.500`}
                     boxSize={4}
                   />
-                  <Badge 
+                  <Badge
                     colorScheme={getMovementColor(log.log_type)}
-                    fontSize="xs"
-                    variant="subtle"
+                    fontSize='xs'
+                    variant='subtle'
                   >
                     {getMovementLabel(log.log_type)}
                   </Badge>
                 </HStack>
               </Td>
               <Td>
-                <Text 
-                  fontWeight="medium"
-                  color={log.quantity_change > 0 ? "green.600" : "red.600"}
+                <Text
+                  fontWeight='medium'
+                  color={log.quantity_change > 0 ? 'green.600' : 'red.600'}
                 >
                   {formatQuantityChange(log.quantity_change)}
                 </Text>
               </Td>
               <Td>
-                <Text color="gray.600">
-                  {formatNumber(log.previous_value)}
-                </Text>
+                <Text color='gray.600'>{formatNumber(log.previous_value)}</Text>
               </Td>
               <Td>
-                <Text fontWeight="medium">
-                  {formatNumber(log.new_value)}
-                </Text>
+                <Text fontWeight='medium'>{formatNumber(log.new_value)}</Text>
               </Td>
               <Td>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   p={0}
-                  h="auto"
-                  minW="auto"
-                  border="none"
-                  onClick={() => handleReferenceClick(log.reference_entity_type, log.reference_entity_id)}
-                  _hover={{ bg: 'gray.50', border: "none" }}
-                  isDisabled={!['invoice', 'import_order', 'adjustment'].includes(log.reference_entity_type)}
+                  h='auto'
+                  minW='auto'
+                  border='none'
+                  onClick={() =>
+                    handleReferenceClick(
+                      log.reference_entity_type,
+                      log.reference_entity_id
+                    )
+                  }
+                  _hover={{ bg: 'gray.50', border: 'none' }}
+                  isDisabled={
+                    !['invoice', 'import_order', 'adjustment'].includes(
+                      log.reference_entity_type
+                    )
+                  }
                 >
-                  <VStack align="flex-start" spacing={0}>
+                  <VStack align='flex-start' spacing={0}>
                     <HStack spacing={1}>
-                      <Text fontSize="xs" color="gray.500">
+                      <Text fontSize='xs' color='gray.500'>
                         {getReferenceLabel(log.reference_entity_type)}
                       </Text>
-                      {['invoice', 'import_order', 'adjustment'].includes(log.reference_entity_type) && (
-                        <Icon as={ExternalLink} boxSize={3} color="gray.400" />
+                      {['invoice', 'import_order', 'adjustment'].includes(
+                        log.reference_entity_type
+                      ) && (
+                        <Icon as={ExternalLink} boxSize={3} color='gray.400' />
                       )}
                     </HStack>
-                    <Text fontSize="sm" fontFamily="mono" color="blue.600">
+                    <Text fontSize='sm' fontFamily='mono' color='blue.600'>
                       #{log.reference_entity_id}
                     </Text>
                   </VStack>
                 </Button>
               </Td>
               <Td>
-                <Text 
-                  fontSize="sm" 
-                  color="gray.600" 
-                  maxW="200px" 
-                  whiteSpace="pre-wrap"
-                  wordBreak="break-word"
+                <Text
+                  fontSize='sm'
+                  color='gray.600'
+                  maxW='200px'
+                  whiteSpace='pre-wrap'
+                  wordBreak='break-word'
                 >
                   {log.notes || '-'}
                 </Text>
               </Td>
               <Td>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize='sm' color='gray.600'>
                   {formatDateTime(log.created_at)}
                 </Text>
               </Td>

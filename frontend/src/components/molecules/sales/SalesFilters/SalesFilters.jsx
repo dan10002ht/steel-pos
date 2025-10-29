@@ -1,50 +1,54 @@
-import React from "react";
-import { Flex } from "@chakra-ui/react";
-import SalesFilterField from "../../../atoms/sales/SalesFilterField";
+import React from 'react';
+import { Flex } from '@chakra-ui/react';
+import SalesFilterField from '../../../atoms/sales/SalesFilterField';
+import CustomerSelect from '../../../atoms/sales/CustomerMultiSelect/CustomerMultiSelect';
 
-const SalesFilters = ({ 
+const SalesFilters = ({
   paymentStatusFilter,
   setPaymentStatusFilter,
   dateFrom,
   setDateFrom,
   dateTo,
-  setDateTo
+  setDateTo,
+  selectedCustomer,
+  setSelectedCustomer,
 }) => {
-
   const paymentStatusOptions = [
-    { value: "pending", label: "Chờ thanh toán" },
-    { value: "partial", label: "Còn lại" },
-    { value: "paid", label: "Đã thanh toán" },
+    { value: 'pending', label: 'Chờ thanh toán' },
+    { value: 'partial', label: 'Còn lại' },
+    { value: 'paid', label: 'Đã thanh toán' },
   ];
 
   return (
-    <Flex
-      direction={{ base: "column", md: "row" }}
-      gap={4}
-      wrap="wrap"
-      mb={4}
-    >
+    <Flex direction={{ base: 'column', md: 'row' }} gap={4} wrap='wrap' mb={4}>
       <SalesFilterField
-        type="select"
-        label="Trạng thái thanh toán"
+        type='select'
+        label='Trạng thái thanh toán'
         value={paymentStatusFilter}
         onChange={setPaymentStatusFilter}
         options={paymentStatusOptions}
-        placeholder="Tất cả"
+        placeholder='Tất cả'
       />
 
       <SalesFilterField
-        type="date"
-        label="Từ ngày"
+        type='date'
+        label='Từ ngày'
         value={dateFrom}
         onChange={setDateFrom}
       />
 
       <SalesFilterField
-        type="date"
-        label="Đến ngày"
+        type='date'
+        label='Đến ngày'
         value={dateTo}
         onChange={setDateTo}
+      />
+
+      <CustomerSelect
+        label='Khách hàng'
+        value={selectedCustomer}
+        onChange={setSelectedCustomer}
+        placeholder='Chọn khách hàng...'
       />
     </Flex>
   );

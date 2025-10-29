@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-	"time"
 
 	"steel-pos-backend/internal/models"
 
@@ -27,196 +26,260 @@ func (s *PDFService) setFont(pdf *gofpdf.Fpdf, style string, size float64, fontA
 }
 
 func (s *PDFService) FormatCurrency(amount float64) string {
-	return fmt.Sprintf("%.0f VNĐ", amount)
+	// Convert to int to remove decimal places
+	intAmount := int64(amount)
+	
+	// Format with thousand separators (dots for Vietnamese format)
+	str := fmt.Sprintf("%d", intAmount)
+	
+	// Add dots as thousand separators from right to left
+	if len(str) > 3 {
+		var result string
+		for i, char := range str {
+			// Add dot before every 3 digits from the right
+			if i > 0 && (len(str)-i)%3 == 0 {
+				result += "."
+			}
+			result += string(char)
+		}
+		return result + " VNĐ"
+	}
+	
+	return str + " VNĐ"
 }
 
 // GenerateInvoicePDF generates a PDF for the given invoice
 func (s *PDFService) GenerateInvoicePDF(invoice *models.Invoice) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 
-	// Add Noto Sans font that supports Vietnamese
-	// Try to add custom fonts, fallback to default if not available
+	// Add NotoSans font that supports Vietnamese
 	fontAvailable := true
 	pdf.AddUTF8Font("NotoSans", "", "fonts/NotoSans-Regular.ttf")
 	pdf.AddUTF8Font("NotoSans", "B", "fonts/NotoSans-Bold.ttf")
 
 	pdf.AddPage()
-	pdf.SetAutoPageBreak(true, 0)
-
-	// Set font - using Noto Sans that supports Vietnamese or fallback to Arial
-	s.setFont(pdf, "B", 22, fontAvailable)
-
-	pdf.SetTextColor(0, 0, 0)
-	pdf.CellFormat(0, 12, "NHÀ MÁY TÔN THÉP KIÊN PHƯỚC", "", 0, "C", false, 0, "")
-	pdf.Ln(10)
-
-	s.setFont(pdf, "", 14, fontAvailable)
-	pdf.SetTextColor(100, 100, 100)
-	pdf.CellFormat(0, 6, "CHUYÊN CUNG CẤP TÔN, SẮT, THÉP VÀ CÁC MẶT HÀNG CƠ KHÍ.", "", 0, "C", false, 0, "")
-
-	pdf.Ln(10)
-	s.setFont(pdf, "", 12, fontAvailable)
-	pdf.CellFormat(0, 6, "Địa chỉ: Xã Đức Minh - Tỉnh Hà Tĩnh", "", 0, "C", false, 0, "")
-	pdf.Ln(6)
-	pdf.CellFormat(0, 6, "Điện thoại: 0972851015 - 0974498918", "", 0, "C", false, 0, "")
-	pdf.Ln(8)
-
-	s.setFont(pdf, "B", 22, fontAvailable)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.CellFormat(0, 12, "HOÁ ĐƠN BÁN HÀNG", "", 0, "C", false, 0, "")
-	pdf.Ln(15)
-
-	s.setFont(pdf, "", 12, fontAvailable)
-
-	// Customer info in two columns (50% each)
-	pdf.Cell(95, 6, fmt.Sprintf("Tên khách hàng: %s", invoice.CustomerName))
-	pdf.Cell(95, 6, fmt.Sprintf("Số điện thoại: %s", invoice.CustomerPhone))
-	pdf.Ln(6)
-
-	if invoice.CustomerAddress != nil && *invoice.CustomerAddress != "" {
-		pdf.Cell(40, 6, fmt.Sprintf("Địa chỉ: %s", *invoice.CustomerAddress))
-		pdf.Ln(6)
-	}
-
-	pdf.Cell(95, 6, fmt.Sprintf("Mã hoá đơn: %s", invoice.InvoiceCode))
-	pdf.Cell(95, 6, fmt.Sprintf("Ngày tạo đơn: %s", invoice.CreatedAt.Format("02/01/2006")))
-	pdf.Ln(6)
-
-	s.setFont(pdf, "B", 10, fontAvailable)
-	pdf.SetTextColor(0, 0, 0)
-	pdf.Cell(0, 6, "Ghi chú:")
-	pdf.Ln(6)
-	hasNotes := false
-	if invoice.Notes != nil && *invoice.Notes != "" {
-		s.setFont(pdf, "", 10, fontAvailable)
-		pdf.SetTextColor(100, 100, 100)
-		pdf.Cell(0, 6, *invoice.Notes)
-		pdf.Ln(10)
-		hasNotes = true
-	}
-	if hasNotes {
-		pdf.Ln(12)
-	} else {
-		pdf.Ln(6)
-	}
-
-	// Table header with better colors - centered
-	s.setFont(pdf, "B", 10, fontAvailable)
-	pdf.SetFillColor(52, 144, 220)  // Blue header
-	pdf.SetTextColor(255, 255, 255) // White text
-
-	// Column widths - first column takes remaining space
-	w2 := 40.0 // Variant
-	w3 := 20.0 // Quantity
-	w4 := 30.0 // Unit price
-	w5 := 30.0 // Total
-
-	// Full width minus margins (210mm - 20mm margins = 190mm)
-	fullWidth := 190.0
-	w1 := fullWidth - w2 - w3 - w4 - w5 // Product name (remaining space)
+	pdf.SetAutoPageBreak(true, 15)
 
 	// Start from left margin (10mm)
 	startX := 10.0
-	pdf.SetX(startX)
+	pageWidth := 190.0 // 210mm - 20mm margins
 
-	pdf.CellFormat(w1, 10, "Sản phẩm", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(w2, 10, "Phân loại", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(w3, 10, "Số lượng", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(w4, 10, "Đơn giá", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(w5, 10, "Thành tiền", "1", 1, "C", true, 0, "")
-
-	// Table content with alternating row colors
+	// =====================================================
+	// HEADER SECTION - Logo, Title, Invoice Info
+	// =====================================================
+	
+	// Logo placeholder box (left side)
+	pdf.SetFillColor(220, 220, 220) // Light gray for logo placeholder
+	pdf.Rect(startX, 10, 50, 25, "D") // Draw rectangle for LOGO
+	s.setFont(pdf, "B", 12, fontAvailable)
+	pdf.SetXY(startX, 18)
+	pdf.SetTextColor(100, 100, 100)
+	pdf.Cell(50, 10, "LOGO")
+	
+	// Title "HOÁ ĐƠN BÁN HÀNG" (center)
+	pdf.SetXY(startX + 60, 10)
+	s.setFont(pdf, "B", 16, fontAvailable)
+	pdf.SetTextColor(0, 0, 0)
+	pdf.Cell(80, 8, "HOÁ ĐƠN BÁN HÀNG")
+	
+	// Subtitle with date
+	pdf.SetXY(startX + 60, 18)
+	s.setFont(pdf, "", 9, fontAvailable)
+	pdf.SetTextColor(100, 100, 100)
+	invoiceDate := "Ngày dd tháng mm năm yyyy"
+	if !invoice.CreatedAt.IsZero() {
+		invoiceDate = fmt.Sprintf("Ngày %s tháng %s năm %s", 
+			invoice.CreatedAt.Format("02"), 
+			invoice.CreatedAt.Format("01"), 
+			invoice.CreatedAt.Format("2006"))
+	}
+	pdf.Cell(80, 6, invoiceDate)
+	
+	// Invoice Code and Number (right side)
+	pdf.SetXY(startX + 140, 10)
 	s.setFont(pdf, "", 9, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
+	pdf.Cell(50, 6, fmt.Sprintf("Mã hóa đơn: %s", invoice.InvoiceCode))
+	pdf.SetXY(startX + 140, 16)
+	pdf.Cell(50, 6, "Số:")
+	
+	pdf.SetY(40)
 
-	for _, item := range invoice.Items {
-		pdf.SetFillColor(255, 255, 255)
-		pdf.SetX(startX) // Reset X position for each row
-
-		// Product name (with word wrap)
-		pdf.CellFormat(w1, 10, item.ProductName, "1", 0, "L", true, 0, "")
-		pdf.CellFormat(w2, 10, item.VariantName, "1", 0, "L", true, 0, "")
-		pdf.CellFormat(w3, 10, strconv.Itoa(int(item.Quantity)), "1", 0, "C", true, 0, "")
-		pdf.CellFormat(w4, 10, s.FormatCurrency(item.UnitPrice), "1", 0, "R", true, 0, "")
-		pdf.CellFormat(w5, 10, s.FormatCurrency(item.TotalPrice), "1", 1, "R", true, 0, "")
-	}
-
-	// Total row - single cell spanning all columns
-	s.setFont(pdf, "B", 10, fontAvailable)
+	// =====================================================
+	// COMPANY INFO SECTION
+	// =====================================================
+	
+	// Horizontal line
+	pdf.SetDrawColor(0, 0, 0)
+	pdf.Line(startX, 40, startX + pageWidth, 40)
+	
+	pdf.SetY(45)
+	s.setFont(pdf, "B", 11, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
-	pdf.SetX(startX) // Reset X position for total row
+	pdf.Cell(0, 6, "NHÀ MÁY TÔN THÉP KIÊN PHƯỚC")
+	pdf.Ln(5)
+	
+	s.setFont(pdf, "", 9, fontAvailable)
+	pdf.Cell(0, 5, "Địa chỉ: Xã Đức Minh - Tỉnh Hà Tĩnh")
+	pdf.Ln(4)
+	pdf.Cell(0, 5, "Số điện thoại: 0972851015 - 0974498918")
+	pdf.Ln(6)
+	
+	// Horizontal line
+	pdf.Line(startX, pdf.GetY(), startX + pageWidth, pdf.GetY())
+	pdf.Ln(6)
 
-	// Calculate total width of all columns
-	totalWidth := w1 + w2 + w3 + w4 + w5
-	pdf.CellFormat(totalWidth, 10, fmt.Sprintf("Thành tiền: %s", s.FormatCurrency(invoice.TotalAmount)), "1", 1, "R", true, 0, "")
-
+	// =====================================================
+	// CUSTOMER INFO SECTION
+	// =====================================================
+	
+	s.setFont(pdf, "", 10, fontAvailable)
+	pdf.Cell(0, 5, fmt.Sprintf("Họ tên người mua: %s", invoice.CustomerName))
+	pdf.Ln(5)
+	
+	customerPhone := ""
+	if invoice.CustomerPhone != "" {
+		customerPhone = invoice.CustomerPhone
+	}
+	pdf.Cell(0, 5, fmt.Sprintf("Số điện thoại: %s", customerPhone))
+	pdf.Ln(5)
+	
+	customerAddress := "Địa chỉ"
+	if invoice.CustomerAddress != nil && *invoice.CustomerAddress != "" {
+		customerAddress = fmt.Sprintf("Địa chỉ: %s", *invoice.CustomerAddress)
+	} else {
+		customerAddress = "Địa chỉ: Địa chỉ"
+	}
+	pdf.Cell(0, 5, customerAddress)
+	pdf.Ln(5)
+	
+	paymentMethod := "Chuyển khoản"
+	if invoice.PaymentStatus == "paid" {
+		paymentMethod = "Chuyển khoản"
+	} else if invoice.PaymentStatus == "partial" {
+		paymentMethod = "Chuyển khoản"
+	}
+	pdf.Cell(0, 5, fmt.Sprintf("Hình thức thanh toán: %s", paymentMethod))
 	pdf.Ln(8)
 
-	// Summary section with better styling
-	s.setFont(pdf, "", 11, fontAvailable)
+	// =====================================================
+	// PRODUCTS TABLE
+	// =====================================================
+	
+	// Table header
+	s.setFont(pdf, "B", 9, fontAvailable)
+	pdf.SetFillColor(255, 255, 255)
 	pdf.SetTextColor(0, 0, 0)
-
-	// Summary table without borders - full width
-	s.setFont(pdf, "", 11, fontAvailable)
-	pdf.SetTextColor(0, 0, 0)
-
-	// Use same full width as product table
-	summaryW1 := w1                // First column takes remaining space
-	summaryW2 := w2 + w3 + w4 + w5 // Second column takes fixed width columns
-
+	pdf.SetDrawColor(0, 0, 0)
+	
+	// Column widths matching the image
+	colSTT := 15.0      // STT
+	colName := 65.0     // Tên hàng hoá
+	colUnit := 25.0     // Đơn vị
+	colQty := 20.0      // Số lượng
+	colPrice := 30.0    // Đơn giá
+	colTotal := 35.0    // Thành tiền
+	
 	pdf.SetX(startX)
-
-	// Discount row
-	if invoice.DiscountAmount > 0 {
-		pdf.CellFormat(summaryW1, 6, "Giảm giá:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, "-"+s.FormatCurrency(invoice.DiscountAmount), "", 1, "R", false, 0, "")
-		pdf.SetX(startX) // Reset X position for next row
+	pdf.CellFormat(colSTT, 8, "STT", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colName, 8, "Tên hàng hoá", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colUnit, 8, "Đơn vị", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colQty, 8, "Số lượng", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colPrice, 8, "Đơn giá", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colTotal, 8, "Thành tiền", "1", 1, "C", true, 0, "")
+	
+	// Table content rows - iterate through invoice items
+	for i, item := range invoice.Items {
+		pdf.SetX(startX)
+		
+		// STT
+		pdf.CellFormat(colSTT, 8, strconv.Itoa(i+1), "1", 0, "C", true, 0, "")
+		
+		// Product name with variant
+		productName := item.ProductName
+		if item.VariantName != "" {
+			productName = fmt.Sprintf("%s (%s)", item.ProductName, item.VariantName)
+		}
+		pdf.CellFormat(colName, 8, productName, "1", 0, "L", true, 0, "")
+		
+		// Unit (using variant name or default)
+		unit := item.VariantName
+		if unit == "" {
+			unit = "Cai"
+		}
+		pdf.CellFormat(colUnit, 8, unit, "1", 0, "C", true, 0, "")
+		
+		// Quantity
+		pdf.CellFormat(colQty, 8, strconv.Itoa(int(item.Quantity)), "1", 0, "C", true, 0, "")
+		
+		// Unit Price
+		pdf.CellFormat(colPrice, 8, s.FormatCurrency(item.UnitPrice), "1", 0, "R", true, 0, "")
+		
+		// Total Price
+		pdf.CellFormat(colTotal, 8, s.FormatCurrency(item.TotalPrice), "1", 1, "R", true, 0, "")
+	}
+	
+	// Add empty rows to match the template (total 8 rows in the image)
+	emptyRows := 6 - len(invoice.Items)
+	if emptyRows < 0 {
+		emptyRows = 0
+	}
+	for i := 0; i < emptyRows; i++ {
+		pdf.SetX(startX)
+		pdf.CellFormat(colSTT, 8, "", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(colName, 8, "", "1", 0, "L", true, 0, "")
+		pdf.CellFormat(colUnit, 8, "", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(colQty, 8, "", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(colPrice, 8, "", "1", 0, "R", true, 0, "")
+		pdf.CellFormat(colTotal, 8, "", "1", 1, "R", true, 0, "")
 	}
 
-	// Total row with highlight
-	s.setFont(pdf, "B", 14, fontAvailable)
-	pdf.SetTextColor(220, 38, 38) // Red color for total
-	pdf.CellFormat(summaryW1, 8, "TỔNG CỘNG:", "", 0, "L", false, 0, "")
-	pdf.CellFormat(summaryW2, 8, s.FormatCurrency(invoice.TotalAmount), "", 1, "R", false, 0, "")
-	pdf.SetX(startX) // Reset X position for next row
-
+	// =====================================================
+	// SUMMARY SECTION
+	// =====================================================
+	
+	s.setFont(pdf, "B", 10, fontAvailable)
+	
+	// Total amount row
+	pdf.SetX(startX)
+	summaryLabelWidth := colSTT + colName + colUnit + colQty + colPrice
+	pdf.CellFormat(summaryLabelWidth, 8, "Tổng số tiền cần thanh toán", "1", 0, "L", true, 0, "")
+	pdf.CellFormat(colTotal, 8, s.FormatCurrency(invoice.TotalAmount), "1", 1, "R", true, 0, "")
+	
 	// Paid amount row
-	if invoice.PaidAmount > 0 {
-		s.setFont(pdf, "", 11, fontAvailable)
-		pdf.SetTextColor(0, 0, 0)
-		pdf.CellFormat(summaryW1, 6, "Đã thanh toán:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(invoice.PaidAmount), "", 1, "R", false, 0, "")
-		pdf.SetX(startX) // Reset X position for next row
-	}
-
+	pdf.SetX(startX)
+	pdf.CellFormat(summaryLabelWidth, 8, "Đã thanh toán", "1", 0, "L", true, 0, "")
+	paidAmountStr := s.FormatCurrency(invoice.PaidAmount)
+	pdf.CellFormat(colTotal, 8, paidAmountStr, "1", 1, "R", true, 0, "")
+	
 	// Remaining amount row
-	if invoice.PaymentStatus == "partial" {
-		remaining := invoice.TotalAmount - invoice.PaidAmount
-		s.setFont(pdf, "B", 11, fontAvailable)
-		pdf.SetTextColor(220, 38, 38) // Red color for remaining
-		pdf.CellFormat(summaryW1, 6, "Còn lại:", "", 0, "L", false, 0, "")
-		pdf.CellFormat(summaryW2, 6, s.FormatCurrency(remaining), "", 1, "R", false, 0, "")
-	}
+	pdf.SetX(startX)
+	pdf.CellFormat(summaryLabelWidth, 8, "Còn lại", "1", 0, "L", true, 0, "")
+	remaining := invoice.TotalAmount - invoice.PaidAmount
+	remainingAmountStr := s.FormatCurrency(remaining)
+	pdf.CellFormat(colTotal, 8, remainingAmountStr, "1", 1, "R", true, 0, "")
+	
 	pdf.Ln(15)
 
-	pdf.SetY(230) // Position near bottom of A4 page
-
-	s.setFont(pdf, "", 12, fontAvailable)
+	// =====================================================
+	// SIGNATURE SECTION
+	// =====================================================
+	
+	// Position signature section at bottom of page
+	currentY := pdf.GetY()
+	if currentY < 240 {
+		pdf.SetY(240)
+	}
+	
+	s.setFont(pdf, "", 11, fontAvailable)
 	pdf.SetTextColor(0, 0, 0)
-
-	// Date row with space between
-	pdf.CellFormat(0, 6, fmt.Sprintf("Ngày %s, Tháng %s, Năm %s", time.Now().Format("02"), time.Now().Format("01"), time.Now().Format("2006")), "", 0, "R", false, 0, "")
-
-	pdf.Ln(6)
-
-	// Signature section with space between
-	pdf.SetTextColor(100, 100, 100)
-	s.setFont(pdf, "B", 13, fontAvailable)
-	pdf.CellFormat(95, 6, "Khách hàng", "", 0, "C", false, 0, "")
-	pdf.CellFormat(95, 6, "Người bán", "", 0, "C", false, 0, "")
-	pdf.Ln(6)
-
-	pdf.Ln(20)
+	
+	// Two columns for signatures
+	signatureWidth := pageWidth / 2
+	
+	pdf.SetX(startX)
+	pdf.CellFormat(signatureWidth, 6, "Người mua hàng", "", 0, "C", false, 0, "")
+	pdf.CellFormat(signatureWidth, 6, "Người bán hàng", "", 1, "C", false, 0, "")
 
 	// Generate PDF bytes
 	var buf bytes.Buffer

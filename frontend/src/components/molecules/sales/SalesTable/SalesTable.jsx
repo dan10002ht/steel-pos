@@ -32,6 +32,7 @@ const SalesTable = ({
   pageSize = 10,
   onPageChange,
   onPageSizeChange,
+  isCustomerPage = false,
 }) => {
   const { isAdmin } = useContext(AuthContext);
   return (
@@ -41,9 +42,9 @@ const SalesTable = ({
           <Thead>
             <Tr>
               <Th>Mã hoá đơn</Th>
-              <Th>Tên khách hàng</Th>
-              <Th>Số điện thoại</Th>
-              <Th>Ngày tạo</Th>
+              {!isCustomerPage && <Th>Tên khách hàng</Th>}
+              {!isCustomerPage && <Th>Số điện thoại</Th>}
+              {!isCustomerPage && <Th>Ngày tạo</Th>}
               <Th>Tổng tiền</Th>
               <Th>Còn lại</Th>
               <Th>Trạng thái</Th>
@@ -67,6 +68,7 @@ const SalesTable = ({
                   onCancel={onCancel}
                   onPayment={onPayment}
                   isAdmin={isAdmin}
+                  isCustomerPage={isCustomerPage}
                 />
               ))
             )}

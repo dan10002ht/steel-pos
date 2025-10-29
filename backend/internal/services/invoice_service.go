@@ -545,18 +545,10 @@ func (s *InvoiceService) GetInvoicePayments(invoiceID int) ([]*models.InvoicePay
 }
 
 func (s *InvoiceService) UpdateInvoicePayment(paymentID int, req *models.UpdateInvoicePaymentRequest, updatedBy int) (*models.InvoicePayment, error) {
-	// Get existing payment
-	payments, err := s.invoiceRepo.GetInvoicePaymentsByInvoiceID(0) // We need to find by payment ID
+	// Get existing payment by ID
+	existingPayment, err := s.invoiceRepo.GetPaymentByID(paymentID)
 	if err != nil {
 		return nil, err
-	}
-
-	var existingPayment *models.InvoicePayment
-	for _, payment := range payments {
-		if payment.ID == paymentID {
-			existingPayment = payment
-			break
-		}
 	}
 
 	if existingPayment == nil {
@@ -578,6 +570,9 @@ func (s *InvoiceService) UpdateInvoicePayment(paymentID int, req *models.UpdateI
 	}
 	if req.TransactionReference != nil {
 		existingPayment.TransactionReference = req.TransactionReference
+	}
+	if req.PaymentImages != nil {
+		existingPayment.PaymentImages = req.PaymentImages
 	}
 	if req.Notes != nil {
 		existingPayment.Notes = req.Notes

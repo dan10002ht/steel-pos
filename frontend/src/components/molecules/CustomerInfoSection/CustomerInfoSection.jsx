@@ -178,7 +178,7 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
         <CardBody>
           <form onSubmit={handleSubmit}>
             <VStack spacing={4} align='stretch'>
-              <HStack spacing={4} align='start'>
+              <HStack flex={1} spacing={4} align='start'>
                 <FormControl isInvalid={!!errors.name} flex={1}>
                   <FormLabel fontWeight='medium'>
                     Tên khách hàng{' '}
@@ -193,38 +193,22 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
                   />
                   <FormErrorMessage>{errors.name}</FormErrorMessage>
                 </FormControl>
-                <Box flex={1}>
-                  <InfoField
-                    label='ID khách hàng'
-                    value={`#${customer.id}`}
-                    isMonospace
-                  />
-                </Box>
-              </HStack>
-
-              <Divider />
-
-              <HStack spacing={4} align='start'>
-                <FormControl isInvalid={!!errors.phone} flex={1}>
-                  <FormLabel fontWeight='medium'>
-                    Số điện thoại{' '}
-                    <Text as='span' color='red.500'>
-                      *
-                    </Text>
-                  </FormLabel>
-                  <Input
-                    value={formData.phone}
-                    onChange={e => handleInputChange('phone', e.target.value)}
-                    isDisabled={editCustomerMutation.isPending}
-                  />
-                  <FormErrorMessage>{errors.phone}</FormErrorMessage>
-                </FormControl>
-                <Box flex={1}>
-                  <InfoField
-                    label='Ngày tạo'
-                    value={formatDateTime(customer.created_at)}
-                  />
-                </Box>
+                <HStack flex={1} spacing={4} align='start'>
+                  <FormControl isInvalid={!!errors.phone} flex={1}>
+                    <FormLabel fontWeight='medium'>
+                      Số điện thoại{' '}
+                      <Text as='span' color='red.500'>
+                        *
+                      </Text>
+                    </FormLabel>
+                    <Input
+                      value={formData.phone}
+                      onChange={e => handleInputChange('phone', e.target.value)}
+                      isDisabled={editCustomerMutation.isPending}
+                    />
+                    <FormErrorMessage>{errors.phone}</FormErrorMessage>
+                  </FormControl>
+                </HStack>
               </HStack>
 
               <Divider />
@@ -240,25 +224,6 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
               </FormControl>
 
               <Divider />
-
-              <HStack justify='space-between' align='center'>
-                <Box>
-                  <FormLabel fontWeight='medium' mb={1}>
-                    Trạng thái hoạt động
-                  </FormLabel>
-                  <Text fontSize='sm' color='gray.600'>
-                    Khách hàng có thể sử dụng hệ thống
-                  </Text>
-                </Box>
-                <Switch
-                  isChecked={formData.is_active}
-                  onChange={e =>
-                    handleInputChange('is_active', e.target.checked)
-                  }
-                  isDisabled={editCustomerMutation.isPending}
-                  colorScheme='green'
-                />
-              </HStack>
             </VStack>
           </form>
         </CardBody>
@@ -268,7 +233,7 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader pb='0'>
         <HStack justify='space-between' align='center'>
           <Text fontSize='lg' fontWeight='bold'>
             Thông tin khách hàng
@@ -288,41 +253,27 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
           <HStack spacing={4} align='start'>
             <InfoField label='Tên khách hàng' value={customer.name} />
             <InfoField
-              label='ID khách hàng'
-              value={`#${customer.id}`}
-              isMonospace
-            />
-          </HStack>
-
-          <Divider />
-
-          <HStack spacing={4} align='start'>
-            <InfoField
               label='Số điện thoại'
               value={formatPhoneNumber(customer.phone)}
               isMonospace
             />
+          </HStack>
+          {customer.address && (
+            <InfoField label='Địa chỉ' value={customer.address} />
+          )}
+
+          <Divider />
+
+          <HStack spacing={4} align='start'>
             <InfoField
               label='Ngày tạo'
               value={formatDateTime(customer.created_at)}
             />
           </HStack>
 
-          {customer.address && (
-            <>
-              <Divider />
-              <Box>
-                <Text fontSize='sm' color='gray.600'>
-                  Địa chỉ
-                </Text>
-                <Text fontSize='md'>{customer.address}</Text>
-              </Box>
-            </>
-          )}
+          {/* <Divider /> */}
 
-          <Divider />
-
-          <HStack spacing={4} align='start'>
+          {/* <HStack spacing={4} align='start'>
             <InfoField
               label='Cập nhật lần cuối'
               value={formatDateTime(customer.updated_at)}
@@ -335,7 +286,7 @@ const CustomerInfoSection = ({ customer, onCustomerUpdate }) => {
                   : 'Hệ thống'
               }
             />
-          </HStack>
+          </HStack> */}
         </VStack>
       </CardBody>
     </Card>

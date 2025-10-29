@@ -15,18 +15,30 @@ import {
   getPaymentStatusWithRemaining,
 } from '@/utils/statusHelpers';
 
-const SalesTableRow = ({ invoice, onViewDetail, onPayment }) => {
+const SalesTableRow = ({
+  invoice,
+  onViewDetail,
+  onPayment,
+  isCustomerPage,
+}) => {
   const remainingAmount = invoice.total_amount - invoice.paid_amount;
   return (
     <Tr
+      height={'60px'}
       _hover={{ bg: 'gray.50' }}
       cursor='pointer'
       onClick={() => onViewDetail(invoice.id)}
     >
-      <Td fontWeight='medium'>{invoice.invoice_code}</Td>
-      <Td>{invoice.customer_name}</Td>
-      <Td>{invoice.customer_phone}</Td>
-      <Td>{new Date(invoice.created_at).toLocaleDateString('vi-VN')}</Td>
+      <Td>
+        <Text fontWeight='bold' fontSize='md'>
+          {invoice.invoice_code}
+        </Text>
+      </Td>
+      {!isCustomerPage && <Td>{invoice.customer_name}</Td>}
+      {!isCustomerPage && <Td>{invoice.customer_phone}</Td>}
+      {!isCustomerPage && (
+        <Td>{new Date(invoice.created_at).toLocaleDateString('vi-VN')}</Td>
+      )}
       <Td fontWeight='medium'>{formatCurrency(invoice.total_amount)}</Td>
       <Td fontWeight='medium'>{formatCurrency(remainingAmount)}</Td>
       <Td>
@@ -56,15 +68,6 @@ const SalesTableRow = ({ invoice, onViewDetail, onPayment }) => {
                 />
               </Tooltip>
             )}
-          <Tooltip label='Xem chi tiết hóa đơn' placement='top' hasArrow>
-            <IconButton
-              size='sm'
-              icon={<Eye size={16} />}
-              onClick={() => onViewDetail(invoice.id)}
-              colorScheme='blue'
-              variant='ghost'
-            />
-          </Tooltip>
         </HStack>
       </Td>
     </Tr>

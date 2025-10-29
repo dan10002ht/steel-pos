@@ -4,15 +4,20 @@ import CustomerForm from '@/components/molecules/sales/CustomerForm';
 import InvoiceItemList from '@/components/molecules/sales/InvoiceItemList';
 import InvoiceSummary from '@/components/molecules/sales/InvoiceSummary';
 
-const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
+const InvoiceForm = ({
+  invoice,
+  onUpdate,
+  onInvoiceCreated,
+  onInvoiceCreatedAndPrint,
+}) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
 
   // Early return if invoice is not loaded yet
   if (!invoice) {
     return (
-      <Box textAlign="center" py={8}>
-        <Text color="gray.500">Đang tải dữ liệu hóa đơn...</Text>
+      <Box textAlign='center' py={8}>
+        <Text color='gray.500'>Đang tải dữ liệu hóa đơn...</Text>
       </Box>
     );
   }
@@ -22,7 +27,8 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'quantity' || field === 'unitPrice') {
-          updatedItem.totalPrice = (updatedItem.quantity || 0) * (updatedItem.unitPrice || 0);
+          updatedItem.totalPrice =
+            (updatedItem.quantity || 0) * (updatedItem.unitPrice || 0);
         }
         return updatedItem;
       }
@@ -36,9 +42,9 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
 
     onUpdate(updatedInvoice);
   };
-  const handleSelectCustomer = (selectedCustomer) => {
-    onUpdate({...invoice, ...selectedCustomer});
-  }
+  const handleSelectCustomer = selectedCustomer => {
+    onUpdate({ ...invoice, ...selectedCustomer });
+  };
 
   const handleRemoveItem = itemId => {
     const updatedItems = invoice.items.filter(item => item.id !== itemId);
@@ -113,6 +119,44 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
     }
   };
 
+  const handleCreateInvoiceAndPrint = async () => {
+    if (invoice.items.length === 0) {
+      toast({
+        title: 'Hoá đơn trống',
+        description: 'Vui lòng thêm ít nhất một sản phẩm',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Validate required customer fields
+    if (!invoice.customer_name || !invoice.customer_phone) {
+      toast({
+        title: 'Thiếu thông tin khách hàng',
+        description: 'Vui lòng nhập đầy đủ tên và số điện thoại khách hàng',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      // Call parent callback to handle invoice creation and print
+      if (onInvoiceCreatedAndPrint) {
+        await onInvoiceCreatedAndPrint(invoice);
+      }
+    } catch (error) {
+      console.error('Failed to create invoice and print:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <VStack spacing={4} align='stretch' h='full'>
       {/* Customer Information */}
@@ -156,6 +200,7 @@ const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
             invoice={invoice}
             onUpdateInvoice={handleUpdateInvoice}
             onCreateInvoice={handleCreateInvoice}
+            onCreateInvoiceAndPrint={handleCreateInvoiceAndPrint}
             isDisabled={invoice.items.length === 0 || isCreating}
             isLoading={isCreating}
           />

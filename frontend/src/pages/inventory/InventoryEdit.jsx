@@ -25,7 +25,6 @@ const InventoryEdit = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-
   // Fetch import order detail
   const { data: importOrderData, error } = useFetchApi(
     ['import-order', id],
@@ -58,9 +57,9 @@ const InventoryEdit = () => {
   });
 
   const importOrder = importOrderData || null;
-  console.log({importOrder})
+  console.log({ importOrder });
 
-  const handleSave = (formDataFromComponent) => {
+  const handleSave = formDataFromComponent => {
     // formDataFromComponent đã có items rồi, không cần transform nữa
     const orderData = {
       supplier_name: formDataFromComponent.supplier_name,
@@ -125,21 +124,21 @@ const InventoryEdit = () => {
 
   return (
     <Page
-      title={<HStack align='center'>
-        <Text>Chỉnh sửa đơn nhập hàng</Text>
-        <Badge
-                  colorScheme={
-                    importOrder.status === 'approved' ? 'green' : 'orange'
-                  }
-                  fontSize="sm"
-                  px={3}
-                  py={1}
-                >
-                  {importOrder.status === 'approved'
-                    ? 'Đã phê duyệt'
-                    : 'Chờ phê duyệt'}
-                </Badge>
-      </HStack>}
+      title={
+        <HStack align='center'>
+          <Text>Chỉnh sửa đơn nhập hàng</Text>
+          <Badge
+            colorScheme={importOrder.status === 'approved' ? 'green' : 'orange'}
+            fontSize='sm'
+            px={3}
+            py={1}
+          >
+            {importOrder.status === 'approved'
+              ? 'Đã phê duyệt'
+              : 'Chờ phê duyệt'}
+          </Badge>
+        </HStack>
+      }
       subtitle={`Ngày tạo: ${formatDate(importOrder.import_date)}`}
       onBack={handleBack}
     >
@@ -148,6 +147,7 @@ const InventoryEdit = () => {
         <ImportOrderForm
           isEditing={true}
           initialData={importOrder}
+          onNavigateToList={() => navigate('/inventory')}
           onSubmit={handleSave}
           onCancel={handleCancel}
           isLoading={editMutation.isPending}

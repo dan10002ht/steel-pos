@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useToast } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page/Page';
 import InvoiceTabsManager from '../../components/organisms/sales/InvoiceTabsManager';
 import { TOAST_DURATION } from '../../constants/options';
@@ -10,6 +11,7 @@ const SalesCreatePage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [invoices, setInvoices] = useState([generateDefaultInvoice('1')]);
   const toast = useToast();
+  const navigate = useNavigate();
   const createInvoiceMutation = useCreateApi('/invoices', {
     invalidateQueries: [
       ['invoices'],
@@ -111,6 +113,71 @@ const SalesCreatePage = () => {
     }
   };
 
+  const handleInvoiceCreatedAndPrint = async createdInvoice => {
+    try {
+      // Transform frontend data to backend format
+      const payload = {
+        customer_id: createdInvoice.customer_id || null,
+        customer_phone: createdInvoice.customer_phone || '',
+        customer_name: createdInvoice.customer_name || '',
+        customer_address: createdInvoice.customer_address || null,
+        items: createdInvoice.items.map(item => ({
+          product_id: item.productId || null,
+          variant_id: item.variantId || null,
+          product_name: item.productName,
+          variant_name: item.variantName,
+          unit: item.unit,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          product_notes: item.productNotes || null,
+        })),
+        discount_amount: createdInvoice.discount || 0,
+        discount_percentage: 0,
+        tax_amount: 0,
+        tax_percentage: 0,
+        payment_method: createdInvoice.paymentMethod || null,
+        paid_amount: createdInvoice.paidAmount || 0,
+        notes: createdInvoice.notes || null,
+      };
+
+      const { data, success } =
+        await createInvoiceMutation.mutateAsync(payload);
+      if (success) {
+        toast({
+          title: 'Tạo hoá đơn thành công',
+          description: `Hoá đơn ${data.invoice_code} đã được tạo và đang mở trang in`,
+          status: 'success',
+          duration: TOAST_DURATION.MEDIUM,
+          isClosable: true,
+        });
+
+        // Remove the created invoice from the list
+        setInvoices(prev =>
+          [...prev].filter((_, index) => index !== activeTab)
+        );
+
+        // Switch to the first tab if current tab was removed
+        if (activeTab > invoices.length - 1) {
+          setActiveTab(0);
+        }
+
+        // Open print page in new tab
+        const printUrl = `/sales/invoices/${data.id}/print`;
+        window.open(printUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating invoice and print:', error);
+
+      toast({
+        title: 'Lỗi tạo hoá đơn',
+        description: error.message || 'Có lỗi xảy ra khi tạo hoá đơn',
+        status: 'error',
+        duration: TOAST_DURATION.LONG,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <Page title='Tạo hoá đơn mới' subtitle='Quản lý và tạo hoá đơn bán hàng'>
       <InvoiceTabsManager
@@ -121,6 +188,7 @@ const SalesCreatePage = () => {
         onCreateNew={handleCreateNewInvoice}
         onUpdateInvoice={handleUpdateInvoice}
         onInvoiceCreated={handleInvoiceCreated}
+        onInvoiceCreatedAndPrint={handleInvoiceCreatedAndPrint}
       />
     </Page>
   );

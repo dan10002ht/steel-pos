@@ -7,24 +7,24 @@ import { useLayoutUi } from '../../../contexts/UiContext';
 import { AuthContext } from '../../../contexts/AuthContext';
 
 const menuItems = [
+  // {
+  //   id: 'dashboard',
+  //   label: 'Dashboard',
+  //   icon: <Home size={20} />,
+  //   path: '/dashboard',
+  // },
   {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: <Home size={20} />,
-    path: '/dashboard',
+    id: 'sales',
+    label: 'Bán hàng',
+    icon: <ShoppingCart size={20} />,
+    path: '/sales',
+    isStartWith: true,
   },
   {
     id: 'products',
     label: 'Sản phẩm',
     icon: <Package size={20} />,
     path: '/products',
-    isStartWith: true,
-  },
-  {
-    id: 'sales',
-    label: 'Bán hàng',
-    icon: <ShoppingCart size={20} />,
-    path: '/sales',
     isStartWith: true,
   },
   {

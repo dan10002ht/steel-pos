@@ -856,14 +856,54 @@ func (r *InvoiceRepository) GetInvoicePaymentsByInvoiceID(invoiceID int) ([]*mod
 	return payments, nil
 }
 
+func (r *InvoiceRepository) GetPaymentByID(paymentID int) (*models.InvoicePayment, error) {
+	query := `
+		SELECT id, invoice_id, amount, payment_method, payment_date, transaction_reference,
+			   payment_images, notes, correction_reason, corrected_by, corrected_at, original_amount,
+			   status, created_at, updated_at, created_by, created_by_username
+		FROM invoice_payments
+		WHERE id = $1
+	`
+
+	payment := &models.InvoicePayment{}
+	err := r.db.QueryRow(query, paymentID).Scan(
+		&payment.ID,
+		&payment.InvoiceID,
+		&payment.Amount,
+		&payment.PaymentMethod,
+		&payment.PaymentDate,
+		&payment.TransactionReference,
+		&payment.PaymentImages,
+		&payment.Notes,
+		&payment.CorrectionReason,
+		&payment.CorrectedBy,
+		&payment.CorrectedAt,
+		&payment.OriginalAmount,
+		&payment.Status,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+		&payment.CreatedBy,
+		&payment.CreatedByUsername,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return payment, nil
+}
+
 func (r *InvoiceRepository) UpdateInvoicePayment(payment *models.InvoicePayment) error {
 	query := `
 		UPDATE invoice_payments
 		SET amount = $1, payment_method = $2, payment_date = $3,
-			transaction_reference = $4, notes = $5, correction_reason = $6,
-			corrected_by = $7, corrected_at = $8, original_amount = $9,
-			status = $10, updated_at = $11
-		WHERE id = $12
+			transaction_reference = $4, payment_images = $5, notes = $6, 
+			correction_reason = $7, corrected_by = $8, corrected_at = $9, 
+			original_amount = $10, status = $11, updated_at = $12
+		WHERE id = $13
 	`
 
 	result, err := r.db.Exec(
@@ -872,6 +912,7 @@ func (r *InvoiceRepository) UpdateInvoicePayment(payment *models.InvoicePayment)
 		payment.PaymentMethod,
 		payment.PaymentDate,
 		payment.TransactionReference,
+		payment.PaymentImages,
 		payment.Notes,
 		payment.CorrectionReason,
 		payment.CorrectedBy,

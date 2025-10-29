@@ -44,11 +44,11 @@ const RecentInvoicesSection = ({
   const totalInvoices = invoicesResult?.total || 0;
   const totalPages = Math.ceil(totalInvoices / pageSize);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = page => {
     setCurrentPage(page);
   };
 
-  const handlePageSizeChange = (event) => {
+  const handlePageSizeChange = event => {
     const newPageSize = parseInt(event.target.value);
     setPageSize(newPageSize);
     setCurrentPage(1); // Reset to first page when changing page size
@@ -57,14 +57,10 @@ const RecentInvoicesSection = ({
   return (
     <Card>
       <CardHeader>
-        <HStack justify='space-between'>
-          <Text fontSize='lg' fontWeight='bold'>
-            Hóa đơn gần đây
-          </Text>
-          <Button size='sm' variant='outline' onClick={onViewAll}>
-            Xem tất cả
-          </Button>
-        </HStack>
+        <Text fontSize='lg' fontWeight='bold'>
+          Hóa đơn gần đây
+        </Text>
+        Chi tiết khách hàng
       </CardHeader>
       <CardBody>
         {isLoading ? (
@@ -128,6 +124,7 @@ const RecentInvoicesSection = ({
             pageSize={pageSize}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
+            isCustomerPage={true}
           />
         )}
       </CardBody>

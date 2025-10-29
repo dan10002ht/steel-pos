@@ -147,7 +147,22 @@ const ProductDetailPage = () => {
 
   return (
     <Page
-      title='Chi tiết sản phẩm'
+      onBack={() => navigate('/products')}
+      title={
+        <HStack spacing={2}>
+          <Text fontSize='xl' fontWeight='bold'>
+            {product.name}
+          </Text>
+          <Badge
+            colorScheme={product.is_active ? 'green' : 'gray'}
+            fontSize='sm'
+            px={3}
+            py={1}
+          >
+            {product.is_active ? 'Hoạt động' : 'Không hoạt động'}
+          </Badge>
+        </HStack>
+      }
       subtitle={`Thông tin chi tiết về ${product.name}`}
       breadcrumbs={[
         { label: 'Dashboard', href: '/dashboard' },
@@ -162,19 +177,11 @@ const ProductDetailPage = () => {
           leftIcon: <Edit size={16} />,
         },
       ]}
-      secondaryActions={[
-        {
-          label: 'Quay lại',
-          onClick: () => navigate('/products'),
-          variant: 'outline',
-          leftIcon: <ArrowLeft size={16} />,
-        },
-      ]}
     >
       <VStack spacing={6} align='stretch'>
         {/* Product Overview */}
         <Card shadow='sm'>
-          <CardHeader>
+          <CardHeader pb={0}>
             <HStack justify='space-between' align='center'>
               <HStack spacing={3}>
                 <VStack align='flex-start' spacing={0}>
@@ -183,14 +190,6 @@ const ProductDetailPage = () => {
                   </Text>
                 </VStack>
               </HStack>
-              <Badge
-                colorScheme={product.is_active ? 'green' : 'gray'}
-                fontSize='sm'
-                px={3}
-                py={1}
-              >
-                {product.is_active ? 'Hoạt động' : 'Không hoạt động'}
-              </Badge>
             </HStack>
           </CardHeader>
           <CardBody>
@@ -257,11 +256,8 @@ const ProductDetailPage = () => {
           <CardHeader>
             <HStack justify='space-between' align='center'>
               <Text fontSize='lg' fontWeight='bold'>
-                Variants của sản phẩm
+                Phân loại của sản phẩm
               </Text>
-              <Badge colorScheme='blue' fontSize='sm'>
-                {product.variants?.length || 0} variants
-              </Badge>
             </HStack>
           </CardHeader>
           <CardBody>
@@ -278,10 +274,10 @@ const ProductDetailPage = () => {
                 </Box>
                 <VStack spacing={2} textAlign='center'>
                   <Text fontSize='lg' fontWeight='semibold' color='gray.700'>
-                    Chưa có variants
+                    Chưa có phân loại
                   </Text>
                   <Text fontSize='md' color='gray.500'>
-                    Sản phẩm này chưa có variants nào được tạo.
+                    Sản phẩm này chưa có phân loại nào được tạo.
                   </Text>
                 </VStack>
               </VStack>
@@ -290,13 +286,10 @@ const ProductDetailPage = () => {
                 <Table variant='simple'>
                   <Thead>
                     <Tr>
-                      <Th>Tên variant</Th>
-                      <Th>SKU</Th>
+                      <Th>Tên phân loại</Th>
                       <Th isNumeric>Tồn kho</Th>
                       <Th isNumeric>Đã bán</Th>
                       <Th isNumeric>Giá</Th>
-                      <Th>Đơn vị</Th>
-                      <Th>Trạng thái</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
@@ -305,15 +298,7 @@ const ProductDetailPage = () => {
                         <Td>
                           <Text fontWeight='medium'>{variant.name}</Text>
                         </Td>
-                        <Td>
-                          <Text
-                            fontFamily='mono'
-                            fontSize='sm'
-                            color='gray.600'
-                          >
-                            {variant.sku}
-                          </Text>
-                        </Td>
+
                         <Td isNumeric>
                           <Text fontWeight='medium'>
                             {formatNumber(variant.stock)}
@@ -328,19 +313,6 @@ const ProductDetailPage = () => {
                           <Text fontWeight='medium' color='blue.600'>
                             {formatCurrency(variant.price)}
                           </Text>
-                        </Td>
-                        <Td>
-                          <Text color='gray.600'>{variant.unit}</Text>
-                        </Td>
-                        <Td>
-                          <Badge
-                            colorScheme={variant.is_active ? 'green' : 'gray'}
-                            fontSize='xs'
-                          >
-                            {variant.is_active
-                              ? 'Hoạt động'
-                              : 'Không hoạt động'}
-                          </Badge>
                         </Td>
                       </Tr>
                     ))}
@@ -358,9 +330,6 @@ const ProductDetailPage = () => {
               <Text fontSize='lg' fontWeight='bold'>
                 Lịch sử tồn kho
               </Text>
-              <Badge colorScheme='blue' fontSize='sm'>
-                {totalCount} hoạt động
-              </Badge>
             </HStack>
           </CardHeader>
           <CardBody>

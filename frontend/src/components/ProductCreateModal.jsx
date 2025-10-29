@@ -219,36 +219,28 @@ const ProductCreateModal = ({ isOpen, onClose, onProductCreated }) => {
                 Thông tin sản phẩm
               </Text>
               <VStack spacing={4} align='stretch'>
-                <FormControl isInvalid={!!errors.name} isRequired>
-                  <FormLabel>Tên sản phẩm</FormLabel>
-                  <Input
-                    value={formData.name}
-                    onChange={e => handleInputChange('name', e.target.value)}
-                    placeholder='Nhập tên sản phẩm'
-                  />
-                  <FormErrorMessage>{errors.name}</FormErrorMessage>
-                </FormControl>
-
-                <HStack spacing={4}>
+                <HStack>
+                  <FormControl isInvalid={!!errors.name} isRequired>
+                    <FormLabel>Tên sản phẩm</FormLabel>
+                    <Input
+                      value={formData.name}
+                      onChange={e => handleInputChange('name', e.target.value)}
+                      placeholder='Nhập tên sản phẩm'
+                    />
+                    <FormErrorMessage>{errors.name}</FormErrorMessage>
+                  </FormControl>
                   <FormControl isInvalid={!!errors.unit} isRequired>
                     <FormLabel>Đơn vị</FormLabel>
-                    <Select
-                      placeholder='Chọn đơn vị'
+                    <Input
                       value={formData.unit}
                       onChange={e => handleInputChange('unit', e.target.value)}
-                    >
-                      <option value='m'>Mét (m)</option>
-                      <option value='m²'>Mét vuông (m²)</option>
-                      <option value='kg'>Kilogram (kg)</option>
-                      <option value='cái'>Cái</option>
-                      <option value='bộ'>Bộ</option>
-                      <option value='cuộn'>Cuộn</option>
-                      <option value='tấm'>Tấm</option>
-                      <option value='ống'>Ống</option>
-                    </Select>
+                      placeholder='Nhập đơn vị'
+                    />
                     <FormErrorMessage>{errors.unit}</FormErrorMessage>
                   </FormControl>
+                </HStack>
 
+                <HStack spacing={4}>
                   <FormControl>
                     <FormLabel>Ghi chú</FormLabel>
                     <Textarea

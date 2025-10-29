@@ -25,7 +25,6 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
     searchError,
     searchCustomers,
     clearSearch,
-    selectCustomer,
   } = useCustomerSearch();
 
   const handleInputChange = (field, value) => {
@@ -55,21 +54,10 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
 
   const handleSelectCustomer = selectedCustomer => {
     onSelectCustomer({
-      customer_id: selectedCustomer.id,
       customer_name: selectedCustomer.name,
       customer_phone: selectedCustomer.phone,
       customer_address: selectedCustomer.address,
     });
-  };
-
-  const handleClearForm = () => {
-    onSelectCustomer({
-      customer_id: null,
-      customer_name: '',
-      customer_phone: '',
-      customer_address: '',
-    });
-    clearSearch();
   };
 
   return (
@@ -77,42 +65,6 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
       <Text fontSize='md' fontWeight='medium'>
         Thông tin khách hàng
       </Text>
-
-      {/* Hiển thị khách hàng hiện tại nếu đã select */}
-      {customer?.id && (
-        <Box
-          p={3}
-          bg='green.50'
-          border='1px'
-          borderColor='green.200'
-          borderRadius='md'
-        >
-          <HStack justify='space-between'>
-            <VStack align='start' spacing={1}>
-              <Text fontSize='sm' fontWeight='medium' color='green.700'>
-                Khách hàng hiện tại
-              </Text>
-              <Text fontSize='sm' color='green.600'>
-                {customer.name} - {customer.phone}
-              </Text>
-              {customer.address && (
-                <Text fontSize='xs' color='green.500'>
-                  {customer.address}
-                </Text>
-              )}
-            </VStack>
-            <Button
-              size='xs'
-              variant='ghost'
-              colorScheme='green'
-              onClick={handleClearForm}
-              leftIcon={<X size={12} />}
-            >
-              Thay đổi
-            </Button>
-          </HStack>
-        </Box>
-      )}
 
       <VStack spacing={3} align='stretch'>
         <Box>

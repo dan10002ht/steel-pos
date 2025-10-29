@@ -11,6 +11,7 @@ const InvoiceTabsManager = ({
   onCreateNew,
   onUpdateInvoice,
   onInvoiceCreated,
+  onInvoiceCreatedAndPrint,
 }) => {
   return (
     <Tabs index={activeTab} onChange={onTabChange} variant='enclosed'>
@@ -30,6 +31,7 @@ const InvoiceTabsManager = ({
                 onUpdateInvoice(index, updatedInvoice)
               }
               onInvoiceCreated={onInvoiceCreated}
+              onInvoiceCreatedAndPrint={onInvoiceCreatedAndPrint}
             />
           </TabPanel>
         ))}
