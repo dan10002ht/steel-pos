@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -16,15 +16,24 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
+  Tooltip,
 } from '@chakra-ui/react';
-import { Search, Package } from 'lucide-react';
+import { Search, Package, AlertTriangle } from 'lucide-react';
 import { useProductVariantsSearch } from '@/hooks/sales/useProductVariantsSearch';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { formatCurrency } from '@/utils/formatters';
+import { useInvoiceReservation } from '@/hooks/useInvoiceReservation';
 
 const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
+
+  const {
+    updateActualStock,
+    getAvailableStock,
+    getTotalReserved,
+    setReservation,
+  } = useInvoiceReservation();
 
   // Use the custom hook for product variants search
   const {
@@ -49,12 +58,28 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
     isLoadingMore
   );
 
+  // Update actual stock in reservation context when search results change
+  useEffect(() => {
+    if (searchResults && searchResults.length > 0) {
+      searchResults.forEach(variant => {
+        updateActualStock(variant.id, variant.stock);
+      });
+    }
+  }, [searchResults, updateActualStock]);
+
   const handleAddProduct = variant => {
+    // Get available stock considering reservations
+    const availableStock = getAvailableStock(variant.id, invoice.id);
+
     // Check if variant is out of stock
-    if (variant.stock === 0) {
+    if (availableStock === 0) {
+      const totalReserved = getTotalReserved(variant.id, invoice.id);
       toast({
         title: 'Không thể thêm sản phẩm',
-        description: 'Sản phẩm này đã hết hàng',
+        description:
+          totalReserved > 0
+            ? `Sản phẩm này đã hết hàng (${totalReserved} đang được giữ trong các hóa đơn khác)`
+            : 'Sản phẩm này đã hết hàng',
         status: 'warning',
         duration: 3000,
         isClosable: true,
@@ -95,6 +120,9 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
       ...invoice,
       items: [...invoice.items, newItem],
     };
+
+    // Add reservation
+    setReservation(invoice.id, variant.id, 1);
 
     onUpdate(updatedInvoice);
 
@@ -175,14 +203,18 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
           {hasResults &&
             searchResults.map((variant, index) => {
               const isLastElement = index === searchResults.length - 1;
+              const availableStock = getAvailableStock(variant.id, invoice.id);
+              const totalReserved = getTotalReserved(variant.id, invoice.id);
+              const hasReservations = totalReserved > 0;
+
               return (
                 <Card
                   key={`${variant.product_id}-${variant.id}`}
                   ref={isLastElement ? lastElementObserver : null}
                   variant='outline'
-                  cursor={variant.stock > 0 ? 'pointer' : 'not-allowed'}
-                  opacity={variant.stock === 0 ? 0.6 : 1}
-                  _hover={variant.stock > 0 ? { shadow: 'md' } : {}}
+                  cursor={availableStock > 0 ? 'pointer' : 'not-allowed'}
+                  opacity={availableStock === 0 ? 0.6 : 1}
+                  _hover={availableStock > 0 ? { shadow: 'md' } : {}}
                   onClick={() => handleAddProduct(variant)}
                 >
                   <CardBody p={4}>
@@ -191,14 +223,32 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
                         <Text fontWeight='bold' fontSize='sm'>
                           {variant.product_name} - {variant.name}
                         </Text>
-                        <Badge
-                          colorScheme={variant.stock > 0 ? 'green' : 'red'}
-                          fontSize='xs'
-                        >
-                          {variant.stock > 0
-                            ? `Tồn: ${variant.stock}`
-                            : 'Hết hàng'}
-                        </Badge>
+                        <HStack spacing={1}>
+                          {hasReservations && (
+                            <Tooltip
+                              label={`Tồn thực: ${variant.stock} | Đang giữ: ${totalReserved} ở các hóa đơn khác`}
+                              placement='top'
+                            >
+                              <Box>
+                                <AlertTriangle size={14} color='orange' />
+                              </Box>
+                            </Tooltip>
+                          )}
+                          <Badge
+                            colorScheme={
+                              availableStock === 0
+                                ? 'red'
+                                : availableStock <= 5
+                                  ? 'orange'
+                                  : 'green'
+                            }
+                            fontSize='xs'
+                          >
+                            {availableStock > 0
+                              ? `Tồn: ${availableStock}`
+                              : 'Hết hàng'}
+                          </Badge>
+                        </HStack>
                       </HStack>
 
                       <HStack justify='space-between'>
@@ -212,7 +262,7 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
                           leftIcon={<Package size={14} />}
                           colorScheme='blue'
                           variant='ghost'
-                          isDisabled={variant.stock === 0}
+                          isDisabled={availableStock === 0}
                         >
                           Thêm
                         </Button>

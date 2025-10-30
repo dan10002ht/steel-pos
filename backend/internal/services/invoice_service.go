@@ -32,6 +32,27 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		return nil, errors.New("invoice must have at least one item")
 	}
 
+	// Validate stock availability for all items BEFORE creating invoice
+	productRepo := repository.NewProductRepository(s.invoiceRepo.GetDB())
+	for _, itemReq := range req.Items {
+		if itemReq.VariantID != nil {
+			variant, err := productRepo.GetVariantByID(*itemReq.VariantID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get variant %d: %w", *itemReq.VariantID, err)
+			}
+			
+			if variant == nil {
+				return nil, fmt.Errorf("variant %d not found", *itemReq.VariantID)
+			}
+			
+			// Check if there's enough stock
+			if float64(variant.Stock) < itemReq.Quantity {
+				return nil, fmt.Errorf("insufficient stock for %s - %s: available %d, requested %.0f", 
+					itemReq.ProductName, itemReq.VariantName, variant.Stock, itemReq.Quantity)
+			}
+		}
+	}
+
 	// Handle customer - either use existing ID or create/get by phone
 	var customer *models.Customer
 	var err error

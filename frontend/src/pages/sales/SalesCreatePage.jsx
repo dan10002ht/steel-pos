@@ -1,23 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
 import Page from '../../components/organisms/Page/Page';
 import InvoiceTabsManager from '../../components/organisms/sales/InvoiceTabsManager';
 import { TOAST_DURATION } from '../../constants/options';
 import { useCreateApi } from '../../hooks/useCreateApi';
 import { generateDefaultInvoice } from '../../utils/invoiceHelpers';
+import { useInvoiceReservation } from '../../hooks/useInvoiceReservation';
+
+const INVOICES_STORAGE_KEY = 'draft_invoices';
+const ACTIVE_TAB_STORAGE_KEY = 'draft_invoices_active_tab';
 
 const SalesCreatePage = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [invoices, setInvoices] = useState([generateDefaultInvoice('1')]);
+  const [invoices, setInvoices] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const toast = useToast();
-  const navigate = useNavigate();
+  const { clearInvoiceReservations } = useInvoiceReservation();
+
   const createInvoiceMutation = useCreateApi('/invoices', {
     invalidateQueries: [
       ['invoices'],
       query => query.queryKey[0] === 'inventory-logs',
     ],
   });
+
+  // Load invoices from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedInvoices = localStorage.getItem(INVOICES_STORAGE_KEY);
+      const savedActiveTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+
+      if (savedInvoices) {
+        const parsed = JSON.parse(savedInvoices);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setInvoices(parsed);
+          if (savedActiveTab) {
+            const tabIndex = parseInt(savedActiveTab, 10);
+            if (tabIndex >= 0 && tabIndex < parsed.length) {
+              setActiveTab(tabIndex);
+            }
+          }
+          setIsInitialized(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load draft invoices from localStorage:', error);
+    }
+
+    // Nếu không có saved data, tạo invoice mặc định
+    setInvoices([generateDefaultInvoice('1')]);
+    setIsInitialized(true);
+  }, []);
+
+  // Save invoices to localStorage whenever they change
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    try {
+      localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invoices));
+    } catch (error) {
+      console.error('Failed to save draft invoices to localStorage:', error);
+    }
+  }, [invoices, isInitialized]);
+
+  // Save active tab to localStorage
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    try {
+      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab.toString());
+    } catch (error) {
+      console.error('Failed to save active tab to localStorage:', error);
+    }
+  }, [activeTab, isInitialized]);
+
+  // Show loading while initializing
+  if (!isInitialized) {
+    return null;
+  }
 
   const handleCreateNewInvoice = () => {
     const newInvoice = generateDefaultInvoice((invoices.length + 1).toString());
@@ -36,6 +97,11 @@ const SalesCreatePage = () => {
       });
       return;
     }
+
+    const closingInvoice = invoices[index];
+
+    // Clear reservations for this invoice
+    clearInvoiceReservations(closingInvoice.id);
 
     setInvoices(prev => [...prev].filter((_, i) => i !== index));
 
@@ -77,6 +143,7 @@ const SalesCreatePage = () => {
         payment_method: createdInvoice.paymentMethod || null,
         paid_amount: createdInvoice.paidAmount || 0,
         notes: createdInvoice.notes || null,
+        invoice_images: createdInvoice.invoiceImages || null,
       };
 
       const { data, success } =
@@ -89,6 +156,9 @@ const SalesCreatePage = () => {
           duration: TOAST_DURATION.MEDIUM,
           isClosable: true,
         });
+
+        // Clear reservations for this invoice
+        clearInvoiceReservations(createdInvoice.id);
 
         // Remove the created invoice from the list
         setInvoices(prev =>
@@ -138,6 +208,7 @@ const SalesCreatePage = () => {
         payment_method: createdInvoice.paymentMethod || null,
         paid_amount: createdInvoice.paidAmount || 0,
         notes: createdInvoice.notes || null,
+        invoice_images: createdInvoice.invoiceImages || null,
       };
 
       const { data, success } =
@@ -150,6 +221,9 @@ const SalesCreatePage = () => {
           duration: TOAST_DURATION.MEDIUM,
           isClosable: true,
         });
+
+        // Clear reservations for this invoice
+        clearInvoiceReservations(createdInvoice.id);
 
         // Remove the created invoice from the list
         setInvoices(prev =>

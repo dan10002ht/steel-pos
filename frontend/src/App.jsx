@@ -9,6 +9,7 @@ import {
 import QueryProvider from './shared/providers/QueryProvider';
 import { AuthProvider } from './contexts/AuthContext';
 import { UiProvider } from './contexts/UiContext';
+import { InvoiceReservationProvider } from './contexts/InvoiceReservationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -20,36 +21,40 @@ import Analytics from './pages/Analytics';
 import ProductsRoute from './routes/ProductsRoute';
 import UserManagement from './pages/user-management';
 
-
 function App() {
   return (
     <QueryProvider>
       <AuthProvider>
         <UiProvider>
-          <Router>
-            <Routes>
-              {/* Public routes */}
-              <Route path='/login' element={<Login />} />
+          <InvoiceReservationProvider>
+            <Router>
+              <Routes>
+                {/* Public routes */}
+                <Route path='/login' element={<Login />} />
 
-              {/* Protected routes group */}
-              <Route path='/' element={<ProtectedRoute />}>
-                <Route path='dashboard' element={<Dashboard />} />
-                <Route path='sales/*' element={<Sales />} />
-                <Route path='inventory/*' element={<InventoryRoute />} />
-                <Route path='products/*' element={<ProductsRoute />} />
-                <Route path='customers/*' element={<CustomersRoute />} />
-                <Route path='user-management' element={<UserManagement />} />
-                <Route path='reports' element={<Reports />} />
-                <Route path='analytics' element={<Analytics />} />
+                {/* Protected routes group */}
+                <Route path='/' element={<ProtectedRoute />}>
+                  <Route path='dashboard' element={<Dashboard />} />
+                  <Route path='sales/*' element={<Sales />} />
+                  <Route path='inventory/*' element={<InventoryRoute />} />
+                  <Route path='products/*' element={<ProductsRoute />} />
+                  <Route path='customers/*' element={<CustomersRoute />} />
+                  <Route path='user-management' element={<UserManagement />} />
+                  <Route path='reports' element={<Reports />} />
+                  <Route path='analytics' element={<Analytics />} />
 
-                {/* Default redirect */}
-                <Route index element={<Navigate to='/dashboard' replace />} />
-              </Route>
+                  {/* Default redirect */}
+                  <Route index element={<Navigate to='/dashboard' replace />} />
+                </Route>
 
-              {/* Catch all route */}
-              <Route path='*' element={<Navigate to='/dashboard' replace />} />
-            </Routes>
-          </Router>
+                {/* Catch all route */}
+                <Route
+                  path='*'
+                  element={<Navigate to='/dashboard' replace />}
+                />
+              </Routes>
+            </Router>
+          </InvoiceReservationProvider>
         </UiProvider>
       </AuthProvider>
     </QueryProvider>

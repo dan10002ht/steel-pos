@@ -3,6 +3,7 @@ import { Box, VStack, Card, CardBody, Text, useToast } from '@chakra-ui/react';
 import CustomerForm from '@/components/molecules/sales/CustomerForm';
 import InvoiceItemList from '@/components/molecules/sales/InvoiceItemList';
 import InvoiceSummary from '@/components/molecules/sales/InvoiceSummary';
+import { useInvoiceReservation } from '@/hooks/useInvoiceReservation';
 
 const InvoiceForm = ({
   invoice,
@@ -12,6 +13,9 @@ const InvoiceForm = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
+
+  const { getAvailableStock, setReservation, removeReservation } =
+    useInvoiceReservation();
 
   // Early return if invoice is not loaded yet
   if (!invoice) {
@@ -23,16 +27,38 @@ const InvoiceForm = ({
   }
 
   const handleUpdateItem = (itemId, field, value) => {
-    const updatedItems = invoice.items.map(item => {
-      if (item.id === itemId) {
-        const updatedItem = { ...item, [field]: value };
+    const item = invoice.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Validate quantity against available stock
+    if (field === 'quantity') {
+      const availableStock = getAvailableStock(item.variantId, invoice.id);
+
+      if (value > availableStock) {
+        toast({
+          title: 'Không đủ hàng trong kho',
+          description: `Chỉ còn ${availableStock} sản phẩm khả dụng (bao gồm cả số lượng đã chọn)`,
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Update reservation
+      setReservation(invoice.id, item.variantId, value);
+    }
+
+    const updatedItems = invoice.items.map(i => {
+      if (i.id === itemId) {
+        const updatedItem = { ...i, [field]: value };
         if (field === 'quantity' || field === 'unitPrice') {
           updatedItem.totalPrice =
             (updatedItem.quantity || 0) * (updatedItem.unitPrice || 0);
         }
         return updatedItem;
       }
-      return item;
+      return i;
     });
 
     const updatedInvoice = {
@@ -47,7 +73,13 @@ const InvoiceForm = ({
   };
 
   const handleRemoveItem = itemId => {
-    const updatedItems = invoice.items.filter(item => item.id !== itemId);
+    const item = invoice.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Remove reservation
+    removeReservation(invoice.id, item.variantId);
+
+    const updatedItems = invoice.items.filter(i => i.id !== itemId);
     const updatedInvoice = {
       ...invoice,
       items: updatedItems,
@@ -81,8 +113,11 @@ const InvoiceForm = ({
     onUpdate(updatedInvoice);
   };
 
-  const handleCreateInvoice = async () => {
-    if (invoice.items.length === 0) {
+  const handleCreateInvoice = async (invoiceData = null) => {
+    // Use provided invoiceData or fallback to invoice from state
+    const invoiceToCreate = invoiceData || invoice;
+
+    if (invoiceToCreate.items.length === 0) {
       toast({
         title: 'Hoá đơn trống',
         description: 'Vui lòng thêm ít nhất một sản phẩm',
@@ -94,7 +129,7 @@ const InvoiceForm = ({
     }
 
     // Validate required customer fields
-    if (!invoice.customer_name || !invoice.customer_phone) {
+    if (!invoiceToCreate.customer_name || !invoiceToCreate.customer_phone) {
       toast({
         title: 'Thiếu thông tin khách hàng',
         description: 'Vui lòng nhập đầy đủ tên và số điện thoại khách hàng',
@@ -110,7 +145,7 @@ const InvoiceForm = ({
     try {
       // Call parent callback to handle invoice creation
       if (onInvoiceCreated) {
-        await onInvoiceCreated(invoice);
+        await onInvoiceCreated(invoiceToCreate);
       }
     } catch (error) {
       console.error('Failed to create invoice:', error);
@@ -119,8 +154,11 @@ const InvoiceForm = ({
     }
   };
 
-  const handleCreateInvoiceAndPrint = async () => {
-    if (invoice.items.length === 0) {
+  const handleCreateInvoiceAndPrint = async (invoiceData = null) => {
+    // Use provided invoiceData or fallback to invoice from state
+    const invoiceToCreate = invoiceData || invoice;
+
+    if (invoiceToCreate.items.length === 0) {
       toast({
         title: 'Hoá đơn trống',
         description: 'Vui lòng thêm ít nhất một sản phẩm',
@@ -132,7 +170,7 @@ const InvoiceForm = ({
     }
 
     // Validate required customer fields
-    if (!invoice.customer_name || !invoice.customer_phone) {
+    if (!invoiceToCreate.customer_name || !invoiceToCreate.customer_phone) {
       toast({
         title: 'Thiếu thông tin khách hàng',
         description: 'Vui lòng nhập đầy đủ tên và số điện thoại khách hàng',
@@ -148,7 +186,7 @@ const InvoiceForm = ({
     try {
       // Call parent callback to handle invoice creation and print
       if (onInvoiceCreatedAndPrint) {
-        await onInvoiceCreatedAndPrint(invoice);
+        await onInvoiceCreatedAndPrint(invoiceToCreate);
       }
     } catch (error) {
       console.error('Failed to create invoice and print:', error);
@@ -187,6 +225,7 @@ const InvoiceForm = ({
 
           <InvoiceItemList
             items={invoice.items}
+            invoiceId={invoice.id}
             onUpdateItem={handleUpdateItem}
             onRemoveItem={handleRemoveItem}
           />

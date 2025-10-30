@@ -35,8 +35,31 @@ const InvoiceSummary = ({
     if (invoice.invoiceImages) {
       try {
         const parsed = JSON.parse(invoice.invoiceImages);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
+        if (Array.isArray(parsed)) {
+          // Support both formats for backward compatibility
+          return parsed
+            .map((item, index) => {
+              if (typeof item === 'string') {
+                // New format: array of URLs
+                return {
+                  id: Date.now() + index,
+                  url: item,
+                  isUploading: false,
+                };
+              } else if (item.url) {
+                // Old format: array of objects with url and public_id
+                return {
+                  id: Date.now() + index,
+                  url: item.url,
+                  public_id: item.public_id,
+                  isUploading: false,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean);
+        }
+      } catch {
         return [];
       }
     }
@@ -59,17 +82,34 @@ const InvoiceSummary = ({
     return totalAmount - paidAmount;
   };
 
+  // Handle invoice creation with images
+  const handleCreateInvoice = async shouldPrint => {
+    // Prepare invoice data with images
+    const invoiceWithImages = {
+      ...invoice,
+    };
+
+    // Only include uploaded images (not still uploading)
+    const uploadedImages = invoiceImages.filter(img => !img.isUploading);
+    if (uploadedImages.length > 0) {
+      // ✅ Chỉ lưu array of URLs (simple format)
+      const imageUrls = uploadedImages.map(img => img.url);
+      invoiceWithImages.invoiceImages = JSON.stringify(imageUrls);
+    }
+
+    // Call appropriate callback
+    if (shouldPrint) {
+      await onCreateInvoiceAndPrint(invoiceWithImages);
+    } else {
+      await onCreateInvoice(invoiceWithImages);
+    }
+  };
+
   const handleImageUpload = async (file, tempImage) => {
     // If no file provided, just add temp image to state (for preview)
     if (!file) {
-      const normalizedTempImage = {
-        id: tempImage.id,
-        name: tempImage.name,
-        url: tempImage.preview,
-        isUploading: true,
-      };
-      setInvoiceImages(prev => [...prev, normalizedTempImage]);
-      return normalizedTempImage;
+      setInvoiceImages(prev => [...prev, tempImage]);
+      return tempImage;
     }
 
     // Create FormData for upload
@@ -94,29 +134,35 @@ const InvoiceSummary = ({
       // Get uploaded image data
       const uploadedImage = response.data.data.images[0];
       const uploadedImageData = {
-        id: tempImage.id,
+        id: tempImage.id, // Keep same ID
         public_id: uploadedImage.public_id,
         url: uploadedImage.secure_url,
         name: uploadedImage.public_id.split('/').pop(),
         size: uploadedImage.size,
         isUploading: false,
+        // Keep preview for smooth transition
+        preview: tempImage.preview,
       };
 
-      // Replace temp image with uploaded image
-      const updatedImages = invoiceImages.map(img =>
-        img.id === tempImage.id ? uploadedImageData : img
+      // Replace temp image with uploaded image in local state only
+      setInvoiceImages(prev =>
+        prev.map(img => (img.id === tempImage.id ? uploadedImageData : img))
       );
-      setInvoiceImages(updatedImages);
 
-      // Update invoice with new images
-      const imagesData = updatedImages
-        .filter(img => !img.isUploading)
-        .map(img => ({
-          url: img.url,
-          public_id: img.public_id,
-        }));
-      
-      onUpdateInvoice('invoiceImages', JSON.stringify(imagesData));
+      // Clean up preview after transition
+      setTimeout(() => {
+        setInvoiceImages(prev =>
+          prev.map(img =>
+            img.id === tempImage.id ? { ...img, preview: undefined } : img
+          )
+        );
+        if (tempImage.preview) {
+          URL.revokeObjectURL(tempImage.preview);
+        }
+      }, 1000);
+
+      // ✅ KHÔNG gọi onUpdateInvoice ở đây nữa
+      // Images sẽ được attach vào invoice khi user nhấn "Tạo hóa đơn"
 
       return uploadedImageData;
     } catch (error) {
@@ -138,18 +184,11 @@ const InvoiceSummary = ({
   };
 
   const handleImageRemove = index => {
-    const newImages = invoiceImages.filter((_, i) => i !== index);
-    setInvoiceImages(newImages);
+    // Simply remove from local state
+    setInvoiceImages(prev => prev.filter((_, i) => i !== index));
 
-    // Update invoice with remaining images
-    const imagesData = newImages
-      .filter(img => !img.isUploading)
-      .map(img => ({
-        url: img.url,
-        public_id: img.public_id,
-      }));
-    
-    onUpdateInvoice('invoiceImages', JSON.stringify(imagesData));
+    // ✅ KHÔNG gọi onUpdateInvoice ở đây nữa
+    // Images sẽ được attach vào invoice khi user nhấn "Tạo hóa đơn"
   };
 
   return (
@@ -196,12 +235,7 @@ const InvoiceSummary = ({
           onRemove={handleImageRemove}
           maxImages={10}
           maxSize={10 * 1024 * 1024} // 10MB
-          acceptedTypes={[
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-          ]}
+          acceptedTypes={['image/jpeg', 'image/png', 'image/gif', 'image/webp']}
           previewSize='100px'
           showUploadArea={true}
           disabled={isDisabled || isLoading}
@@ -209,7 +243,6 @@ const InvoiceSummary = ({
       </Box>
 
       <Divider />
-      
 
       {/* Payment Summary */}
       <VStack spacing={2} align='stretch'>
@@ -279,7 +312,7 @@ const InvoiceSummary = ({
           leftIcon={<Save size={16} />}
           colorScheme='blue'
           size='lg'
-          onClick={onCreateInvoice}
+          onClick={() => handleCreateInvoice(false)}
           isDisabled={isDisabled}
           isLoading={isLoading}
           loadingText='Đang tạo...'
@@ -292,7 +325,7 @@ const InvoiceSummary = ({
           leftIcon={<Printer size={16} />}
           colorScheme='green'
           size='lg'
-          onClick={onCreateInvoiceAndPrint}
+          onClick={() => handleCreateInvoice(true)}
           isDisabled={isDisabled}
           isLoading={isLoading}
           loadingText='Đang tạo...'
