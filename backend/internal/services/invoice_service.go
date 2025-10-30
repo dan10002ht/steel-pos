@@ -116,6 +116,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		PaymentStatus:      paymentStatus,
 		Status:             "confirmed",
 		Notes:              req.Notes,
+		InvoiceImages:      req.InvoiceImages,
 		CreatedBy:          &createdBy,
 		CreatedByUsername:  &createdByUsername,
 		CreatedAt:          time.Now(),
@@ -333,6 +334,11 @@ func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest,
 	// Update notes if provided
 	if req.Notes != nil {
 		invoice.Notes = req.Notes
+	}
+
+	// Update invoice images if provided
+	if req.InvoiceImages != nil {
+		invoice.InvoiceImages = req.InvoiceImages
 	}
 
 	// Update items if provided

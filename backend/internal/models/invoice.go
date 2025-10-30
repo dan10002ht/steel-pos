@@ -20,6 +20,7 @@ type Invoice struct {
 	PaymentStatus      string    `json:"payment_status" db:"payment_status"`
 	Status             string    `json:"status" db:"status"`
 	Notes              *string   `json:"notes" db:"notes"`
+	InvoiceImages      *string   `json:"invoice_images" db:"invoice_images"`
 	CreatedAt          time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 	CreatedBy          *int      `json:"created_by" db:"created_by"`
@@ -96,6 +97,7 @@ type CreateInvoiceRequest struct {
 	PaymentMethod      *string                   `json:"payment_method"`
 	PaidAmount         *float64                  `json:"paid_amount"`
 	Notes              *string                   `json:"notes"`
+	InvoiceImages      *string                   `json:"invoice_images"`
 }
 
 // CreateInvoiceItemRequest represents a request to create an invoice item
@@ -124,6 +126,7 @@ type UpdateInvoiceRequest struct {
 	PaidAmount         *float64                  `json:"paid_amount"`
 	Status             *string                   `json:"status"`
 	Notes              *string                   `json:"notes"`
+	InvoiceImages      *string                   `json:"invoice_images"`
 }
 
 // UpdateInvoiceItemRequest represents a request to update an invoice item

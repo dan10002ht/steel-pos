@@ -348,6 +348,25 @@ func (r *CustomerRepository) GetCustomerTotalSpent(customerID int) (float64, err
 	return totalSpent, nil
 }
 
+// GetCustomerUnpaidDebt gets the total unpaid debt for a customer
+func (r *CustomerRepository) GetCustomerUnpaidDebt(customerID int) (float64, error) {
+	query := `
+		SELECT COALESCE(SUM(total_amount - paid_amount), 0) 
+		FROM invoices 
+		WHERE customer_id = $1 
+		  AND status != 'cancelled'
+		  AND payment_status != 'paid'
+	`
+	
+	var unpaidDebt float64
+	err := r.db.QueryRow(query, customerID).Scan(&unpaidDebt)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get customer unpaid debt: %w", err)
+	}
+
+	return unpaidDebt, nil
+}
+
 // GetCustomerInvoices gets customer invoices with pagination
 func (r *CustomerRepository) GetCustomerInvoices(customerID int, page, limit int) ([]*models.Invoice, int, error) {
 	offset := (page - 1) * limit

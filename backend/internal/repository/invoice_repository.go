@@ -29,10 +29,10 @@ func (r *InvoiceRepository) CreateInvoice(invoice *models.Invoice) error {
 		INSERT INTO invoices (
 			invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
-			total_amount, paid_amount, payment_status, status, notes,
+			total_amount, paid_amount, payment_status, status, notes, invoice_images,
 			created_by, created_by_username, created_at, updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -53,6 +53,7 @@ func (r *InvoiceRepository) CreateInvoice(invoice *models.Invoice) error {
 		invoice.PaymentStatus,
 		invoice.Status,
 		invoice.Notes,
+		invoice.InvoiceImages,
 		invoice.CreatedBy,
 		invoice.CreatedByUsername,
 		invoice.CreatedAt,
@@ -66,7 +67,7 @@ func (r *InvoiceRepository) GetInvoiceByID(id int) (*models.Invoice, error) {
 	query := `
 		SELECT id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			   subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
-			   total_amount, paid_amount, payment_status, status, notes,
+			   total_amount, paid_amount, payment_status, status, notes, invoice_images,
 			   created_at, updated_at, created_by, created_by_username, cancelled_at, cancelled_by, cancellation_reason
 		FROM invoices
 		WHERE id = $1
@@ -90,6 +91,7 @@ func (r *InvoiceRepository) GetInvoiceByID(id int) (*models.Invoice, error) {
 		&invoice.PaymentStatus,
 		&invoice.Status,
 		&invoice.Notes,
+		&invoice.InvoiceImages,
 		&invoice.CreatedAt,
 		&invoice.UpdatedAt,
 		&invoice.CreatedBy,
@@ -166,7 +168,7 @@ func (r *InvoiceRepository) GetAllInvoices(limit, offset int, search string, sta
 	query := `
 		SELECT id, invoice_code, customer_id, customer_phone, customer_name, customer_address,
 			   subtotal, discount_amount, discount_percentage, tax_amount, tax_percentage,
-			   total_amount, paid_amount, payment_status, status, notes,
+			   total_amount, paid_amount, payment_status, status, notes, invoice_images,
 			   created_at, updated_at, created_by, created_by_username
 		FROM invoices
 		WHERE 1=1
@@ -234,6 +236,7 @@ func (r *InvoiceRepository) GetAllInvoices(limit, offset int, search string, sta
 			&invoice.PaymentStatus,
 			&invoice.Status,
 			&invoice.Notes,
+			&invoice.InvoiceImages,
 			&invoice.CreatedAt,
 			&invoice.UpdatedAt,
 			&invoice.CreatedBy,
@@ -583,8 +586,8 @@ func (r *InvoiceRepository) UpdateInvoice(invoice *models.Invoice) error {
 			subtotal = $4, discount_amount = $5, discount_percentage = $6,
 			tax_amount = $7, tax_percentage = $8, total_amount = $9,
 			paid_amount = $10, payment_status = $11, status = $12, notes = $13,
-			updated_at = $14
-		WHERE id = $15
+			invoice_images = $14, updated_at = $15
+		WHERE id = $16
 	`
 
 	result, err := r.db.Exec(
@@ -602,6 +605,7 @@ func (r *InvoiceRepository) UpdateInvoice(invoice *models.Invoice) error {
 		invoice.PaymentStatus,
 		invoice.Status,
 		invoice.Notes,
+		invoice.InvoiceImages,
 		invoice.UpdatedAt,
 		invoice.ID,
 	)

@@ -1,11 +1,14 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"steel-pos-backend/internal/models"
 	"steel-pos-backend/internal/repository"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type CustomerService struct {
@@ -225,22 +228,56 @@ func (s *CustomerService) DeleteCustomer(id int, deletedBy int) error {
 }
 
 // GetCustomerAnalytics gets customer analytics data
+// Uses goroutines to fetch data in parallel for better performance
 func (s *CustomerService) GetCustomerAnalytics(customerID int) (map[string]interface{}, error) {
-	// Get total invoices count
-	totalInvoices, err := s.customerRepo.GetCustomerInvoicesCount(customerID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get customer invoices count: %w", err)
-	}
+	var (
+		totalInvoices int
+		totalSpent    float64
+		unpaidDebt    float64
+	)
 
-	// Get total spent amount
-	totalSpent, err := s.customerRepo.GetCustomerTotalSpent(customerID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get customer total spent: %w", err)
+	// Use errgroup to run queries in parallel
+	g, _ := errgroup.WithContext(context.Background())
+
+	// Fetch total invoices count
+	g.Go(func() error {
+		count, err := s.customerRepo.GetCustomerInvoicesCount(customerID)
+		if err != nil {
+			return fmt.Errorf("failed to get customer invoices count: %w", err)
+		}
+		totalInvoices = count
+		return nil
+	})
+
+	// Fetch total spent amount
+	g.Go(func() error {
+		spent, err := s.customerRepo.GetCustomerTotalSpent(customerID)
+		if err != nil {
+			return fmt.Errorf("failed to get customer total spent: %w", err)
+		}
+		totalSpent = spent
+		return nil
+	})
+
+	// Fetch unpaid debt
+	g.Go(func() error {
+		debt, err := s.customerRepo.GetCustomerUnpaidDebt(customerID)
+		if err != nil {
+			return fmt.Errorf("failed to get customer unpaid debt: %w", err)
+		}
+		unpaidDebt = debt
+		return nil
+	})
+
+	// Wait for all goroutines to complete
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	analytics := map[string]interface{}{
 		"total_invoices": totalInvoices,
 		"total_spent":    totalSpent,
+		"unpaid_debt":    unpaidDebt,
 	}
 
 	return analytics, nil

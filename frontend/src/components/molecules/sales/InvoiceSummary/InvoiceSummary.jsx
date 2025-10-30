@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   VStack,
@@ -13,10 +13,13 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Button,
+  useToast,
 } from '@chakra-ui/react';
 import { Save, Printer } from 'lucide-react';
 import { PAYMENT_METHODS } from '@/constants/options';
 import { formatCurrency } from '@/utils';
+import ImageUpload from '@/components/atoms/ImageUpload/ImageUpload';
+import { fetchApi } from '@/shared/services/api';
 
 const InvoiceSummary = ({
   invoice,
@@ -26,6 +29,20 @@ const InvoiceSummary = ({
   isDisabled = false,
   isLoading = false,
 }) => {
+  const toast = useToast();
+  const [invoiceImages, setInvoiceImages] = useState(() => {
+    // Parse existing invoice images if available
+    if (invoice.invoiceImages) {
+      try {
+        const parsed = JSON.parse(invoice.invoiceImages);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
   const calculateSubtotal = () => {
     return invoice.items.reduce((sum, item) => sum + item.totalPrice, 0);
   };
@@ -40,6 +57,99 @@ const InvoiceSummary = ({
     const totalAmount = calculateFinalAmount();
     const paidAmount = invoice.paidAmount || 0;
     return totalAmount - paidAmount;
+  };
+
+  const handleImageUpload = async (file, tempImage) => {
+    // If no file provided, just add temp image to state (for preview)
+    if (!file) {
+      const normalizedTempImage = {
+        id: tempImage.id,
+        name: tempImage.name,
+        url: tempImage.preview,
+        isUploading: true,
+      };
+      setInvoiceImages(prev => [...prev, normalizedTempImage]);
+      return normalizedTempImage;
+    }
+
+    // Create FormData for upload
+    const formData = new FormData();
+    formData.append('images', file);
+
+    try {
+      // Upload images using fetchApi
+      const response = await fetchApi({
+        method: 'POST',
+        url: '/images/upload',
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (!response.success) {
+        throw new Error(response.message || 'Upload failed');
+      }
+
+      // Get uploaded image data
+      const uploadedImage = response.data.data.images[0];
+      const uploadedImageData = {
+        id: tempImage.id,
+        public_id: uploadedImage.public_id,
+        url: uploadedImage.secure_url,
+        name: uploadedImage.public_id.split('/').pop(),
+        size: uploadedImage.size,
+        isUploading: false,
+      };
+
+      // Replace temp image with uploaded image
+      const updatedImages = invoiceImages.map(img =>
+        img.id === tempImage.id ? uploadedImageData : img
+      );
+      setInvoiceImages(updatedImages);
+
+      // Update invoice with new images
+      const imagesData = updatedImages
+        .filter(img => !img.isUploading)
+        .map(img => ({
+          url: img.url,
+          public_id: img.public_id,
+        }));
+      
+      onUpdateInvoice('invoiceImages', JSON.stringify(imagesData));
+
+      return uploadedImageData;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+
+      // Remove failed image from state
+      setInvoiceImages(prev => prev.filter(img => img.id !== tempImage.id));
+
+      toast({
+        title: 'Lỗi upload',
+        description: error.message || 'Không thể upload hình ảnh',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      throw error;
+    }
+  };
+
+  const handleImageRemove = index => {
+    const newImages = invoiceImages.filter((_, i) => i !== index);
+    setInvoiceImages(newImages);
+
+    // Update invoice with remaining images
+    const imagesData = newImages
+      .filter(img => !img.isUploading)
+      .map(img => ({
+        url: img.url,
+        public_id: img.public_id,
+      }));
+    
+    onUpdateInvoice('invoiceImages', JSON.stringify(imagesData));
   };
 
   return (
@@ -76,7 +186,30 @@ const InvoiceSummary = ({
         />
       </Box>
 
+      <Box>
+        <Text fontSize='sm' color='gray.600' mb={2}>
+          Hình ảnh minh chứng hóa đơn
+        </Text>
+        <ImageUpload
+          images={invoiceImages}
+          onUpload={handleImageUpload}
+          onRemove={handleImageRemove}
+          maxImages={10}
+          maxSize={10 * 1024 * 1024} // 10MB
+          acceptedTypes={[
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+          ]}
+          previewSize='100px'
+          showUploadArea={true}
+          disabled={isDisabled || isLoading}
+        />
+      </Box>
+
       <Divider />
+      
 
       {/* Payment Summary */}
       <VStack spacing={2} align='stretch'>
