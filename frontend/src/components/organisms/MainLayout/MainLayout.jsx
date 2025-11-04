@@ -24,6 +24,8 @@ const MainLayout = ({ children }) => {
         ml={{ base: 0, lg: 0 }}
         minWidth={0}
         overflow='hidden'
+        // Fix iPhone home indicator overlap
+        pb={{ base: 'env(safe-area-inset-bottom)', lg: 0 }}
       >
         {/* Top Header - Fixed */}
         <Header />
@@ -33,6 +35,7 @@ const MainLayout = ({ children }) => {
           flex={1}
           overflowY='auto'
           p={{ base: '4', md: '6' }}
+          pb={{ base: 'calc(1rem + env(safe-area-inset-bottom))', md: '6' }}
           minH={0}
           minWidth={0}
           maxWidth='100%'

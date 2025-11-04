@@ -37,6 +37,8 @@ html {
 #root {
   height: 100vh;
   overflow: hidden;
+  /* Fix iPhone safe area */
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 h1 {
