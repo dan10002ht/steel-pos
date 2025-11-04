@@ -361,24 +361,192 @@ docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db
 
 ### **Step 7: GitHub Actions Setup**
 
-#### **7.1 Add GitHub Secrets**
+#### **7.1 Generate SSH Key Pair**
+
+**Có 3 cách để generate SSH key:**
+
+##### **Cách 1: Generate trực tiếp trên VPS (Đơn giản nhất - Khuyến nghị)**
+
+```bash
+# SSH vào VPS
+ssh root@YOUR_VPS_IP
+
+# Generate SSH key pair trên VPS
+ssh-keygen -t ed25519 -C "github-actions-steel-pos" -f ~/.ssh/github_actions_steel_pos
+
+# Hoặc nếu VPS không support ed25519, dùng RSA:
+ssh-keygen -t rsa -b 4096 -C "github-actions-steel-pos" -f ~/.ssh/github_actions_steel_pos
+```
+
+**Lưu ý:** Khi hỏi passphrase, nhấn Enter để để trống (không set passphrase).
+
+Sau khi generate:
+```bash
+# Xem public key (để add vào authorized_keys)
+cat ~/.ssh/github_actions_steel_pos.pub
+
+# Add public key vào authorized_keys
+cat ~/.ssh/github_actions_steel_pos.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+
+# Xem private key (để copy vào GitHub Secrets)
+cat ~/.ssh/github_actions_steel_pos
+```
+
+##### **Cách 2: Generate trên máy local (nếu muốn)**
+
+```bash
+# Generate SSH key pair trên máy local
+ssh-keygen -t ed25519 -C "github-actions-steel-pos" -f ~/.ssh/github_actions_steel_pos
+
+# Copy public key vào VPS
+ssh-copy-id -i ~/.ssh/github_actions_steel_pos.pub root@YOUR_VPS_IP
+
+# Hoặc copy thủ công:
+# 1. Xem public key
+cat ~/.ssh/github_actions_steel_pos.pub
+
+# 2. SSH vào VPS và thêm vào authorized_keys
+ssh root@YOUR_VPS_IP
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+echo "PASTE_PUBLIC_KEY_HERE" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+##### **Cách 3: Dùng key có sẵn trên VPS**
+
+Nếu bạn đã có SSH key trên VPS (ví dụ: key để SSH vào VPS), bạn có thể dùng key đó:
+
+```bash
+# SSH vào VPS
+ssh root@YOUR_VPS_IP
+
+# Xem private key hiện có (thường ở ~/.ssh/id_rsa hoặc ~/.ssh/id_ed25519)
+cat ~/.ssh/id_rsa
+# hoặc
+cat ~/.ssh/id_ed25519
+```
+
+**Lưu ý:** Nếu dùng key hiện có, public key đã có trong `authorized_keys` rồi, không cần thêm lại.
+
+#### **7.2 Add GitHub Secrets**
 
 Vào GitHub: Repository → Settings → Secrets and variables → Actions
 
-**Required Secrets:**
-
-- `VPS_HOST`: IP của VPS
-- `VPS_USER`: Username trên VPS (root)
-- `SSH_PRIVATE_KEY`: SSH private key
-
-#### **7.2 Test Automated Deployment**
+**Copy Private Key:**
 
 ```bash
-# Push code to trigger deployment
+# Nếu generate trên VPS (Cách 1):
+# SSH vào VPS và chạy:
+cat ~/.ssh/github_actions_steel_pos
+
+# Nếu generate trên local (Cách 2):
+cat ~/.ssh/github_actions_steel_pos
+
+# Nếu dùng key có sẵn (Cách 3):
+cat ~/.ssh/id_rsa
+# hoặc
+cat ~/.ssh/id_ed25519
+```
+
+**Add 3 Secrets:**
+
+1. **`VPS_HOST`**
+   - Value: IP của VPS (ví dụ: `161.248.147.161`)
+
+2. **`VPS_USER`**
+   - Value: Username trên VPS (thường là `root`)
+
+3. **`SSH_PRIVATE_KEY`**
+   - Value: Paste toàn bộ private key (bao gồm `-----BEGIN` và `-----END`)
+   - Format phải đúng:
+     ```
+     -----BEGIN OPENSSH PRIVATE KEY-----
+     [key content]
+     -----END OPENSSH PRIVATE KEY-----
+     ```
+
+#### **7.3 Test SSH Connection (Optional)**
+
+Nếu bạn muốn test SSH connection trước khi setup GitHub Actions:
+
+```bash
+# Test SSH từ bất kỳ đâu (local machine, VPS khác, hoặc GitHub Actions runner)
+# Với private key đã copy vào GitHub Secrets
+ssh -i /path/to/private_key root@YOUR_VPS_IP
+
+# Hoặc test từ chính VPS (nếu generate key trên VPS):
+# Vào VPS và test localhost connection
+ssh -i ~/.ssh/github_actions_steel_pos root@localhost
+```
+
+**Lưu ý:** Test này là optional. GitHub Actions sẽ tự test khi chạy workflow.
+
+#### **7.4 Verify Secrets**
+
+Đảm bảo có đủ 3 secrets trong GitHub:
+- ✅ `VPS_HOST`: IP của VPS
+- ✅ `VPS_USER`: Username (thường là `root`)
+- ✅ `SSH_PRIVATE_KEY`: Private key (toàn bộ, bao gồm BEGIN và END)
+
+#### **7.5 Test Automated Deployment**
+
+```bash
+# Push code để trigger deployment
+git commit --allow-empty -m "Test CI/CD SSH connection"
+git push origin main
+
+# Hoặc
 git add .
 git commit -m "Setup production deployment"
 git push origin main
 ```
+
+**Kiểm tra deployment:**
+- Vào GitHub: Actions tab
+- Xem workflow logs
+- Nếu thành công, bạn sẽ thấy "✅ Deployment successful!"
+
+#### **7.7 Troubleshooting SSH Issues**
+
+**Nếu gặp lỗi "ssh: handshake failed":**
+
+1. **Kiểm tra SSH key format:**
+   ```bash
+   # Private key phải có đầy đủ BEGIN và END
+   cat ~/.ssh/github_actions_steel_pos | head -1
+   # Should show: -----BEGIN OPENSSH PRIVATE KEY----- hoặc -----BEGIN RSA PRIVATE KEY-----
+   ```
+
+2. **Kiểm tra public key trên VPS:**
+   ```bash
+   # SSH vào VPS
+   ssh root@YOUR_VPS_IP
+   
+   # Kiểm tra authorized_keys
+   cat ~/.ssh/authorized_keys
+   # Phải có public key bạn đã thêm
+   ```
+
+3. **Kiểm tra permissions:**
+   ```bash
+   # Trên VPS
+   ls -la ~/.ssh/
+   # .ssh should be 700, authorized_keys should be 600
+   chmod 700 ~/.ssh
+   chmod 600 ~/.ssh/authorized_keys
+   ```
+
+4. **Test SSH connection manually:**
+   ```bash
+   # Test từ VPS (nếu key đã có trên VPS)
+   ssh -v -i ~/.ssh/github_actions_steel_pos root@localhost
+   
+   # Hoặc test từ bất kỳ máy nào có private key
+   ssh -v -i /path/to/private_key root@YOUR_VPS_IP
+   # -v flag sẽ show chi tiết lỗi
+   ```
 
 ### **Step 8: Monitoring and Maintenance**
 
