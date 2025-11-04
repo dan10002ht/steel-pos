@@ -1,54 +1,8 @@
 import React from 'react';
-import {
-  Box,
-  Flex,
-  HStack,
-  Text,
-  Badge,
-  useBreakpointValue,
-} from '@chakra-ui/react';
-import { useLocation } from 'react-router-dom';
+import { Box, Flex, HStack, useBreakpointValue } from '@chakra-ui/react';
 import { useColorModeValue } from '@chakra-ui/react';
 import MenuButton from '../../atoms/MenuButton';
 import { useLayoutUi } from '../../../contexts/UiContext';
-
-const menuItems = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    path: '/dashboard',
-  },
-  {
-    id: 'products',
-    label: 'Sản phẩm',
-    path: '/products',
-  },
-  {
-    id: 'sales',
-    label: 'Bán hàng',
-    path: '/sales',
-  },
-  {
-    id: 'inventory',
-    label: 'Nhập kho',
-    path: '/inventory',
-  },
-  {
-    id: 'customers',
-    label: 'Khách hàng',
-    path: '/customers',
-  },
-  {
-    id: 'reports',
-    label: 'Báo cáo',
-    path: '/reports',
-  },
-  {
-    id: 'analytics',
-    label: 'Thống kê',
-    path: '/analytics',
-  },
-];
 
 const Header = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -56,7 +10,9 @@ const Header = () => {
   const { isSidebarOpen, toggleSidebar } = useLayoutUi();
   const isMobile = useBreakpointValue({ base: true, lg: false });
 
-  if (!isMobile) return null;
+  // Default to true if undefined (mobile-first approach)
+  // This fixes Safari iOS issue where useBreakpointValue might return undefined initially
+  if (isMobile === false) return null;
 
   return (
     <Box
