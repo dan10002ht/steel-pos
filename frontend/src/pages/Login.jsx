@@ -157,7 +157,7 @@ const Login = () => {
                       value={formData.username}
                       onChange={handleInputChange}
                       placeholder='Nhập tên đăng nhập'
-                      size={{ base: 'md', md: 'lg' }}
+                      size='lg'
                       bg='white'
                       border='1px'
                       borderColor='gray.300'
@@ -174,7 +174,7 @@ const Login = () => {
                     >
                       Mật khẩu
                     </FormLabel>
-                    <InputGroup size={{ base: 'md', md: 'lg' }}>
+                    <InputGroup size='lg'>
                       <Input
                         id='password'
                         name='password'
@@ -183,6 +183,7 @@ const Login = () => {
                         onChange={handleInputChange}
                         placeholder='Nhập mật khẩu'
                         bg='white'
+                        size='lg'
                         border='1px'
                         borderColor='gray.300'
                         _hover={{ borderColor: 'gray.400' }}
@@ -199,7 +200,7 @@ const Login = () => {
                           icon={showPassword ? <EyeOff /> : <Eye />}
                           onClick={() => setShowPassword(!showPassword)}
                           variant='ghost'
-                          size={{ base: 'xs', md: 'sm' }}
+                          size='sm'
                         />
                       </InputRightElement>
                     </InputGroup>
@@ -208,7 +209,7 @@ const Login = () => {
                   <Button
                     type='submit'
                     colorScheme='blue'
-                    size={{ base: 'md', md: 'lg' }}
+                    size='lg'
                     fontSize='md'
                     w='full'
                     isLoading={isLoginLoading}
