@@ -218,32 +218,6 @@ const Login = () => {
                   </Button>
                 </VStack>
               </Box>
-
-              {/* Thông tin demo */}
-              <VStack
-                spacing={{ base: '2', md: '4' }}
-                pt={{ base: '2', md: '4' }}
-                borderTop='1px'
-                borderColor='gray.200'
-              >
-                <Text fontSize='sm' color='gray.600' textAlign='center'>
-                  Tài khoản demo:
-                </Text>
-                <VStack spacing='1'>
-                  <Text fontSize='xs' color='gray.500' textAlign='center'>
-                    <strong>Admin:</strong> admin / admin123
-                  </Text>
-                  <Text fontSize='xs' color='gray.500' textAlign='center'>
-                    <strong>Manager:</strong> manager / manager123
-                  </Text>
-                  <Text fontSize='xs' color='gray.500' textAlign='center'>
-                    <strong>Accountant:</strong> accountant / accountant123
-                  </Text>
-                  <Text fontSize='xs' color='gray.500' textAlign='center'>
-                    <strong>User:</strong> user / user123
-                  </Text>
-                </VStack>
-              </VStack>
             </VStack>
           </Box>
         </Flex>
