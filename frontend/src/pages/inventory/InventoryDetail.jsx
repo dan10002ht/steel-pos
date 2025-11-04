@@ -159,7 +159,11 @@ const InventoryDetail = () => {
           </CardHeader>
           <CardBody>
             <Grid
-              templateColumns='repeat(auto-fit, minmax(300px, 1fr))'
+              templateColumns={{
+                base: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(auto-fit, minmax(300px, 1fr))',
+              }}
               gap={6}
             >
               <GridItem>
