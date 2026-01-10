@@ -11,7 +11,7 @@ System Nginx (Port 80/443)
 ├── Drink POS (tiemtra3oclock.online)
 │   ├── Frontend: Port 8080
 │   └── Backend: Port 8081
-└── Steel POS (steel-pos.com)
+└── Steel POS (cuahangkienphuoc.site)
     ├── Frontend: Port 8082
     └── Backend: Port 8083
 ```
@@ -29,7 +29,7 @@ System Nginx (Port 80/443)
 
 1. Clone Steel POS repository
 2. Setup environment variables
-3. Setup SSL certificate cho steel-pos.com
+3. Setup SSL certificate cho cuahangkienphuoc.site
 4. Update System Nginx config
 
 ### **Phase 3: Deployment**
@@ -162,7 +162,7 @@ CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 sudo apt install certbot python3-certbot-nginx
 
 # Generate SSL certificate
-sudo certbot certonly --standalone -d steel-pos.com
+sudo certbot certonly --standalone -d cuahangkienphuoc.site
 
 # Verify certificate
 sudo certbot certificates
@@ -171,7 +171,7 @@ sudo certbot certificates
 #### **2.2 Verify SSL Files**
 
 ```bash
-ls -la /etc/letsencrypt/live/steel-pos.com/
+ls -la /etc/letsencrypt/live/cuahangkienphuoc.site/
 # Should show: cert.pem, fullchain.pem, privkey.pem
 ```
 
@@ -186,7 +186,7 @@ sudo cp /etc/nginx/sites-available/tiemtra3oclock.online /etc/nginx/sites-availa
 #### **3.2 Create Steel POS Nginx Config**
 
 ```bash
-sudo nano /etc/nginx/sites-available/steel-pos.com
+sudo nano /etc/nginx/sites-available/cuahangkienphuoc.site
 ```
 
 **Nginx Configuration for Steel POS:**
@@ -195,7 +195,7 @@ sudo nano /etc/nginx/sites-available/steel-pos.com
 # HTTP to HTTPS redirect
 server {
     listen 80;
-    server_name steel-pos.com;
+    server_name cuahangkienphuoc.site;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -209,11 +209,11 @@ server {
 # HTTPS server
 server {
     listen 443 ssl;
-    server_name steel-pos.com;
+    server_name cuahangkienphuoc.site;
 
     # SSL configuration
-    ssl_certificate /etc/letsencrypt/live/steel-pos.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/steel-pos.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/cuahangkienphuoc.site/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cuahangkienphuoc.site/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -267,7 +267,7 @@ server {
 
 ```bash
 # Create symlink
-sudo ln -s /etc/nginx/sites-available/steel-pos.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/cuahangkienphuoc.site /etc/nginx/sites-enabled/
 
 # Test nginx configuration
 sudo nginx -t
@@ -331,13 +331,13 @@ curl http://localhost:8083/health
 
 ```bash
 # Test HTTP redirect
-curl -I http://steel-pos.com
+curl -I http://cuahangkienphuoc.site
 
 # Test HTTPS
-curl -I https://steel-pos.com
+curl -I https://cuahangkienphuoc.site
 
 # Test API
-curl https://steel-pos.com/api/health
+curl https://cuahangkienphuoc.site/api/health
 ```
 
 ### **Step 6: Database Setup**
@@ -573,7 +573,7 @@ else
 fi
 
 # Domain health
-if curl -f https://steel-pos.com/health 2>/dev/null; then
+if curl -f https://cuahangkienphuoc.site/health 2>/dev/null; then
     echo "✅ Domain: Healthy"
 else
     echo "❌ Domain: Unhealthy"
@@ -719,7 +719,7 @@ sudo systemctl status nginx
 ### **Next Steps:**
 
 1. **Deploy to VPS** following the detailed steps above
-2. **Setup SSL certificates** for steel-pos.com
+2. **Setup SSL certificates** for cuahangkienphuoc.site
 3. **Configure System Nginx** for multiple domains
 4. **Test deployment** and verify functionality
 5. **Setup monitoring** and automated deployment

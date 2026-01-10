@@ -320,19 +320,6 @@ const InvoiceSummary = ({
         >
           Tạo hoá đơn
         </Button>
-
-        <Button
-          leftIcon={<Printer size={16} />}
-          colorScheme='green'
-          size='lg'
-          onClick={() => handleCreateInvoice(true)}
-          isDisabled={isDisabled}
-          isLoading={isLoading}
-          loadingText='Đang tạo...'
-          flex={1}
-        >
-          Tạo hoá đơn và in
-        </Button>
       </HStack>
     </VStack>
   );

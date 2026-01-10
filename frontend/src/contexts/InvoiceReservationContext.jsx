@@ -150,7 +150,7 @@ export const InvoiceReservationProvider = ({ children }) => {
           if (excludeInvoiceId && invId === excludeInvoiceId) {
             return total; // Không tính invoice hiện tại
           }
-          return total + qty;
+          return total + qty || 0;
         },
         0
       );
@@ -184,6 +184,7 @@ export const InvoiceReservationProvider = ({ children }) => {
       const currentReserved = currentInvoiceId
         ? getReservedByInvoice(currentInvoiceId, variantId)
         : 0;
+
 
       return actualStock - totalReserved + currentReserved;
     },

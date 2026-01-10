@@ -285,7 +285,7 @@ const InventoryList = () => {
         {/* Filters Section */}
         <Card mb={6}>
           <CardBody>
-            <VStack spacing={4} align='stretch'>
+            <HStack alignItems="flex-end" spacing={4} align='stretch'>
               <InventoryFilters
                 searchTerm={searchTerm}
                 onSearchChange={value => handleFilterChange('search', value)}
@@ -310,7 +310,7 @@ const InventoryList = () => {
               >
                 Xóa bộ lọc
               </Button>
-            </VStack>
+            </HStack>
           </CardBody>
         </Card>
 

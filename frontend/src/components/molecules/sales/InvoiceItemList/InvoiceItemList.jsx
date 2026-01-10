@@ -99,7 +99,7 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
                     Số lượng
                   </Text>
                   <NumberInput
-                    value={item.quantity}
+                    value={item.quantity || ""}
                     min={1}
                     max={availableStock}
                     onChange={value => {

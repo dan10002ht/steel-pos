@@ -13,6 +13,7 @@ const InventoryFilters = ({
 }) => {
   return (
     <Flex
+    flex={1}
       direction={{ base: 'column', md: 'row' }}
       gap={4}
       wrap='wrap'

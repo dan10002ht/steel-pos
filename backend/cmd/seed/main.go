@@ -86,7 +86,7 @@ func seedData(db *sql.DB) error {
 
 	_, err = db.Exec(query,
 		"admin",
-		"admin@steelpos.com",
+		"dantt1002@gmail.com",
 		string(hashedPassword),
 		"Administrator",
 		"admin",
@@ -102,7 +102,7 @@ func seedData(db *sql.DB) error {
 	fmt.Printf("Admin user created successfully!\n")
 	fmt.Printf("Username: admin\n")
 	fmt.Printf("Password: %s\n", password)
-	fmt.Printf("Email: admin@steelpos.com\n")
+	fmt.Printf("Email: dantt1002@gmail.com\n")
 	return nil
 }
 
