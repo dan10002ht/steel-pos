@@ -7,7 +7,6 @@ const InvoiceTabManager = ({
   invoice,
   onUpdate,
   onInvoiceCreated,
-  onInvoiceCreatedAndPrint,
 }) => {
   return (
     <Grid templateColumns='repeat(12, 1fr)' gap={6} h='calc(100vh - 200px)'>
@@ -22,7 +21,6 @@ const InvoiceTabManager = ({
           invoice={invoice}
           onUpdate={onUpdate}
           onInvoiceCreated={onInvoiceCreated}
-          onInvoiceCreatedAndPrint={onInvoiceCreatedAndPrint}
         />
       </GridItem>
     </Grid>

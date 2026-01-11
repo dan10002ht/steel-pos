@@ -25,7 +25,6 @@ const InvoiceSummary = ({
   invoice,
   onUpdateInvoice,
   onCreateInvoice,
-  onCreateInvoiceAndPrint,
   isDisabled = false,
   isLoading = false,
 }) => {
@@ -83,7 +82,7 @@ const InvoiceSummary = ({
   };
 
   // Handle invoice creation with images
-  const handleCreateInvoice = async shouldPrint => {
+  const handleCreateInvoice = async () => {
     // Prepare invoice data with images
     const invoiceWithImages = {
       ...invoice,
@@ -97,12 +96,7 @@ const InvoiceSummary = ({
       invoiceWithImages.invoiceImages = JSON.stringify(imageUrls);
     }
 
-    // Call appropriate callback
-    if (shouldPrint) {
-      await onCreateInvoiceAndPrint(invoiceWithImages);
-    } else {
-      await onCreateInvoice(invoiceWithImages);
-    }
+    await onCreateInvoice(invoiceWithImages);
   };
 
   const handleImageUpload = async (file, tempImage) => {

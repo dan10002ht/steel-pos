@@ -12,11 +12,11 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 	invoices := api.Group("/invoices")
 	{
 		// Invoice CRUD operations
-		invoices.POST("", authMiddleware.RequireManager(), invoiceHandler.CreateInvoice)
+		invoices.POST("", authMiddleware.RequireAccountant(), invoiceHandler.CreateInvoice)
 		invoices.GET("", invoiceHandler.GetAllInvoices)
 		invoices.GET("/:id", invoiceHandler.GetInvoiceByID)
 		invoices.GET("/code/:code", invoiceHandler.GetInvoiceByCode)
-		invoices.PUT("/:id", authMiddleware.RequireManager(), invoiceHandler.UpdateInvoice)
+		invoices.PUT("/:id", authMiddleware.RequireAccountant(), invoiceHandler.UpdateInvoice)
 		invoices.DELETE("/:id", authMiddleware.RequireManager(), invoiceHandler.DeleteInvoice)
 
 		// Search and filter
@@ -41,8 +41,8 @@ func SetupInvoiceRoutes(api *gin.RouterGroup, invoiceHandler *handlers.InvoiceHa
 	// Invoice Payment routes
 	payments := api.Group("/invoice-payments")
 	{
-		payments.POST("/:invoiceId", authMiddleware.RequireManager(), invoiceHandler.CreateInvoicePayment)
-		payments.PUT("/:paymentId", authMiddleware.RequireManager(), invoiceHandler.UpdateInvoicePayment)
-		payments.DELETE("/:paymentId", authMiddleware.RequireManager(), invoiceHandler.DeleteInvoicePayment)
+		payments.POST("/:invoiceId", authMiddleware.RequireAccountant(), invoiceHandler.CreateInvoicePayment)
+		payments.PUT("/:paymentId", authMiddleware.RequireAccountant(), invoiceHandler.UpdateInvoicePayment)
+		payments.DELETE("/:paymentId", authMiddleware.RequireAccountant(), invoiceHandler.DeleteInvoicePayment)
 	}
 }

@@ -9,7 +9,6 @@ const InvoiceForm = ({
   invoice,
   onUpdate,
   onInvoiceCreated,
-  onInvoiceCreatedAndPrint,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
@@ -154,47 +153,6 @@ const InvoiceForm = ({
     }
   };
 
-  const handleCreateInvoiceAndPrint = async (invoiceData = null) => {
-    // Use provided invoiceData or fallback to invoice from state
-    const invoiceToCreate = invoiceData || invoice;
-
-    if (invoiceToCreate.items.length === 0) {
-      toast({
-        title: 'Hoá đơn trống',
-        description: 'Vui lòng thêm ít nhất một sản phẩm',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Validate required customer fields
-    if (!invoiceToCreate.customer_name || !invoiceToCreate.customer_phone) {
-      toast({
-        title: 'Thiếu thông tin khách hàng',
-        description: 'Vui lòng nhập đầy đủ tên và số điện thoại khách hàng',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsCreating(true);
-
-    try {
-      // Call parent callback to handle invoice creation and print
-      if (onInvoiceCreatedAndPrint) {
-        await onInvoiceCreatedAndPrint(invoiceToCreate);
-      }
-    } catch (error) {
-      console.error('Failed to create invoice and print:', error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   return (
     <VStack spacing={4} align='stretch' h='full'>
       {/* Customer Information */}
@@ -239,7 +197,6 @@ const InvoiceForm = ({
             invoice={invoice}
             onUpdateInvoice={handleUpdateInvoice}
             onCreateInvoice={handleCreateInvoice}
-            onCreateInvoiceAndPrint={handleCreateInvoiceAndPrint}
             isDisabled={invoice.items.length === 0 || isCreating}
             isLoading={isCreating}
           />

@@ -262,7 +262,6 @@ const SalesCreatePage = () => {
         onCreateNew={handleCreateNewInvoice}
         onUpdateInvoice={handleUpdateInvoice}
         onInvoiceCreated={handleInvoiceCreated}
-        onInvoiceCreatedAndPrint={handleInvoiceCreatedAndPrint}
       />
     </Page>
   );
