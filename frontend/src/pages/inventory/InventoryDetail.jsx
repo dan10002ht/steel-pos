@@ -152,7 +152,7 @@ const InventoryDetail = () => {
       <Box w='100%' maxW='100%' mx='auto'>
         {/* Order Information */}
         <Card mb={6}>
-          <CardHeader>
+          <CardHeader pb="0">
             <Heading size={{ base: 'sm', md: 'md' }}>
               Thông tin đơn nhập hàng
             </Heading>
@@ -237,7 +237,7 @@ const InventoryDetail = () => {
         {/* Import Images / Documents */}
         {importOrder.import_images && importOrder.import_images.length > 0 && (
           <Card mb={6}>
-            <CardHeader>
+            <CardHeader pb="0">
               <Heading size={{ base: 'sm', md: 'md' }}>
                 Hình ảnh chứng từ
               </Heading>
@@ -286,7 +286,7 @@ const InventoryDetail = () => {
 
         {/* Items Table */}
         <Card>
-          <CardHeader>
+          <CardHeader pb="0">
             <Heading size={{ base: 'sm', md: 'md' }}>
               Danh sách sản phẩm
             </Heading>

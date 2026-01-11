@@ -52,6 +52,7 @@ const CreateProductPage = () => {
         isLoading={createProductMutation.isPending}
         title='Tạo sản phẩm mới'
         submitText='Tạo sản phẩm'
+        isCreatePage={true}
       />
     </Page>
   );
