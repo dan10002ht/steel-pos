@@ -121,7 +121,7 @@ const CustomerDetailPage = () => {
           customerId={id}
           onViewAll={() => navigate('/sales')}
           onCreateInvoice={() => navigate('/sales/create')}
-          onInvoiceClick={invoiceId => navigate(`/sales/${invoiceId}`)}
+          onInvoiceClick={invoiceId => navigate(`/sales/detail/${invoiceId}`)}
         />
         <CustomerAuditLog customerId={id} />
       </VStack>

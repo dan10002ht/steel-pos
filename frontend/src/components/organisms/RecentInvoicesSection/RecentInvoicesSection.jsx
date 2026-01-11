@@ -20,7 +20,6 @@ import { useFetchApi } from '@/hooks/useFetchApi';
 
 const RecentInvoicesSection = ({
   customerId,
-  onViewAll,
   onCreateInvoice,
   onInvoiceClick,
 }) => {
