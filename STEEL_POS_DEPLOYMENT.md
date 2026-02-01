@@ -189,13 +189,28 @@ sudo cp /etc/nginx/sites-available/tiemtra3oclock.online /etc/nginx/sites-availa
 sudo nano /etc/nginx/sites-available/cuahangkienphuoc.site
 ```
 
-**Nginx Configuration for Steel POS:**
+**Nginx Configuration for Steel POS (OPTIMIZED):**
+
+> ⚠️ **Note:** This config includes production optimizations:
+> - DNS resolver (prevents 20s timeout)
+> - Optimized timeouts (3-10s)
+> - Proxy buffering enabled
+> - HTML caching (1 hour via Cloudflare)
+> - Static assets caching (1 year)
+> - WebSocket support
+> - Security headers
 
 ```nginx
+# WebSocket upgrade map (must be outside server blocks)
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
 # HTTP to HTTPS redirect
 server {
     listen 80;
-    server_name cuahangkienphuoc.site;
+    server_name cuahangkienphuoc.site www.cuahangkienphuoc.site;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -208,8 +223,8 @@ server {
 
 # HTTPS server
 server {
-    listen 443 ssl;
-    server_name cuahangkienphuoc.site;
+    listen 443 ssl http2;
+    server_name cuahangkienphuoc.site www.cuahangkienphuoc.site;
 
     # SSL configuration
     ssl_certificate /etc/letsencrypt/live/cuahangkienphuoc.site/fullchain.pem;
@@ -217,21 +232,70 @@ server {
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-    # Let's Encrypt challenge
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
+    # Resolver for DNS (critical - prevents 20s timeout)
+    resolver 127.0.0.1 valid=10s;
+    resolver_timeout 2s;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Cache index.html (Cloudflare will serve, SPA handles updates)
+    location = /index.html {
+        proxy_pass http://127.0.0.1:8082;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Optimized timeouts
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+
+        # Enable buffering
+        proxy_buffering on;
+
+        # Keepalive
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # Cache for 1 hour (Cloudflare will cache this)
+        add_header Cache-Control "public, max-age=3600" always;
     }
 
-    # Frontend (React app)
+    # Frontend (React app) - Port 8082
     location / {
         proxy_pass http://127.0.0.1:8082;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Optimized timeouts
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+
+        # Enable buffering for better performance
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+
+        # Keepalive connections
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        # Allow Cloudflare to cache HTML
+        add_header Cache-Control "public, max-age=3600" always;
     }
 
-    # Backend API
+    # Backend API - Port 8083
     location /api/ {
         proxy_pass http://127.0.0.1:8083;
         proxy_set_header Host $host;
@@ -239,27 +303,57 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
+        # Optimized timeouts for API (allow DB queries)
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+
+        # Disable buffering for API
+        proxy_buffering off;
+
+        # Keepalive
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        # Don't cache API responses
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
     }
 
+    # Static assets caching (JS, CSS, images, fonts)
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif)$ {
+        proxy_pass http://127.0.0.1:8082;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
 
-    # Health check
+        # Optimized timeouts
+        proxy_connect_timeout 3s;
+        proxy_send_timeout 5s;
+        proxy_read_timeout 5s;
+
+        # Keepalive
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # Cache static assets for 1 year
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+    }
+
+    # Health check endpoint
     location /health {
         access_log off;
         return 200 "healthy\n";
         add_header Content-Type text/plain;
     }
 
-    # Static assets caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        proxy_pass http://127.0.0.1:8082;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        add_header Vary Accept-Encoding;
-    }
+    # Max upload size
+    client_max_body_size 10M;
 }
 ```
 
