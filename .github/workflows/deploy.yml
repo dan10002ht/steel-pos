@@ -74,7 +74,7 @@ jobs:
 
             # Build new images locally
             echo "🔨 Building new images..."
-            docker-compose -f docker-compose.prod.yml build
+            docker compose -f docker compose.prod.yml build
 
             # Health check current deployment
             if curl -f http://localhost:8082/health 2>/dev/null; then
@@ -82,7 +82,7 @@ jobs:
               
               # Zero-downtime deployment strategy
               echo "🔄 Updating backend..."
-              docker-compose -f docker-compose.prod.yml up -d --no-deps backend
+              docker compose -f docker compose.prod.yml up -d --no-deps backend
               
               # Wait for backend to be healthy
               echo "⏳ Waiting for backend to be healthy..."
@@ -99,7 +99,7 @@ jobs:
               done
               
               echo "🔄 Updating frontend..."
-              docker-compose -f docker-compose.prod.yml up -d --no-deps frontend
+              docker compose -f docker compose.prod.yml up -d --no-deps frontend
               
               # Wait for frontend to be healthy
               echo "⏳ Waiting for frontend to be healthy..."
@@ -117,8 +117,8 @@ jobs:
               
             else
               echo "❌ Current deployment is unhealthy, doing full restart..."
-              docker-compose -f docker-compose.prod.yml down --remove-orphans
-              docker-compose -f docker-compose.prod.yml up -d
+              docker compose -f docker compose.prod.yml down --remove-orphans
+              docker compose -f docker compose.prod.yml up -d
             fi
 
             # Wait for database to be ready
@@ -127,16 +127,16 @@ jobs:
 
             # Run database migrations
             echo "🗄️ Running database migrations..."
-            docker-compose -f docker-compose.prod.yml exec -T backend ./migrate_db || {
+            docker compose -f docker compose.prod.yml exec -T backend ./migrate_db || {
               echo "⚠️ Migration failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend ./migrate_db
+              docker compose -f docker compose.prod.yml run --rm backend ./migrate_db
             }
 
             # Run database seeding
             echo "🌱 Running database seeding..."
-            docker-compose -f docker-compose.prod.yml exec -T backend ./seed_db || {
+            docker compose -f docker compose.prod.yml exec -T backend ./seed_db || {
               echo "⚠️ Seeding failed, trying alternative method..."
-              docker-compose -f docker-compose.prod.yml run --rm backend ./seed_db
+              docker compose -f docker compose.prod.yml run --rm backend ./seed_db
             }
 
             # Wait for services to be healthy
@@ -157,8 +157,8 @@ jobs:
               
               # Rollback strategy
               echo "🔄 Rolling back to previous version..."
-              docker-compose -f docker-compose.prod.yml down
-              docker-compose -f docker-compose.prod.yml up -d
+              docker compose -f docker compose.prod.yml down
+              docker compose -f docker compose.prod.yml up -d
               
               # Wait for rollback to be healthy
               sleep 10
@@ -167,9 +167,9 @@ jobs:
               else
                 echo "❌ Rollback failed!"
                 echo "📋 Checking container status..."
-                docker-compose -f docker-compose.prod.yml ps
+                docker compose -f docker compose.prod.yml ps
                 echo "📋 Checking logs..."
-                docker-compose -f docker-compose.prod.yml logs --tail=50
+                docker compose -f docker compose.prod.yml logs --tail=50
                 exit 1
               fi
             fi
