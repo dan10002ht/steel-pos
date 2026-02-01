@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+.cache
+.parcel-cache
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.*
+*.env
+
+# Tests
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.js
+**/*.spec.jsx
+**/*.spec.ts
+**/*.spec.tsx
+coverage/
+.jest/
+__tests__/
+
+# Documentation
+README.md
+docs/
+*.md
+LICENSE
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

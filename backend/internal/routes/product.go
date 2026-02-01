@@ -37,6 +37,7 @@ func SetupProductRoutes(api *gin.RouterGroup, productHandler *handlers.ProductHa
 	// Variant-specific routes (separate group)
 	variants := api.Group("/variants")
 	{
+		variants.GET("/stocks", productHandler.GetVariantsStocks)
 		variants.GET("/:variantId", productHandler.GetVariantByID)
 		variants.PUT("/:variantId", authMiddleware.RequireManager(), productHandler.UpdateVariant)
 		variants.DELETE("/:variantId", authMiddleware.RequireManager(), productHandler.DeleteVariant)

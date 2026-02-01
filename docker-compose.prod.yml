@@ -7,13 +7,21 @@ services:
     container_name: steel_pos_postgres_prod
     environment:
       POSTGRES_DB: steel_pos
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_USER: ${POSTGRES_USER:?Error: POSTGRES_USER not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}
     volumes:
       - steel_postgres_data:/var/lib/postgresql/data
     networks:
       - steel_pos_network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 30s
@@ -29,6 +37,14 @@ services:
     networks:
       - steel_pos_network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -45,27 +61,30 @@ services:
       - NODE_ENV=production
       - ENV=production
       - PORT=8080
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/steel_pos?sslmode=disable
+      - DATABASE_URL=postgresql://${POSTGRES_USER:?Error: POSTGRES_USER not set}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}@postgres:5432/steel_pos?sslmode=disable
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-postgres}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_USER=${POSTGRES_USER:?Error: POSTGRES_USER not set}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}
       - DB_NAME=steel_pos
+      - DB_MAX_OPEN_CONNS=25
+      - DB_MAX_IDLE_CONNS=5
+      - DB_CONN_MAX_LIFETIME=5m
       - REDIS_URL=redis://redis:6379
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=0
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:?Error: JWT_SECRET not set}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-${JWT_SECRET}}
-      - CORS_ORIGIN=${CORS_ORIGIN:-https://steel-pos.com}
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://cuahangkienphuoc.site}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     ports:
       - "8083:8080"
     volumes:
-      - ./.env:/root/.env:ro
+      - ./.env:/home/appuser/.env:ro
     networks:
       - steel_pos_network
     depends_on:
@@ -74,6 +93,14 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     healthcheck:
       test:
         [
@@ -94,18 +121,26 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://steel-pos.com/api}
-        VITE_WS_URL: ${VITE_WS_URL:-wss://steel-pos.com/ws}
+        VITE_API_URL: ${VITE_API_URL:-https://cuahangkienphuoc.site/api}
+        VITE_WS_URL: ${VITE_WS_URL:-wss://cuahangkienphuoc.site/ws}
     container_name: steel_pos_frontend_prod
     environment:
-      - VITE_API_URL=${VITE_API_URL:-https://steel-pos.com/api}
-      - VITE_WS_URL=${VITE_WS_URL:-wss://steel-pos.com/ws}
+      - VITE_API_URL=${VITE_API_URL:-https://cuahangkienphuoc.site/api}
+      - VITE_WS_URL=${VITE_WS_URL:-wss://cuahangkienphuoc.site/ws}
       - NODE_ENV=production
     ports:
       - "8082:80"
     networks:
       - steel_pos_network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     healthcheck:
       test:
         [

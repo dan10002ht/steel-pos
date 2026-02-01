@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Box,
   VStack,
@@ -32,11 +32,13 @@ import { useFetchApi } from '@/hooks/useFetchApi';
 import { formatCurrency } from '@/utils/formatters';
 import SkeletonCard from '@/components/atoms/SkeletonCard';
 import SalesFilterField from '@/components/atoms/sales/SalesFilterField';
+import { AuthContext } from '@/contexts/AuthContext';
 
 const SalesStats = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
+  const { isAdmin } = useContext(AuthContext);
 
   // Date range presets
   const datePresets = [
@@ -258,64 +260,69 @@ const SalesStats = () => {
         </CardBody>
       </Card>
 
-      {/* Stats Cards */}
-      <Grid
-        templateColumns={{
-          base: '1fr',
-          md: 'repeat(2, 1fr)',
-          lg: 'repeat(2, 1fr)',
-          xl: 'repeat(4, 1fr)',
-        }}
-        gap={4}
-      >
-        {statItems.map((item, index) => (
-          <Card key={index} _hover={{ shadow: 'md' }} transition='all 0.2s'>
-            <CardBody>
-              <VStack align='stretch' spacing={3}>
-                <HStack justify='space-between' align='flex-start'>
-                  <VStack align='flex-start' spacing={1} flex='1'>
-                    <HStack spacing={2}>
-                      <Text color='gray.600' fontSize='sm' fontWeight='medium'>
-                        {item.label}
-                      </Text>
-                    </HStack>
-                    <Text fontSize='2xl' fontWeight='bold' color='gray.800'>
-                      {item.value}
-                    </Text>
-                  </VStack>
-                  {item.trend && (
-                    <Tooltip label={item.description} hasArrow>
-                      <Badge
-                        colorScheme={item.trend.isPositive ? 'green' : 'red'}
-                        variant='subtle'
-                        display='flex'
-                        alignItems='center'
-                        gap={1}
-                        px={2}
-                        py={1}
-                        borderRadius='md'
-                      >
-                        <Icon
-                          as={item.trend.isPositive ? ArrowUp : ArrowDown}
-                          boxSize={3}
-                        />
-                        <Text fontSize='xs' fontWeight='bold'>
-                          {item.trend.value}%
+      {isAdmin && (
+        <Grid
+          templateColumns={{
+            base: '1fr',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(2, 1fr)',
+            xl: 'repeat(4, 1fr)',
+          }}
+          gap={4}
+        >
+          {statItems.map((item, index) => (
+            <Card key={index} _hover={{ shadow: 'md' }} transition='all 0.2s'>
+              <CardBody>
+                <VStack align='stretch' spacing={3}>
+                  <HStack justify='space-between' align='flex-start'>
+                    <VStack align='flex-start' spacing={1} flex='1'>
+                      <HStack spacing={2}>
+                        <Text
+                          color='gray.600'
+                          fontSize='sm'
+                          fontWeight='medium'
+                        >
+                          {item.label}
                         </Text>
-                      </Badge>
-                    </Tooltip>
+                      </HStack>
+                      <Text fontSize='2xl' fontWeight='bold' color='gray.800'>
+                        {item.value}
+                      </Text>
+                    </VStack>
+                    {item.trend && (
+                      <Tooltip label={item.description} hasArrow>
+                        <Badge
+                          colorScheme={item.trend.isPositive ? 'green' : 'red'}
+                          variant='subtle'
+                          display='flex'
+                          alignItems='center'
+                          gap={1}
+                          px={2}
+                          py={1}
+                          borderRadius='md'
+                        >
+                          <Icon
+                            as={item.trend.isPositive ? ArrowUp : ArrowDown}
+                            boxSize={3}
+                          />
+                          <Text fontSize='xs' fontWeight='bold'>
+                            {item.trend.value}%
+                          </Text>
+                        </Badge>
+                      </Tooltip>
+                    )}
+                  </HStack>
+                  {item.description && (
+                    <Text fontSize='xs' color='gray.500' lineHeight='short'>
+                      {item.description}
+                    </Text>
                   )}
-                </HStack>
-                {item.description && (
-                  <Text fontSize='xs' color='gray.500' lineHeight='short'>
-                    {item.description}
-                  </Text>
-                )}
-              </VStack>
-            </CardBody>
-          </Card>
-        ))}
-      </Grid>
+                </VStack>
+              </CardBody>
+            </Card>
+          ))}
+        </Grid>
+      )}
     </VStack>
   );
 };

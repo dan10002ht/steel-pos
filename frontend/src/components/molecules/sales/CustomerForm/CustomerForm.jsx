@@ -62,10 +62,6 @@ const CustomerForm = ({ customer, onUpdate, onSelectCustomer }) => {
 
   return (
     <VStack spacing={4} align='stretch'>
-      <Text fontSize='md' fontWeight='medium'>
-        Thông tin khách hàng
-      </Text>
-
       <VStack spacing={3} align='stretch'>
         <Box>
           <Text fontSize='sm' color='gray.600' mb={1}>

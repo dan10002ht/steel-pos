@@ -24,11 +24,26 @@ const CustomerListPage = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [debtFilter, setDebtFilter] = useState('');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Build API URL with sort and filter params
+  const buildUrl = () => {
+    if (debouncedSearchTerm) {
+      return `/customers/search?q=${debouncedSearchTerm}&page=${currentPage}&limit=${pageSize}`;
+    }
+    let url = `/customers?page=${currentPage}&limit=${pageSize}&sort_by=${sortBy}&sort_order=${sortOrder}`;
+    if (debtFilter) {
+      url += `&debt_filter=${debtFilter}`;
+    }
+    return url;
+  };
 
   // Fetch customers from API with debounced search and pagination
   const { data, isLoading, error, refetch } = useFetchApi(
@@ -38,13 +53,14 @@ const CustomerListPage = () => {
       {
         search: debouncedSearchTerm,
         status: filterStatus,
+        debtFilter,
+        sortBy,
+        sortOrder,
         page: currentPage,
         limit: pageSize,
       },
     ],
-    debouncedSearchTerm
-      ? `/customers/search?q=${debouncedSearchTerm}&page=${currentPage}&limit=${pageSize}`
-      : `/customers?page=${currentPage}&limit=${pageSize}`,
+    buildUrl(),
     {
       enabled: true,
     }
@@ -68,10 +84,15 @@ const CustomerListPage = () => {
     setCurrentPage(1); // Reset to first page
   };
 
-  // Reset to first page when search or filter changes
+  // Reset to first page when search, filter, or sort changes
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, filterStatus]);
+  }, [debouncedSearchTerm, filterStatus, debtFilter, sortBy, sortOrder]);
+
+  const handleSort = (field, order) => {
+    setSortBy(field);
+    setSortOrder(order);
+  };
 
   // Filter customers by status (search is handled by API)
   const filteredCustomers = customersList.filter(customer => {
@@ -111,6 +132,8 @@ const CustomerListPage = () => {
               onSearchChange={e => setSearchTerm(e.target.value)}
               filterStatus={filterStatus}
               onFilterChange={setFilterStatus}
+              debtFilter={debtFilter}
+              onDebtFilterChange={setDebtFilter}
             />
           </HStack>
         </CardBody>
@@ -145,6 +168,9 @@ const CustomerListPage = () => {
             <CustomerTable
               customers={filteredCustomers}
               onViewDetail={handleCustomerClick}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={handleSort}
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalCount}

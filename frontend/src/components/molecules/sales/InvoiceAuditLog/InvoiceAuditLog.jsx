@@ -15,11 +15,10 @@ import { AuthContext } from '@/contexts/AuthContext';
 
 const InvoiceAuditLog = ({ auditLogs = [], showDetailedLog = false }) => {
   const { isAdmin } = useContext(AuthContext);
-  if (!isAdmin) return;
   const [expandedLogs, setExpandedLogs] = useState({});
   const [selectedLog, setSelectedLog] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  if (!isAdmin) return;
   const toggleLogExpansion = logId => {
     setExpandedLogs(prev => ({
       ...prev,

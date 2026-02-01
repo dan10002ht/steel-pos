@@ -1,9 +1,11 @@
-import React, {
+import {
   createContext,
   useContext,
   useState,
   useEffect,
   useCallback,
+  useMemo,
+  useRef,
 } from 'react';
 
 /**
@@ -29,41 +31,76 @@ const STORAGE_KEY = 'invoice_reservations';
  */
 
 export const InvoiceReservationProvider = ({ children }) => {
-  const [reservationMap, setReservationMap] = useState({});
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  const [reservationMap, setReservationMap] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setReservationMap(parsed);
-      }
+      if (saved) return JSON.parse(saved);
     } catch (error) {
       console.error('Failed to load reservations from localStorage:', error);
     }
-  }, []);
+    return {};
+  });
 
-  // Save to localStorage whenever reservationMap changes
+  // Ref để getter functions luôn đọc giá trị mới nhất mà không cần re-create
+  const reservationMapRef = useRef(reservationMap);
+  reservationMapRef.current = reservationMap;
+
+  // Debounce save to localStorage
+  const saveTimeoutRef = useRef(null);
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reservationMap));
-    } catch (error) {
-      console.error('Failed to save reservations to localStorage:', error);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+    saveTimeoutRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reservationMap));
+      } catch (error) {
+        console.error('Failed to save reservations to localStorage:', error);
+      }
+    }, 300);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [reservationMap]);
 
   /**
    * Cập nhật actual stock cho một variant (từ API)
    */
   const updateActualStock = useCallback((variantId, stock) => {
-    setReservationMap(prev => ({
-      ...prev,
-      [variantId]: {
-        actualStock: stock,
-        reservations: prev[variantId]?.reservations || {},
-      },
-    }));
+    setReservationMap(prev => {
+      // Skip nếu không thay đổi
+      if (prev[variantId]?.actualStock === stock) return prev;
+      return {
+        ...prev,
+        [variantId]: {
+          actualStock: stock,
+          reservations: prev[variantId]?.reservations || {},
+        },
+      };
+    });
+  }, []);
+
+  /**
+   * Batch update actual stocks cho nhiều variants (tránh multiple re-renders)
+   */
+  const batchUpdateActualStocks = useCallback(stocksMap => {
+    setReservationMap(prev => {
+      let changed = false;
+      const next = { ...prev };
+      Object.entries(stocksMap).forEach(([variantId, stock]) => {
+        if (prev[variantId]?.actualStock !== stock) {
+          changed = true;
+          next[variantId] = {
+            actualStock: stock,
+            reservations: prev[variantId]?.reservations || {},
+          };
+        }
+      });
+      return changed ? next : prev;
+    });
   }, []);
 
   /**
@@ -72,7 +109,8 @@ export const InvoiceReservationProvider = ({ children }) => {
   const setReservation = useCallback((invoiceId, variantId, quantity) => {
     setReservationMap(prev => {
       const variant = prev[variantId] || { actualStock: 0, reservations: {} };
-
+      // Skip nếu không thay đổi
+      if (variant.reservations[invoiceId] === quantity) return prev;
       return {
         ...prev,
         [variantId]: {
@@ -87,6 +125,36 @@ export const InvoiceReservationProvider = ({ children }) => {
   }, []);
 
   /**
+   * Batch update reservations cho một invoice (tránh multiple re-renders)
+   * variantQuantities: { [variantId]: quantity }
+   */
+  const batchSetReservations = useCallback((invoiceId, variantQuantities) => {
+    setReservationMap(prev => {
+      let changed = false;
+      const next = { ...prev };
+
+      Object.entries(variantQuantities).forEach(([variantId, quantity]) => {
+        const variant = prev[variantId] || {
+          actualStock: 0,
+          reservations: {},
+        };
+        if (variant.reservations[invoiceId] !== quantity) {
+          changed = true;
+          next[variantId] = {
+            ...variant,
+            reservations: {
+              ...variant.reservations,
+              [invoiceId]: quantity,
+            },
+          };
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, []);
+
+  /**
    * Xóa reservation của một variant trong invoice
    */
   const removeReservation = useCallback((invoiceId, variantId) => {
@@ -96,6 +164,8 @@ export const InvoiceReservationProvider = ({ children }) => {
 
       const { [invoiceId]: removed, ...remainingReservations } =
         variant.reservations;
+
+      if (removed === undefined) return prev; // Không có gì để xóa
 
       // Nếu không còn reservation nào, xóa variant khỏi map
       if (Object.keys(remainingReservations).length === 0) {
@@ -119,64 +189,65 @@ export const InvoiceReservationProvider = ({ children }) => {
   const clearInvoiceReservations = useCallback(invoiceId => {
     setReservationMap(prev => {
       const newMap = {};
+      let changed = false;
 
       Object.entries(prev).forEach(([variantId, variant]) => {
-        const { [invoiceId]: removed, ...remainingReservations } =
-          variant.reservations;
-
-        // Chỉ giữ lại variant nếu còn reservations từ invoices khác
-        if (Object.keys(remainingReservations).length > 0) {
-          newMap[variantId] = {
-            ...variant,
-            reservations: remainingReservations,
-          };
+        if (variant.reservations[invoiceId] !== undefined) {
+          changed = true;
+          const { [invoiceId]: removed, ...remainingReservations } =
+            variant.reservations;
+          if (Object.keys(remainingReservations).length > 0) {
+            newMap[variantId] = {
+              ...variant,
+              reservations: remainingReservations,
+            };
+          }
+        } else {
+          newMap[variantId] = variant;
         }
       });
 
-      return newMap;
+      return changed ? newMap : prev;
     });
   }, []);
 
   /**
-   * Lấy tổng số lượng đã reserved cho một variant (trừ invoice hiện tại)
+   * Getter functions dùng ref để không tạo lại khi reservationMap thay đổi
+   * -> consumers không bị re-render chỉ vì getter reference thay đổi
    */
   const getTotalReserved = useCallback(
     (variantId, excludeInvoiceId = null) => {
-      const variant = reservationMap[variantId];
+      const map = reservationMapRef.current;
+      const variant = map[variantId];
       if (!variant) return 0;
 
       return Object.entries(variant.reservations).reduce(
         (total, [invId, qty]) => {
           if (excludeInvoiceId && invId === excludeInvoiceId) {
-            return total; // Không tính invoice hiện tại
+            return total;
           }
-          return total + qty || 0;
+          return total + (qty || 0);
         },
         0
       );
     },
-    [reservationMap]
+    [] // Stable reference - dùng ref internally
   );
 
-  /**
-   * Lấy số lượng đã reserved bởi một invoice cụ thể
-   */
   const getReservedByInvoice = useCallback(
     (invoiceId, variantId) => {
-      const variant = reservationMap[variantId];
+      const map = reservationMapRef.current;
+      const variant = map[variantId];
       if (!variant) return 0;
       return variant.reservations[invoiceId] || 0;
     },
-    [reservationMap]
+    [] // Stable reference
   );
 
-  /**
-   * Tính available stock cho một variant (xét đến invoice hiện tại)
-   * Formula: actualStock - totalReserved + currentInvoiceReserved
-   */
   const getAvailableStock = useCallback(
     (variantId, currentInvoiceId = null) => {
-      const variant = reservationMap[variantId];
+      const map = reservationMapRef.current;
+      const variant = map[variantId];
       if (!variant) return 0;
 
       const actualStock = variant.actualStock || 0;
@@ -185,18 +256,15 @@ export const InvoiceReservationProvider = ({ children }) => {
         ? getReservedByInvoice(currentInvoiceId, variantId)
         : 0;
 
-
       return actualStock - totalReserved + currentReserved;
     },
-    [reservationMap, getTotalReserved, getReservedByInvoice]
+    [getTotalReserved, getReservedByInvoice]
   );
 
-  /**
-   * Lấy thông tin chi tiết về reservations của một variant
-   */
   const getReservationDetails = useCallback(
     variantId => {
-      const variant = reservationMap[variantId];
+      const map = reservationMapRef.current;
+      const variant = map[variantId];
       if (!variant) {
         return {
           actualStock: 0,
@@ -215,7 +283,45 @@ export const InvoiceReservationProvider = ({ children }) => {
         availableStock: (variant.actualStock || 0) - totalReserved,
       };
     },
-    [reservationMap, getTotalReserved]
+    [getTotalReserved]
+  );
+
+  /**
+   * Fetch và update actual stock từ API cho nhiều variants
+   */
+  const fetchAndUpdateStocks = useCallback(
+    async variantIds => {
+      if (!variantIds || variantIds.length === 0) return;
+
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/variants/stocks?ids=${variantIds.join(',')}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch variant stocks');
+        }
+
+        const result = await response.json();
+        const stocks = result.data || [];
+
+        // Batch update thay vì gọi updateActualStock từng cái
+        const stocksMap = {};
+        stocks.forEach(({ id, stock }) => {
+          stocksMap[id] = stock;
+        });
+        batchUpdateActualStocks(stocksMap);
+      } catch (error) {
+        console.error('Failed to fetch variant stocks:', error);
+      }
+    },
+    [batchUpdateActualStocks]
   );
 
   /**
@@ -226,18 +332,39 @@ export const InvoiceReservationProvider = ({ children }) => {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  const value = {
-    reservationMap,
-    updateActualStock,
-    setReservation,
-    removeReservation,
-    clearInvoiceReservations,
-    getTotalReserved,
-    getReservedByInvoice,
-    getAvailableStock,
-    getReservationDetails,
-    clearAllReservations,
-  };
+  // Memoize context value - chỉ re-create khi reservationMap thay đổi
+  const value = useMemo(
+    () => ({
+      reservationMap,
+      updateActualStock,
+      batchUpdateActualStocks,
+      setReservation,
+      batchSetReservations,
+      removeReservation,
+      clearInvoiceReservations,
+      getTotalReserved,
+      getReservedByInvoice,
+      getAvailableStock,
+      getReservationDetails,
+      clearAllReservations,
+      fetchAndUpdateStocks,
+    }),
+    [
+      reservationMap,
+      updateActualStock,
+      batchUpdateActualStocks,
+      setReservation,
+      batchSetReservations,
+      removeReservation,
+      clearInvoiceReservations,
+      getTotalReserved,
+      getReservedByInvoice,
+      getAvailableStock,
+      getReservationDetails,
+      clearAllReservations,
+      fetchAndUpdateStocks,
+    ]
+  );
 
   return (
     <InvoiceReservationContext.Provider value={value}>

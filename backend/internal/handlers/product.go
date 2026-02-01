@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"steel-pos-backend/internal/middleware"
@@ -331,6 +332,44 @@ func (h *ProductHandler) SearchProductsWithVariants(c *gin.Context) {
 		"query":    query,
 		"took_ms":  searchTime,
 	}, "Products with variants found")
+}
+
+// GetVariantsStocks gets stock information for multiple variants by IDs
+func (h *ProductHandler) GetVariantsStocks(c *gin.Context) {
+	idsStr := c.Query("ids")
+	if idsStr == "" {
+		response.BadRequest(c, "ids parameter is required")
+		return
+	}
+
+	// Parse comma-separated IDs
+	idStrings := strings.Split(idsStr, ",")
+	var ids []int
+	for _, idStr := range idStrings {
+		idStr = strings.TrimSpace(idStr)
+		if idStr == "" {
+			continue
+		}
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			response.BadRequest(c, "Invalid variant ID: "+idStr)
+			return
+		}
+		ids = append(ids, id)
+	}
+
+	if len(ids) == 0 {
+		response.Success(c, []interface{}{}, "No variants requested")
+		return
+	}
+
+	stocks, err := h.productService.GetVariantsStocksByIDs(ids)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, stocks, "Variant stocks retrieved successfully")
 }
 
 // GetProductInventoryLogs gets inventory logs for a product

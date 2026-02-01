@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+main
+migrate_db
+seed_db
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Documentation
+README.md
+docs/
+*.md
+LICENSE
+
+# Tests
+*_test.go
+testdata/
+test/
+coverage/
+*.out
+
+# Environment
+.env
+.env.*
+*.env
+
+# Dependencies
+vendor/
+
+# Misc
+tmp/
+temp/
+*.log
+.DS_Store
+Thumbs.db

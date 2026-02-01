@@ -1,6 +1,6 @@
 module steel-pos-backend
 
-go 1.22
+go 1.23
 
 require (
 	github.com/cloudinary/cloudinary-go/v2 v2.13.0

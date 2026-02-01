@@ -100,6 +100,15 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return defaultValue
 }
 
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
+		}
+	}
+	return defaultValue
+}
+
 func InitDB(cfg *Config) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Database.Host,
@@ -115,19 +124,23 @@ func InitDB(cfg *Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %v", err)
 	}
 
-	// Configure connection pool for better performance
+	// Configure connection pool for better performance (read from env vars)
 	// SetMaxOpenConns: maximum number of open connections to the database
-	db.SetMaxOpenConns(25) // Default is 0 (unlimited), but 25 is good for most apps
-	
+	maxOpenConns := getEnvAsInt("DB_MAX_OPEN_CONNS", 25)
+	db.SetMaxOpenConns(maxOpenConns)
+
 	// SetMaxIdleConns: maximum number of connections in the idle connection pool
-	db.SetMaxIdleConns(5) // Keep 5 idle connections ready
-	
+	maxIdleConns := getEnvAsInt("DB_MAX_IDLE_CONNS", 5)
+	db.SetMaxIdleConns(maxIdleConns)
+
 	// SetConnMaxLifetime: maximum amount of time a connection may be reused
 	// This helps prevent stale connections
-	db.SetConnMaxLifetime(5 * time.Minute)
-	
+	connMaxLifetime := getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute)
+	db.SetConnMaxLifetime(connMaxLifetime)
+
 	// SetConnMaxIdleTime: maximum amount of time a connection may be idle before being closed
-	db.SetConnMaxIdleTime(1 * time.Minute)
+	connMaxIdleTime := getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", 1*time.Minute)
+	db.SetConnMaxIdleTime(connMaxIdleTime)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %v", err)

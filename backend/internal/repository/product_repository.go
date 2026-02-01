@@ -670,3 +670,47 @@ func (r *ProductRepository) GetProductInventoryLogs(productID int, variantID *in
 
 	return logs, total, nil
 }
+
+// VariantStock represents a variant's stock information
+type VariantStock struct {
+	ID    int `json:"id"`
+	Stock int `json:"stock"`
+}
+
+// GetVariantsStocksByIDs gets stock information for multiple variants by their IDs
+func (r *ProductRepository) GetVariantsStocksByIDs(ids []int) ([]VariantStock, error) {
+	if len(ids) == 0 {
+		return []VariantStock{}, nil
+	}
+
+	// Build placeholders for IN clause
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, stock
+		FROM product_variants
+		WHERE id IN (%s) AND is_active = true
+	`, strings.Join(placeholders, ", "))
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []VariantStock
+	for rows.Next() {
+		var vs VariantStock
+		if err := rows.Scan(&vs.ID, &vs.Stock); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, vs)
+	}
+
+	return stocks, nil
+}

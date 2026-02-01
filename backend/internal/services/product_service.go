@@ -438,3 +438,8 @@ func (s *ProductService) SearchProductsForImportOrder(query string, limit int) (
 
 	return results, nil
 }
+
+// GetVariantsStocksByIDs gets stock information for multiple variants
+func (s *ProductService) GetVariantsStocksByIDs(ids []int) ([]repository.VariantStock, error) {
+	return s.productRepo.GetVariantsStocksByIDs(ids)
+}

@@ -15,7 +15,7 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { Save, Printer } from 'lucide-react';
+import { Save, FileEdit } from 'lucide-react';
 import { PAYMENT_METHODS } from '@/constants/options';
 import { formatCurrency } from '@/utils';
 import ImageUpload from '@/components/atoms/ImageUpload/ImageUpload';
@@ -82,16 +82,16 @@ const InvoiceSummary = ({
   };
 
   // Handle invoice creation with images
-  const handleCreateInvoice = async () => {
+  const handleCreateInvoice = async (isDraft = false) => {
     // Prepare invoice data with images
     const invoiceWithImages = {
       ...invoice,
+      isDraft,
     };
 
     // Only include uploaded images (not still uploading)
     const uploadedImages = invoiceImages.filter(img => !img.isUploading);
     if (uploadedImages.length > 0) {
-      // ✅ Chỉ lưu array of URLs (simple format)
       const imageUrls = uploadedImages.map(img => img.url);
       invoiceWithImages.invoiceImages = JSON.stringify(imageUrls);
     }
@@ -302,6 +302,18 @@ const InvoiceSummary = ({
       </VStack>
 
       <HStack spacing={3}>
+        <Button
+          leftIcon={<FileEdit size={16} />}
+          colorScheme='gray'
+          size='lg'
+          onClick={() => handleCreateInvoice(true)}
+          isDisabled={isDisabled}
+          isLoading={isLoading}
+          loadingText='Đang lưu...'
+          flex={1}
+        >
+          Lưu nháp
+        </Button>
         <Button
           leftIcon={<Save size={16} />}
           colorScheme='blue'

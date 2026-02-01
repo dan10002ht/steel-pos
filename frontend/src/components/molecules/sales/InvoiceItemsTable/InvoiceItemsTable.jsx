@@ -35,7 +35,14 @@ const InvoiceItemsTable = ({ items = [] }) => {
               {items && items.length > 0 ? (
                 items.map((item) => (
                   <Tr key={item.id}>
-                    <Td fontWeight="medium">{item.product_name}</Td>
+                    <Td fontWeight="medium">
+                      {item.product_name}
+                      {item.product_notes && (
+                        <Text fontSize="sm" color="gray.500" mt={0.5}>
+                          {item.product_notes}
+                        </Text>
+                      )}
+                    </Td>
                     <Td>{item.variant_name}</Td>
                     <Td isNumeric>{item.quantity}</Td>
                     <Td isNumeric>

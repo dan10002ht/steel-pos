@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import viteCompression from 'vite-plugin-compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -7,7 +8,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    viteCompression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024, // Only compress files larger than 1KB
+      deleteOriginFile: false,
+    }),
+  ],
   server: {
     port: 5173,
     host: true,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tr, Td, Text, VStack, HStack, Button, Badge } from '@chakra-ui/react';
 import { Eye } from 'lucide-react';
-import { formatPhoneNumber } from '@/utils/formatters';
+import { formatPhoneNumber, formatCurrency } from '@/utils/formatters';
 
 const CustomerTableRow = ({ customer, onViewDetail }) => {
   const handleViewClick = e => {
@@ -42,6 +42,16 @@ const CustomerTableRow = ({ customer, onViewDetail }) => {
             Chưa có địa chỉ
           </Text>
         )}
+      </Td>
+
+      <Td isNumeric>
+        <Text
+          fontSize='sm'
+          fontWeight={customer.unpaid_debt > 0 ? 'bold' : 'normal'}
+          color={customer.unpaid_debt > 0 ? 'red.500' : 'gray.500'}
+        >
+          {customer.unpaid_debt > 0 ? formatCurrency(customer.unpaid_debt) : '0'}
+        </Text>
       </Td>
 
       <Td>

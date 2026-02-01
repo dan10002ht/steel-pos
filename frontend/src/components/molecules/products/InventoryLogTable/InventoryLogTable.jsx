@@ -93,7 +93,7 @@ const InventoryLogTable = ({ logs, isLoading, error }) => {
   const handleReferenceClick = (referenceType, referenceId) => {
     switch (referenceType) {
       case 'invoice':
-        navigate(`/sales/invoices/${referenceId}`);
+        navigate(`/sales/detail/${referenceId}`);
         break;
       case 'import_order':
         navigate(`/inventory/import-orders/${referenceId}`);

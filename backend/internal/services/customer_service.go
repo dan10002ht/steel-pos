@@ -23,9 +23,9 @@ func NewCustomerService(customerRepo *repository.CustomerRepository, auditLogSer
 	}
 }
 
-// GetAllCustomers gets all customers with pagination
-func (s *CustomerService) GetAllCustomers(page, limit int) ([]*models.Customer, int, error) {
-	customers, total, err := s.customerRepo.GetAllCustomers(page, limit)
+// GetAllCustomers gets all customers with pagination, sorting, and filtering
+func (s *CustomerService) GetAllCustomers(page, limit int, sortBy, sortOrder, debtFilter string) ([]*models.Customer, int, error) {
+	customers, total, err := s.customerRepo.GetAllCustomers(page, limit, sortBy, sortOrder, debtFilter)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get all customers: %w", err)
 	}

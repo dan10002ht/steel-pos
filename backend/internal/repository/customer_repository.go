@@ -18,35 +18,67 @@ func NewCustomerRepository(db *sql.DB) *CustomerRepository {
 	}
 }
 
-// GetAllCustomers gets all customers with pagination
-func (r *CustomerRepository) GetAllCustomers(page, limit int) ([]*models.Customer, int, error) {
+// Allowed sort columns to prevent SQL injection
+var allowedSortColumns = map[string]string{
+	"name":        "c.name",
+	"phone":       "c.phone",
+	"created_at":  "c.created_at",
+	"unpaid_debt": "unpaid_debt",
+}
+
+// GetAllCustomers gets all customers with pagination, sorting, and filtering
+func (r *CustomerRepository) GetAllCustomers(page, limit int, sortBy, sortOrder, debtFilter string) ([]*models.Customer, int, error) {
 	offset := (page - 1) * limit
 
-	// Count total customers
-	countQuery := `
-		SELECT COUNT(*) 
-		FROM customers 
-		WHERE is_active = true
-	`
-	
+	// Build WHERE clause
+	whereClause := "WHERE c.is_active = true"
+	args := []interface{}{}
+	argIndex := 1
+
+	if debtFilter == "has_debt" {
+		whereClause += fmt.Sprintf(` AND (SELECT COALESCE(SUM(i2.total_amount - i2.paid_amount), 0) FROM invoices i2 WHERE i2.customer_id = c.id AND i2.status != 'cancelled' AND i2.payment_status != 'paid') > 0`)
+	} else if debtFilter == "no_debt" {
+		whereClause += fmt.Sprintf(` AND (SELECT COALESCE(SUM(i2.total_amount - i2.paid_amount), 0) FROM invoices i2 WHERE i2.customer_id = c.id AND i2.status != 'cancelled' AND i2.payment_status != 'paid') = 0`)
+	}
+
+	// Count total customers with filter
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM customers c %s`, whereClause)
 	var total int
-	err := r.db.QueryRow(countQuery).Scan(&total)
+	err := r.db.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count customers: %w", err)
 	}
 
-	// Get customers with pagination
-	query := `
-		SELECT 
-			id, name, phone, address, is_active,
-			created_by, created_at, updated_at
-		FROM customers 
-		WHERE is_active = true
-		ORDER BY created_at DESC
-		LIMIT $1 OFFSET $2
-	`
+	// Determine ORDER BY
+	orderColumn := "c.created_at"
+	if col, ok := allowedSortColumns[sortBy]; ok {
+		orderColumn = col
+	}
+	orderDir := "DESC"
+	if sortOrder == "asc" {
+		orderDir = "ASC"
+	}
 
-	rows, err := r.db.Query(query, limit, offset)
+	// Get customers with pagination (includes unpaid debt)
+	query := fmt.Sprintf(`
+		SELECT
+			c.id, c.name, c.phone, c.address, c.is_active,
+			c.created_by, c.created_at, c.updated_at,
+			COALESCE((
+				SELECT SUM(i.total_amount - i.paid_amount)
+				FROM invoices i
+				WHERE i.customer_id = c.id
+				  AND i.status != 'cancelled'
+				  AND i.payment_status != 'paid'
+			), 0) AS unpaid_debt
+		FROM customers c
+		%s
+		ORDER BY %s %s
+		LIMIT $%d OFFSET $%d
+	`, whereClause, orderColumn, orderDir, argIndex, argIndex+1)
+
+	args = append(args, limit, offset)
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get customers: %w", err)
 	}
@@ -64,6 +96,7 @@ func (r *CustomerRepository) GetAllCustomers(page, limit int) ([]*models.Custome
 			&customer.CreatedBy,
 			&customer.CreatedAt,
 			&customer.UpdatedAt,
+			&customer.UnpaidDebt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan customer: %w", err)
@@ -99,21 +132,28 @@ func (r *CustomerRepository) SearchCustomers(query string, limit int) ([]*models
 		return nil, 0, fmt.Errorf("failed to count customers: %w", err)
 	}
 
-	// Search customers with pagination using normalized search
+	// Search customers with pagination using normalized search (includes unpaid debt)
 	searchQuery := `
-		SELECT 
-			id, name, phone, address, is_active,
-			created_by, created_at, updated_at
-		FROM customers 
-		WHERE (normalize_vietnamese(name) ILIKE normalize_vietnamese($1) OR phone ILIKE $2)
-		AND is_active = true
-		ORDER BY 
-			CASE 
-				WHEN phone ILIKE $2 THEN 1
-				WHEN normalize_vietnamese(name) ILIKE normalize_vietnamese($1) THEN 2
+		SELECT
+			c.id, c.name, c.phone, c.address, c.is_active,
+			c.created_by, c.created_at, c.updated_at,
+			COALESCE((
+				SELECT SUM(i.total_amount - i.paid_amount)
+				FROM invoices i
+				WHERE i.customer_id = c.id
+				  AND i.status != 'cancelled'
+				  AND i.payment_status != 'paid'
+			), 0) AS unpaid_debt
+		FROM customers c
+		WHERE (normalize_vietnamese(c.name) ILIKE normalize_vietnamese($1) OR c.phone ILIKE $2)
+		AND c.is_active = true
+		ORDER BY
+			CASE
+				WHEN c.phone ILIKE $2 THEN 1
+				WHEN normalize_vietnamese(c.name) ILIKE normalize_vietnamese($1) THEN 2
 				ELSE 3
 			END,
-			name ASC
+			c.name ASC
 		LIMIT $3
 	`
 
@@ -135,6 +175,7 @@ func (r *CustomerRepository) SearchCustomers(query string, limit int) ([]*models
 			&customer.CreatedBy,
 			&customer.CreatedAt,
 			&customer.UpdatedAt,
+			&customer.UnpaidDebt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan customer: %w", err)

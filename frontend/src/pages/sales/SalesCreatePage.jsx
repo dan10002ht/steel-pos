@@ -15,7 +15,8 @@ const SalesCreatePage = () => {
   const [invoices, setInvoices] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const toast = useToast();
-  const { clearInvoiceReservations } = useInvoiceReservation();
+  const { clearInvoiceReservations, fetchAndUpdateStocks } =
+    useInvoiceReservation();
 
   const createInvoiceMutation = useCreateApi('/invoices', {
     invalidateQueries: [
@@ -53,18 +54,22 @@ const SalesCreatePage = () => {
     setIsInitialized(true);
   }, []);
 
-  // Save invoices to localStorage whenever they change
+  // Debounce save invoices to localStorage
   useEffect(() => {
     if (!isInitialized) return;
 
-    try {
-      localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invoices));
-    } catch (error) {
-      console.error('Failed to save draft invoices to localStorage:', error);
-    }
+    const timeout = setTimeout(() => {
+      try {
+        localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(invoices));
+      } catch (error) {
+        console.error('Failed to save draft invoices to localStorage:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
   }, [invoices, isInitialized]);
 
-  // Save active tab to localStorage
+  // Save active tab to localStorage (lightweight, no debounce needed)
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -74,6 +79,25 @@ const SalesCreatePage = () => {
       console.error('Failed to save active tab to localStorage:', error);
     }
   }, [activeTab, isInitialized]);
+
+  // Fetch actual stock từ API khi load invoices từ localStorage
+  useEffect(() => {
+    if (!isInitialized || invoices.length === 0) return;
+
+    // Collect all variant IDs from all invoices
+    const variantIds = new Set();
+    invoices.forEach(inv => {
+      inv.items?.forEach(item => {
+        if (item.variantId) variantIds.add(item.variantId);
+      });
+    });
+
+    if (variantIds.size > 0) {
+      fetchAndUpdateStocks([...variantIds]);
+    }
+    // Chỉ fetch một lần khi khởi tạo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized]);
 
   // Show loading while initializing
   if (!isInitialized) {
@@ -120,6 +144,8 @@ const SalesCreatePage = () => {
 
   const handleInvoiceCreated = async createdInvoice => {
     try {
+      const isDraft = createdInvoice.isDraft || false;
+
       // Transform frontend data to backend format
       const payload = {
         customer_id: createdInvoice.customer_id || null,
@@ -144,14 +170,17 @@ const SalesCreatePage = () => {
         paid_amount: createdInvoice.paidAmount || 0,
         notes: createdInvoice.notes || null,
         invoice_images: createdInvoice.invoiceImages || null,
+        is_draft: isDraft,
       };
 
       const { data, success } =
         await createInvoiceMutation.mutateAsync(payload);
       if (success) {
         toast({
-          title: 'Tạo hoá đơn thành công',
-          description: `Hoá đơn ${data.invoice_code} đã được tạo`,
+          title: isDraft ? 'Lưu nháp thành công' : 'Tạo hoá đơn thành công',
+          description: isDraft
+            ? `Hoá đơn nháp ${data.invoice_code} đã được lưu`
+            : `Hoá đơn ${data.invoice_code} đã được tạo`,
           status: 'success',
           duration: TOAST_DURATION.MEDIUM,
           isClosable: true,
@@ -236,7 +265,7 @@ const SalesCreatePage = () => {
         }
 
         // Open print page in new tab
-        const printUrl = `/sales/invoices/${data.id}/print`;
+        const printUrl = `/sales/detail/${data.id}/print`;
         window.open(printUrl, '_blank');
       }
     } catch (error) {

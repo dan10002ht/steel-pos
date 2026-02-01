@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   VStack,
@@ -26,7 +26,14 @@ import {
   IconButton,
   useDisclosure,
 } from '@chakra-ui/react';
-import { X, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  X,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  CheckCircle,
+} from 'lucide-react';
 import { useFetchApi } from '../../hooks/useFetchApi';
 import InvoiceAuditLog from '../../components/molecules/sales/InvoiceAuditLog/InvoiceAuditLog';
 import Page from '../../components/organisms/Page/Page';
@@ -46,8 +53,10 @@ import {
   getPaymentStatusColor,
   getPaymentStatusWithRemaining,
 } from '@/utils/statusHelpers';
+import { AuthContext } from '@/contexts/AuthContext';
 
 const SalesDetailPage = () => {
+  const { isAdmin } = useContext(AuthContext);
   const { id } = useParams();
   const navigate = useNavigate();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -101,6 +110,11 @@ const SalesDetailPage = () => {
     refetch: refetchPayments,
   } = useInvoicePayments(id);
 
+  // Finalize draft mutation
+  const finalizeMutation = useCreateApi(`/invoices/${id}/finalize`, {
+    invalidateQueries: ['invoice', 'invoices', 'audit-logs'],
+  });
+
   // Audit logs hook
   const { data: auditLogsData } = useFetchApi(
     ['audit-logs', 'invoice', id],
@@ -110,6 +124,19 @@ const SalesDetailPage = () => {
     }
   );
   const auditLogs = auditLogsData || [];
+
+  const handleFinalize = useCallback(async () => {
+    try {
+      await finalizeMutation.mutateAsync({});
+      refetch();
+    } catch (error) {
+      console.error('Finalize error:', error);
+    }
+  }, [finalizeMutation, refetch]);
+
+  const handleEditDraft = useCallback(() => {
+    navigate(`/sales/detail/${id}/edit`);
+  }, [navigate, id]);
 
   const handleCancelInvoice = useCallback(() => {
     setCancelModalOpen(true);
@@ -249,16 +276,30 @@ const SalesDetailPage = () => {
       isLoading={isLoading}
       error={error}
       primaryActions={[
-        // Payment action - only show if invoice is not fully paid
+        // Draft actions
+        invoice.status === 'draft' && {
+          label: 'Chỉnh sửa',
+          icon: <Edit3 size={16} />,
+          onClick: handleEditDraft,
+          colorScheme: 'blue',
+        },
+        invoice.status === 'draft' && {
+          label: 'Chốt đơn',
+          icon: <CheckCircle size={16} />,
+          onClick: handleFinalize,
+          colorScheme: 'green',
+          isLoading: finalizeMutation.isPending,
+        },
+        // Payment action - only show if invoice is confirmed and not fully paid
         invoice.payment_status !== 'paid' &&
-          invoice.status !== 'cancelled' && {
+          invoice.status === 'confirmed' && {
             label: 'Trả tiền',
             icon: <CreditCard size={16} />,
             onClick: handlePayment,
             colorScheme: 'green',
           },
-        // Cancel action - only show if invoice is confirmed
-        invoice.status === 'confirmed' && {
+        // Cancel action - only show if invoice is confirmed or draft
+        (invoice.status === 'confirmed' || invoice.status === 'draft') && {
           label: 'Hủy hóa đơn',
           icon: <X size={16} />,
           onClick: handleCancelInvoice,
@@ -266,6 +307,20 @@ const SalesDetailPage = () => {
         },
       ].filter(Boolean)}
     >
+      {/* Draft Info */}
+      {invoice.status === 'draft' && (
+        <Alert status='info' borderRadius='md'>
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Hóa đơn nháp</AlertTitle>
+            <AlertDescription>
+              Hóa đơn này đang ở trạng thái nháp. Bạn có thể chỉnh sửa hoặc chốt
+              đơn.
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
+
       <Grid templateColumns='repeat(12, 1fr)' gap={6}>
         {/* Invoice Information */}
         <GridItem colSpan={{ base: 12, lg: 6 }}>
@@ -273,7 +328,22 @@ const SalesDetailPage = () => {
             {/* Customer Information */}
             <CustomerInfoCard customer={invoice} />
 
-            {/* Invoice Information */}
+            {/* Invoice Items */}
+            <InvoiceItemsTable items={invoice.items} />
+
+            {/* Payment Summary */}
+            <PaymentSummaryCard invoice={invoice} />
+
+            {/* Payment History - only show for confirmed invoices */}
+            {invoice.status !== 'draft' && (
+              <PaymentHistoryTable
+                payments={payments}
+                isLoading={isPaymentsLoading}
+                error={paymentsError}
+                onUploadImage={handleUploadPaymentImage}
+                onPreviewImages={handlePreviewPaymentImages}
+              />
+            )}
 
             {/* Invoice Images */}
             {invoiceImages.length > 0 && (
@@ -320,36 +390,25 @@ const SalesDetailPage = () => {
               </Card>
             )}
 
-            {/* Invoice Items */}
-            <InvoiceItemsTable items={invoice.items} />
-
-            {/* Payment Summary */}
-            <PaymentSummaryCard invoice={invoice} />
-
-            {/* Payment History */}
-            <PaymentHistoryTable
-              payments={payments}
-              isLoading={isPaymentsLoading}
-              error={paymentsError}
-              onUploadImage={handleUploadPaymentImage}
-              onPreviewImages={handlePreviewPaymentImages}
-            />
-
             {/* Audit Logs */}
-            <InvoiceAuditLog
-              invoiceId={id}
-              auditLogs={auditLogs}
-              showDetailedLog={false}
-            />
+            {isAdmin && (
+              <InvoiceAuditLog
+                invoiceId={id}
+                auditLogs={auditLogs}
+                showDetailedLog={false}
+              />
+            )}
 
             {/* Notes */}
             {invoice.notes && (
-              <Box>
-                <Text fontWeight='medium' color='gray.600' mb={2}>
-                  Ghi chú
-                </Text>
-                <Text>{invoice.notes}</Text>
-              </Box>
+              <Card>
+                <CardBody>
+                  <Text fontWeight='medium' color='gray.600' mb={2}>
+                    Ghi chú
+                  </Text>
+                  <Text>{invoice.notes}</Text>
+                </CardBody>
+              </Card>
             )}
           </VStack>
         </GridItem>

@@ -326,7 +326,7 @@ const InvoicePrintPage = () => {
               • Nhấn nút "In" để mở cửa sổ in mới
             </Text>
             <Text fontSize="sm" color="blue.600">
-              • Chọn máy in và cài đặt phù hợp (A4, Portrait)
+              • Chọn máy in và cài đặt phù hợp (A5, Portrait)
             </Text>
             <Text fontSize="sm" color="blue.600">
               • Nhấn "Tải PDF" để tải file về máy tính

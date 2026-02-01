@@ -120,6 +120,12 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		}
 	}
 
+	// Determine invoice status
+	invoiceStatus := "confirmed"
+	if req.IsDraft {
+		invoiceStatus = "draft"
+	}
+
 	// Create invoice
 	invoice := &models.Invoice{
 		InvoiceCode:        invoiceCode,
@@ -135,7 +141,7 @@ func (s *InvoiceService) CreateInvoice(req *models.CreateInvoiceRequest, created
 		TotalAmount:        totalAmount,
 		PaidAmount:         paidAmount,
 		PaymentStatus:      paymentStatus,
-		Status:             "confirmed",
+		Status:             invoiceStatus,
 		Notes:              req.Notes,
 		InvoiceImages:      req.InvoiceImages,
 		CreatedBy:          &createdBy,
@@ -314,8 +320,8 @@ func (s *InvoiceService) CancelInvoice(invoiceID int, reason string, cancelledBy
 		return errors.New("invoice is already cancelled")
 	}
 
-	if invoice.Status != "confirmed" {
-		return errors.New("only confirmed invoices can be cancelled")
+	if invoice.Status != "confirmed" && invoice.Status != "draft" {
+		return errors.New("only confirmed or draft invoices can be cancelled")
 	}
 
 	// Cancel invoice and restore inventory
@@ -333,18 +339,25 @@ func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest,
 		return nil, errors.New("invoice not found")
 	}
 
+	// Check if items can be edited - only draft invoices can have items modified
+	if len(req.Items) > 0 && oldInvoice.Status != "draft" {
+		return nil, errors.New("cannot edit items of confirmed or cancelled invoice")
+	}
+
 	// Create a copy for updating
 	invoice := *oldInvoice
 
-	// Update customer info if provided
-	if req.CustomerPhone != nil {
-		invoice.CustomerPhone = *req.CustomerPhone
-	}
-	if req.CustomerName != nil {
-		invoice.CustomerName = *req.CustomerName
-	}
-	if req.CustomerAddress != nil {
-		invoice.CustomerAddress = req.CustomerAddress
+	// Update customer info if provided (only for draft)
+	if oldInvoice.Status == "draft" {
+		if req.CustomerPhone != nil {
+			invoice.CustomerPhone = *req.CustomerPhone
+		}
+		if req.CustomerName != nil {
+			invoice.CustomerName = *req.CustomerName
+		}
+		if req.CustomerAddress != nil {
+			invoice.CustomerAddress = req.CustomerAddress
+		}
 	}
 
 	// Update status if provided
@@ -362,8 +375,76 @@ func (s *InvoiceService) UpdateInvoice(id int, req *models.UpdateInvoiceRequest,
 		invoice.InvoiceImages = req.InvoiceImages
 	}
 
-	// Update items if provided
-	if len(req.Items) > 0 {
+	// Update items if provided (only for draft)
+	if len(req.Items) > 0 && oldInvoice.Status == "draft" {
+		// Build map of old quantities by variant ID
+		oldQtyByVariant := make(map[int]float64)
+		for _, item := range oldInvoice.Items {
+			if item.VariantID != nil {
+				oldQtyByVariant[*item.VariantID] += item.Quantity
+			}
+		}
+
+		// Build map of new quantities by variant ID
+		newQtyByVariant := make(map[int]float64)
+		for _, itemReq := range req.Items {
+			if itemReq.IsDeleted != nil && *itemReq.IsDeleted {
+				continue
+			}
+			if itemReq.VariantID != nil && itemReq.Quantity != nil {
+				newQtyByVariant[*itemReq.VariantID] += *itemReq.Quantity
+			}
+		}
+
+		// Calculate and apply stock adjustments
+		productRepo := repository.NewProductRepository(s.invoiceRepo.GetDB())
+
+		// Process all variants (both old and new)
+		allVariants := make(map[int]bool)
+		for variantID := range oldQtyByVariant {
+			allVariants[variantID] = true
+		}
+		for variantID := range newQtyByVariant {
+			allVariants[variantID] = true
+		}
+
+		for variantID := range allVariants {
+			oldQty := oldQtyByVariant[variantID]
+			newQty := newQtyByVariant[variantID]
+			diff := newQty - oldQty
+
+			if diff == 0 {
+				continue
+			}
+
+			if diff > 0 {
+				// Need more stock - check availability and deduct
+				variant, err := productRepo.GetVariantByID(variantID)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get variant %d: %w", variantID, err)
+				}
+				if variant == nil {
+					return nil, fmt.Errorf("variant %d not found", variantID)
+				}
+				if float64(variant.Stock) < diff {
+					return nil, fmt.Errorf("insufficient stock for variant %d: available %d, need %.0f more",
+						variantID, variant.Stock, diff)
+				}
+
+				// Deduct stock
+				err = s.adjustStock(variantID, -diff, id, updatedBy, updatedByUsername, "sale_update")
+				if err != nil {
+					return nil, fmt.Errorf("failed to deduct stock: %w", err)
+				}
+			} else {
+				// Restore stock (diff is negative, so -diff is positive)
+				err = s.adjustStock(variantID, -diff, id, updatedBy, updatedByUsername, "sale_update_restore")
+				if err != nil {
+					return nil, fmt.Errorf("failed to restore stock: %w", err)
+				}
+			}
+		}
+
 		// Delete existing items
 		err = s.invoiceRepo.DeleteInvoiceItemsByInvoiceID(id)
 		if err != nil {
@@ -828,6 +909,126 @@ func (s *InvoiceService) GetInvoiceAuditLogs(invoiceID int) ([]models.AuditLog, 
 	if s.auditLogService == nil {
 		return []models.AuditLog{}, nil
 	}
-	
+
 	return s.auditLogService.GetAuditLogsByEntity("invoice", invoiceID)
+}
+
+// FinalizeInvoice changes a draft invoice to confirmed status
+func (s *InvoiceService) FinalizeInvoice(invoiceID int, userID int, userName string) (*models.Invoice, error) {
+	// Get invoice
+	invoice, err := s.invoiceRepo.GetInvoiceByID(invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if invoice == nil {
+		return nil, errors.New("invoice not found")
+	}
+
+	// Check if invoice is draft
+	if invoice.Status != "draft" {
+		return nil, errors.New("only draft invoices can be finalized")
+	}
+
+	// Store old invoice for audit
+	oldInvoice := *invoice
+
+	// Update status to confirmed
+	invoice.Status = "confirmed"
+	invoice.UpdatedAt = time.Now()
+
+	err = s.invoiceRepo.UpdateInvoice(invoice)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get updated invoice
+	updatedInvoice, err := s.invoiceRepo.GetInvoiceByID(invoiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log audit trail
+	if s.auditLogService != nil {
+		userIDPtr := &userID
+		userNamePtr := &userName
+		err = s.auditLogService.LogInvoiceChange(
+			invoiceID,
+			"finalized",
+			&oldInvoice,
+			updatedInvoice,
+			userIDPtr,
+			userNamePtr,
+			nil,
+			nil,
+		)
+		if err != nil {
+			fmt.Printf("ERROR: Failed to create finalize audit log: %v\n", err)
+		}
+	}
+
+	return updatedInvoice, nil
+}
+
+// adjustStock adjusts stock for a variant (positive = add, negative = deduct)
+func (s *InvoiceService) adjustStock(variantID int, quantityChange float64, invoiceID int, userID int, userName string, movementType string) error {
+	// Get current stock
+	var currentStock float64
+	var productID int
+	err := s.invoiceRepo.GetDB().QueryRow(`
+		SELECT stock, product_id FROM product_variants WHERE id = $1
+	`, variantID).Scan(&currentStock, &productID)
+	if err != nil {
+		return fmt.Errorf("failed to get current stock: %w", err)
+	}
+
+	// Calculate new stock
+	newStock := currentStock + quantityChange
+
+	if newStock < 0 {
+		return fmt.Errorf("insufficient stock: current %.0f, change %.0f", currentStock, quantityChange)
+	}
+
+	// Update stock
+	_, err = s.invoiceRepo.GetDB().Exec(`
+		UPDATE product_variants SET stock = $1, updated_at = NOW() WHERE id = $2
+	`, newStock, variantID)
+	if err != nil {
+		return fmt.Errorf("failed to update stock: %w", err)
+	}
+
+	// Log inventory change
+	notes := fmt.Sprintf("Cập nhật hóa đơn %d", invoiceID)
+	inventoryData := map[string]interface{}{
+		"product_id":      productID,
+		"variant_id":      variantID,
+		"movement_type":   movementType,
+		"quantity_change": quantityChange,
+		"previous_stock":  currentStock,
+		"new_stock":       newStock,
+		"reference_type":  "invoice",
+		"reference_id":    invoiceID,
+	}
+	inventoryDataJSON, _ := json.Marshal(inventoryData)
+
+	_, err = s.invoiceRepo.GetDB().Exec(`
+		SELECT log_inventory_change(
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+		)
+	`,
+		"product_variant",
+		variantID,
+		movementType,
+		quantityChange,
+		currentStock,
+		newStock,
+		"invoice",
+		invoiceID,
+		notes,
+		userID,
+		userName,
+		string(inventoryDataJSON),
+	)
+
+	return err
 }

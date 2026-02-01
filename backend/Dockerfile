@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -12,35 +12,54 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# Build the application with optimizations
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -ldflags="-s -w -X main.version=${VERSION:-dev}" \
+    -trimpath \
+    -o main .
 
-# Build migration binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate_db ./cmd/migrate
+# Build migration binary with optimizations
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o migrate_db ./cmd/migrate
 
-# Build seed binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o seed_db ./cmd/seed
+# Build seed binary with optimizations
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -a -installsuffix cgo \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o seed_db ./cmd/seed
 
 # Final stage
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+# Create non-root user
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
+
+WORKDIR /home/appuser/
 
 # Copy the binaries from builder stage
-COPY --from=builder /app/main .
-COPY --from=builder /app/migrate_db .
-COPY --from=builder /app/seed_db .
+COPY --from=builder --chown=appuser:appuser /app/main .
+COPY --from=builder --chown=appuser:appuser /app/migrate_db .
+COPY --from=builder --chown=appuser:appuser /app/seed_db .
 
 # Copy migrations directory
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder --chown=appuser:appuser /app/migrations ./migrations
 
 # Copy fonts directory for PDF generation
-COPY --from=builder /app/fonts ./fonts
+COPY --from=builder --chown=appuser:appuser /app/fonts ./fonts
 
 # Make binaries executable
 RUN chmod +x main migrate_db seed_db
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8080

@@ -342,6 +342,26 @@ func (h *InvoiceHandler) CancelInvoice(c *gin.Context) {
 	}, "Invoice cancelled")
 }
 
+// FinalizeInvoice changes a draft invoice to confirmed status
+func (h *InvoiceHandler) FinalizeInvoice(c *gin.Context) {
+	invoiceID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "Invalid invoice ID")
+		return
+	}
+
+	userID, _ := middleware.GetCurrentUserID(c)
+	userName, _ := middleware.GetCurrentUsername(c)
+
+	invoice, err := h.invoiceService.FinalizeInvoice(invoiceID, userID, userName)
+	if err != nil {
+		response.ServiceError(c, err)
+		return
+	}
+
+	response.Success(c, invoice, "Invoice finalized successfully")
+}
+
 // Export endpoints
 func (h *InvoiceHandler) ExportInvoices(c *gin.Context) {
 	// This would implement invoice export functionality

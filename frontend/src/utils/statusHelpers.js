@@ -47,6 +47,9 @@ export const getPaymentStatusColor = (paymentStatus, invoiceStatus) => {
   if(invoiceStatus === "cancelled") {
     return "red";
   }
+  if(invoiceStatus === "draft") {
+    return "gray";
+  }
   switch (paymentStatus) {
     case "paid":
       return "green";
@@ -92,6 +95,9 @@ export const getPaymentStatusText = (status, invoiceStatus) => {
 export const getPaymentStatusWithRemaining = (invoice) => {
   if (invoice.status === "cancelled") {
     return "Đã hủy";
+  }
+  if (invoice.status === "draft") {
+    return "Nháp";
   }
   if (invoice.payment_status === "partial") {
     return `Tồn nợ`;

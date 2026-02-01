@@ -8,11 +8,19 @@ const CustomerFilters = ({
   onSearchChange,
   filterStatus,
   onFilterChange,
+  debtFilter,
+  onDebtFilterChange,
 }) => {
   const statusOptions = [
     { value: 'all', label: 'Tất cả' },
     { value: 'active', label: 'Đang hoạt động' },
     { value: 'inactive', label: 'Không hoạt động' },
+  ];
+
+  const debtOptions = [
+    { value: '', label: 'Tất cả' },
+    { value: 'has_debt', label: 'Có nợ' },
+    { value: 'no_debt', label: 'Không nợ' },
   ];
 
   return (
@@ -27,6 +35,13 @@ const CustomerFilters = ({
         options={statusOptions}
         value={filterStatus}
         onChange={onFilterChange}
+        placeholder='Tất cả'
+      />
+      <FilterDropdown
+        label='Tồn nợ'
+        options={debtOptions}
+        value={debtFilter}
+        onChange={onDebtFilterChange}
         placeholder='Tất cả'
       />
     </HStack>

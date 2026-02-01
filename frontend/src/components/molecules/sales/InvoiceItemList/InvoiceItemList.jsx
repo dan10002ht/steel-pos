@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -10,30 +10,49 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   IconButton,
-  Badge,
   Alert,
   AlertIcon,
   AlertDescription,
+  Input,
 } from '@chakra-ui/react';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/utils';
 import { useInvoiceReservation } from '@/hooks/useInvoiceReservation';
 
 const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
   const { getAvailableStock, getTotalReserved } = useInvoiceReservation();
-  const handleUpdateItem = (itemId, field, value) => {
-    onUpdateItem(itemId, field, value);
-  };
 
-  const handleRemoveItem = itemId => {
-    onRemoveItem(itemId);
-  };
+  // Pre-compute tổng qty theo variant (tính 1 lần thay vì N lần trong loop)
+  const totalQtyByVariant = useMemo(() => {
+    const map = {};
+    items.forEach(item => {
+      if (item.variantId) {
+        map[item.variantId] = (map[item.variantId] || 0) + (item.quantity || 0);
+      }
+    });
+    return map;
+  }, [items]);
+
+  const handleUpdateItem = useCallback(
+    (itemId, field, value) => {
+      onUpdateItem(itemId, field, value);
+    },
+    [onUpdateItem]
+  );
+
+  const handleRemoveItem = useCallback(
+    itemId => {
+      onRemoveItem(itemId);
+    },
+    [onRemoveItem]
+  );
 
   if (items.length === 0) {
     return (
       <Box textAlign='center' py={8}>
         <Text color='gray.500'>
-          Chưa có sản phẩm nào. Vui lòng tìm kiếm và thêm sản phẩm từ bên trái.
+          Chưa có sản phẩm nào. Vui lòng tìm kiếm và thêm sản phẩm từ bên
+          trái.
         </Text>
       </Box>
     );
@@ -42,9 +61,24 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
   return (
     <VStack spacing={3} align='stretch'>
       {items.map(item => {
-        const availableStock = getAvailableStock(item.variantId, invoiceId);
+        // Available từ các invoice khác
+        const availableFromOthers = getAvailableStock(
+          item.variantId,
+          invoiceId
+        );
+
+        // Tính qty từ other items = tổng - item hiện tại (O(1) thay vì O(N))
+        const qtyFromOtherItems =
+          (totalQtyByVariant[item.variantId] || 0) - (item.quantity || 0);
+
+        // Max cho item này
+        const maxForThisItem = Math.max(
+          0,
+          availableFromOthers - qtyFromOtherItems
+        );
+
         const totalReserved = getTotalReserved(item.variantId, invoiceId);
-        const isLowStock = availableStock <= 5 && availableStock > 0;
+        const isLowStock = maxForThisItem <= 5 && maxForThisItem > 0;
         const hasReservations = totalReserved > 0;
 
         return (
@@ -59,19 +93,12 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
             <VStack spacing={3} align='stretch'>
               <HStack justify='space-between'>
                 <VStack align='flex-start' spacing={1}>
-                  <HStack>
+                  <HStack align='center'>
                     <Text fontWeight='bold'>{item.productName}</Text>
-                    {hasReservations && (
-                      <Badge colorScheme='orange' fontSize='xs'>
-                        <HStack spacing={1}>
-                          <AlertTriangle size={10} />
-                        </HStack>
-                      </Badge>
-                    )}
+                    <Text color='gray.600' fontStyle='italic'>
+                      ({item.variantName})
+                    </Text>
                   </HStack>
-                  <Text fontSize='sm' color='gray.600'>
-                    {item.variantName}
-                  </Text>
                 </VStack>
                 <IconButton
                   size='sm'
@@ -86,7 +113,7 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
                 <Alert status='warning' size='sm' borderRadius='md'>
                   <AlertIcon />
                   <AlertDescription fontSize='xs'>
-                    Sắp hết hàng! Chỉ còn {availableStock} sản phẩm khả dụng
+                    Sắp hết hàng! Chỉ còn {maxForThisItem} sản phẩm khả dụng
                     {hasReservations &&
                       ` (${totalReserved} đang giữ ở tabs khác)`}
                   </AlertDescription>
@@ -94,20 +121,20 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
               )}
 
               <HStack spacing={4} align='stretch'>
-                <Box flex={1}>
+                <Box>
                   <Text fontSize='sm' color='gray.600' mb={1}>
                     Số lượng
                   </Text>
                   <NumberInput
-                    value={item.quantity || ""}
+                    value={item.quantity || ''}
                     min={1}
-                    max={availableStock}
+                    max={maxForThisItem}
                     onChange={value => {
                       const numberValue = parseInt(value);
                       handleUpdateItem(
                         item.id,
                         'quantity',
-                        Math.min(numberValue, availableStock)
+                        Math.min(numberValue, maxForThisItem)
                       );
                     }}
                   >
@@ -119,9 +146,9 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
                   </NumberInput>
                   <HStack spacing={2} mt={1}>
                     <Text fontSize='xs' color='gray.500'>
-                      Khả dụng: {availableStock}
+                      Khả dụng: {maxForThisItem}
                     </Text>
-                    {item.stock !== availableStock && (
+                    {item.stock !== maxForThisItem && (
                       <Text
                         fontSize='xs'
                         color='orange.600'
@@ -157,6 +184,20 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
                   </Text>
                 </Box>
               </HStack>
+
+              <Box>
+                <Text fontSize='sm' color='gray.600' mb={1}>
+                  Ghi chú
+                </Text>
+                <Input
+                  size='sm'
+                  placeholder='Nhập ghi chú cho sản phẩm...'
+                  value={item.productNotes || ''}
+                  onChange={e =>
+                    handleUpdateItem(item.id, 'productNotes', e.target.value)
+                  }
+                />
+              </Box>
             </VStack>
           </Box>
         );
@@ -165,4 +206,4 @@ const InvoiceItemList = ({ items, invoiceId, onUpdateItem, onRemoveItem }) => {
   );
 };
 
-export default InvoiceItemList;
+export default React.memo(InvoiceItemList);

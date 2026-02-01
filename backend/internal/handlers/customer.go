@@ -53,6 +53,9 @@ func (h *CustomerHandler) GetAllCustomers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	search := c.Query("search")
+	sortBy := c.DefaultQuery("sort_by", "created_at")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+	debtFilter := c.Query("debt_filter") // "has_debt", "no_debt", or "" (all)
 
 	if page < 1 {
 		page = 1
@@ -69,7 +72,7 @@ func (h *CustomerHandler) GetAllCustomers(c *gin.Context) {
 	if search != "" {
 		result, total, err = h.customerService.SearchCustomers(search, limit)
 	} else {
-		result, total, err = h.customerService.GetAllCustomers(page, limit)
+		result, total, err = h.customerService.GetAllCustomers(page, limit, sortBy, sortOrder, debtFilter)
 	}
 
 	if err != nil {

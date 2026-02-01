@@ -98,6 +98,7 @@ type CreateInvoiceRequest struct {
 	PaidAmount         *float64                  `json:"paid_amount"`
 	Notes              *string                   `json:"notes"`
 	InvoiceImages      *string                   `json:"invoice_images"`
+	IsDraft            bool                      `json:"is_draft"` // If true, create as draft status
 }
 
 // CreateInvoiceItemRequest represents a request to create an invoice item

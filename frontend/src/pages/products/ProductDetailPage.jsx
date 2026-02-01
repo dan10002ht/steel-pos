@@ -253,7 +253,7 @@ const ProductDetailPage = () => {
 
         {/* Variants Table */}
         <Card shadow='sm'>
-          <CardHeader pb="0">
+          <CardHeader pb='0'>
             <HStack justify='space-between' align='center'>
               <Text fontSize='lg' fontWeight='bold'>
                 Phân loại của sản phẩm
@@ -323,9 +323,8 @@ const ProductDetailPage = () => {
           </CardBody>
         </Card>
 
-        {/* Inventory Logs */}
         <Card shadow='sm'>
-          <CardHeader pb="0">
+          <CardHeader pb='0'>
             <HStack justify='space-between' align='center'>
               <Text fontSize='lg' fontWeight='bold'>
                 Lịch sử tồn kho

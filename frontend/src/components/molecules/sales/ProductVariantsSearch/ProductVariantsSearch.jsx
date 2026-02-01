@@ -28,12 +28,8 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const toast = useToast();
 
-  const {
-    updateActualStock,
-    getAvailableStock,
-    getTotalReserved,
-    setReservation,
-  } = useInvoiceReservation();
+  const { updateActualStock, getAvailableStock, getTotalReserved } =
+    useInvoiceReservation();
 
   // Use the custom hook for product variants search
   const {
@@ -68,34 +64,29 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
   }, [searchResults, updateActualStock]);
 
   const handleAddProduct = variant => {
-    // Get available stock considering reservations
-    const availableStock = getAvailableStock(variant.id, invoice.id);
+    // Tính số lượng variant này đã có trong invoice hiện tại
+    const currentQtyInInvoice = invoice.items
+      .filter(item => item.variantId === variant.id)
+      .reduce((sum, item) => sum + (item.quantity || 0), 0);
+
+    // Get available stock từ các invoice khác
+    const availableFromOthers = getAvailableStock(variant.id, invoice.id);
+
+    // Available thực tế = available từ others - số đã có trong invoice này
+    const actualAvailable = availableFromOthers - currentQtyInInvoice;
 
     // Check if variant is out of stock
-    if (availableStock === 0) {
+    if (actualAvailable <= 0) {
       const totalReserved = getTotalReserved(variant.id, invoice.id);
       toast({
         title: 'Không thể thêm sản phẩm',
         description:
-          totalReserved > 0
-            ? `Sản phẩm này đã hết hàng (${totalReserved} đang được giữ trong các hóa đơn khác)`
-            : 'Sản phẩm này đã hết hàng',
+          currentQtyInInvoice > 0
+            ? `Đã có ${currentQtyInInvoice} sản phẩm trong hóa đơn, không còn hàng để thêm`
+            : totalReserved > 0
+              ? `Sản phẩm này đã hết hàng (${totalReserved} đang được giữ trong các hóa đơn khác)`
+              : 'Sản phẩm này đã hết hàng',
         status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    // Check if variant already exists in invoice
-    const existingItem = invoice.items.find(
-      item => item.variantId === variant.id
-    );
-    if (existingItem) {
-      toast({
-        title: 'Sản phẩm đã tồn tại',
-        description: 'Sản phẩm này đã có trong hoá đơn',
-        status: 'info',
         duration: 3000,
         isClosable: true,
       });
@@ -114,6 +105,7 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
       totalPrice: variant.unit_price || variant.price || 0,
       stock: variant.stock,
       unit: variant.unit || variant.product_unit || 'cái',
+      productNotes: '',
     };
 
     const updatedInvoice = {
@@ -121,18 +113,8 @@ const ProductVariantsSearch = ({ invoice, onUpdate, enabled = true }) => {
       items: [...invoice.items, newItem],
     };
 
-    // Add reservation
-    setReservation(invoice.id, variant.id, 1);
-
+    // Reservation sẽ được sync từ InvoiceForm khi items thay đổi
     onUpdate(updatedInvoice);
-
-    toast({
-      title: 'Đã thêm sản phẩm',
-      description: `${variant.product_name} - ${variant.name} đã được thêm vào hoá đơn`,
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
   };
 
   const handleSearchChange = e => {

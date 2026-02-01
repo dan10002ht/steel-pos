@@ -11,7 +11,8 @@ type Customer struct {
 	IsActive  bool      `json:"is_active" db:"is_active"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-	CreatedBy *int      `json:"created_by" db:"created_by"`
+	CreatedBy  *int      `json:"created_by" db:"created_by"`
+	UnpaidDebt float64   `json:"unpaid_debt" db:"unpaid_debt"`
 
 	// Relations
 	Invoices []*Invoice `json:"invoices,omitempty"`

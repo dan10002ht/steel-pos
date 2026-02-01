@@ -1,20 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, VStack, Card, CardBody, Text, useToast } from '@chakra-ui/react';
 import CustomerForm from '@/components/molecules/sales/CustomerForm';
 import InvoiceItemList from '@/components/molecules/sales/InvoiceItemList';
 import InvoiceSummary from '@/components/molecules/sales/InvoiceSummary';
 import { useInvoiceReservation } from '@/hooks/useInvoiceReservation';
 
-const InvoiceForm = ({
-  invoice,
-  onUpdate,
-  onInvoiceCreated,
-}) => {
+const InvoiceForm = ({ invoice, onUpdate, onInvoiceCreated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const toast = useToast();
 
-  const { getAvailableStock, setReservation, removeReservation } =
-    useInvoiceReservation();
+  const { getAvailableStock, batchSetReservations } = useInvoiceReservation();
+
+  // Sync reservations when items change - dùng batchSetReservations để chỉ 1 state update
+  useEffect(() => {
+    if (!invoice?.items || !invoice?.id) return;
+
+    // Group items by variantId và tính tổng quantity
+    const variantQuantities = {};
+    invoice.items.forEach(item => {
+      if (item.variantId) {
+        variantQuantities[item.variantId] =
+          (variantQuantities[item.variantId] || 0) + (item.quantity || 0);
+      }
+    });
+
+    // Batch update reservations (1 state update thay vì N)
+    batchSetReservations(invoice.id, variantQuantities);
+  }, [invoice?.items, invoice?.id, batchSetReservations]);
 
   // Early return if invoice is not loaded yet
   if (!invoice) {
@@ -31,21 +43,28 @@ const InvoiceForm = ({
 
     // Validate quantity against available stock
     if (field === 'quantity') {
-      const availableStock = getAvailableStock(item.variantId, invoice.id);
+      // Get available từ các invoice khác
+      const availableFromOthers = getAvailableStock(item.variantId, invoice.id);
 
-      if (value > availableStock) {
+      // Tính qty của variant này từ các items KHÁC trong invoice (không tính item đang edit)
+      const qtyFromOtherItems = invoice.items
+        .filter(i => i.variantId === item.variantId && i.id !== itemId)
+        .reduce((sum, i) => sum + (i.quantity || 0), 0);
+
+      // Max cho item này = available từ others - qty từ other items cùng variant
+      const maxAllowed = availableFromOthers - qtyFromOtherItems;
+
+      if (value > maxAllowed) {
         toast({
           title: 'Không đủ hàng trong kho',
-          description: `Chỉ còn ${availableStock} sản phẩm khả dụng (bao gồm cả số lượng đã chọn)`,
+          description: `Chỉ còn ${maxAllowed} sản phẩm khả dụng cho item này`,
           status: 'warning',
           duration: 3000,
           isClosable: true,
         });
         return;
       }
-
-      // Update reservation
-      setReservation(invoice.id, item.variantId, value);
+      // Reservation sẽ được tự động sync bởi useEffect khi items thay đổi
     }
 
     const updatedItems = invoice.items.map(i => {
@@ -72,27 +91,14 @@ const InvoiceForm = ({
   };
 
   const handleRemoveItem = itemId => {
-    const item = invoice.items.find(i => i.id === itemId);
-    if (!item) return;
-
-    // Remove reservation
-    removeReservation(invoice.id, item.variantId);
-
     const updatedItems = invoice.items.filter(i => i.id !== itemId);
+    // Reservation sẽ được tự động sync bởi useEffect khi items thay đổi
     const updatedInvoice = {
       ...invoice,
       items: updatedItems,
     };
 
     onUpdate(updatedInvoice);
-
-    toast({
-      title: 'Đã xóa sản phẩm',
-      description: 'Sản phẩm đã được xóa khỏi hoá đơn',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
   };
 
   const handleUpdateInvoice = (field, value) => {
