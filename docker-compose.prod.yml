@@ -7,8 +7,8 @@ services:
     container_name: steel_pos_postgres_prod
     environment:
       POSTGRES_DB: steel_pos
-      POSTGRES_USER: ${POSTGRES_USER:?Error: POSTGRES_USER not set}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}
+      POSTGRES_USER: "${POSTGRES_USER:?Error - POSTGRES_USER not set}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Error - POSTGRES_PASSWORD not set}"
     volumes:
       - steel_postgres_data:/var/lib/postgresql/data
     networks:
@@ -61,11 +61,11 @@ services:
       - NODE_ENV=production
       - ENV=production
       - PORT=8080
-      - DATABASE_URL=postgresql://${POSTGRES_USER:?Error: POSTGRES_USER not set}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}@postgres:5432/steel_pos?sslmode=disable
+      - "DATABASE_URL=postgresql://${POSTGRES_USER:?Error - POSTGRES_USER not set}:${POSTGRES_PASSWORD:?Error - POSTGRES_PASSWORD not set}@postgres:5432/steel_pos?sslmode=disable"
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:?Error: POSTGRES_USER not set}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD not set}
+      - "DB_USER=${POSTGRES_USER:?Error - POSTGRES_USER not set}"
+      - "DB_PASSWORD=${POSTGRES_PASSWORD:?Error - POSTGRES_PASSWORD not set}"
       - DB_NAME=steel_pos
       - DB_MAX_OPEN_CONNS=10
       - DB_MAX_IDLE_CONNS=2
@@ -75,7 +75,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_DB=0
-      - JWT_SECRET=${JWT_SECRET:?Error: JWT_SECRET not set}
+      - "JWT_SECRET=${JWT_SECRET:?Error - JWT_SECRET not set}"
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-${JWT_SECRET}}
       - CORS_ORIGIN=${CORS_ORIGIN:-https://cuahangkienphuoc.site}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}

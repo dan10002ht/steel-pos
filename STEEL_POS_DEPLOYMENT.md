@@ -261,6 +261,11 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Connection "";
 
+        # Hide backend cache headers and set our own
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Pragma;
+        proxy_hide_header Expires;
+
         # Cache for 1 hour (Cloudflare will cache this)
         add_header Cache-Control "public, max-age=3600" always;
     }
@@ -290,6 +295,11 @@ server {
         # WebSocket support
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
+
+        # Hide backend cache headers and set our own
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Pragma;
+        proxy_hide_header Expires;
 
         # Allow Cloudflare to cache HTML
         add_header Cache-Control "public, max-age=3600" always;
@@ -339,6 +349,11 @@ server {
         # Keepalive
         proxy_http_version 1.1;
         proxy_set_header Connection "";
+
+        # Hide backend cache headers and set our own
+        proxy_hide_header Cache-Control;
+        proxy_hide_header Pragma;
+        proxy_hide_header Expires;
 
         # Cache static assets for 1 year
         expires 1y;

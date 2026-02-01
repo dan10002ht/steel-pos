@@ -36,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates curl
 
 # Create non-root user
 RUN addgroup -g 1000 appuser && \
@@ -64,9 +64,9 @@ USER appuser
 # Expose port
 EXPOSE 8080
 
-# Health check
+# Health check (use 127.0.0.1 instead of localhost to avoid IPv6 issues)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD curl -f http://127.0.0.1:8080/health || exit 1
 
 # Run the binary
 CMD ["./main"]
